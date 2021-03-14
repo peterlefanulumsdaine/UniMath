@@ -7,11 +7,14 @@ Author: Langston Barrett (@siddharthist) (March 2018)
 
 Require Import UniMath.Foundations.PartA.
 Require Import UniMath.MoreFoundations.PartA.
+
 Require Import UniMath.Combinatorics.FiniteSequences.
 Require Import UniMath.Algebra.BinaryOperations.
 Require Import UniMath.Algebra.IteratedBinaryOperations.
 
 Require Import UniMath.Algebra.RigsAndRings.
+
+Local Open Scope stn.
 
 (** ** Contents
 
@@ -29,6 +32,13 @@ Require Import UniMath.Algebra.RigsAndRings.
 
 Definition pointwise {X : UU} (n : nat) (op : binop X) : binop (Vector X n) :=
   λ v1 v2 i, op (v1 i) (v2 i).
+
+(* TODO: perhaps move to [Combinatorics.FiniteSequences]? *)
+Definition vector_path {X} {n} {v1 v2 : Vector X n}
+  : (∏ i, v1 i = v2 i) -> v1 = v2.
+Proof.
+  apply funextfun.
+Defined.
 
 (** *** Standard conditions on one binary operation *)
 
@@ -163,6 +173,14 @@ End Structures.
 Definition entrywise {X : UU} (n m : nat) (op : binop X) : binop (Matrix X n m) :=
   λ mat1 mat2 i, pointwise _ op (mat1 i) (mat2 i).
 
+(* TODO: perhaps move to [Combinatorics.FiniteSequences]? *)
+Definition matrix_path {X} {m n} {a1 a2 : Matrix X m n}
+  : (∏ i j, a1 i j = a2 i j) -> a1 = a2.
+Proof.
+  intro H.
+  apply vector_path; intro; apply vector_path; intro; apply H.
+Defined.
+
 (** *** Standard conditions on one binary operation *)
 
 Section OneOpMat.
@@ -256,7 +274,7 @@ Section MatrixMult.
 
 End MatrixMult.
 
-Local Notation Σ := (iterop_fun rigunel1 op1).
+Local Notation Σ := (iterop_fun rigunel1 op1) (only parsing).
 Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
 Local Notation "A ** B" := (matrix_mult A B) (at level 80).
 
@@ -301,24 +319,71 @@ Section Weighting.
     apply rigrunax2.
   Defined.
 
-  (** TODO: prove this so that the below isn't hypothetical *)
-  Definition matrix_mult_assoc_statement : UU :=
-    ∏ (m n : nat) (mat1 : Matrix R m n)
-      (p : nat) (mat2 : Matrix R n p)
-      (q : nat) (mat3 : Matrix R p q),
-    ((mat1 ** mat2) ** mat3) = (mat1 ** (mat2 ** mat3)).
+  (* TODO: perhaps move upstream?  And if leaving not proved, name the statement and convert uses of this to hypotheses before merging into main. *)
+  Lemma interchange_sum_simple {m n} (a : ⟦m⟧ -> ⟦n⟧ -> R)
+    : Σ (fun i => Σ (fun j => (a i j)))
+      = Σ (fun j => Σ (fun i => (a i j))).
+  Proof.
+  Admitted.
+
+  (* TODO: upstream? and generalise to any distributive operations? *)
+  Lemma iterop_rdistr {m} (a : Vector R m) (b : R)
+    : op2 (Σ a) b = Σ (fun i => op2 (a i) b).
+  Proof.
+    induction m as [ | m' _].
+    { cbn. use rigmult0x. }
+    (* The extra case distinction in the definition of [iterop_fun] is a minor annoyance here (and will be in every other inductive proof about it).  Perhaps make an [iterop_fun'] defined the more “naïve” way, and prove that it’s equal to [iterop], so one can switch between them for such proofs? *)
+    induction m' as [ | m'' IH ].
+    { apply idpath. }
+    cbn.
+    eapply pathscomp0. { apply rigrdistr. }
+    apply maponpaths_2, IH.
+  Defined.
+
+    (* TODO: upstream? and generalise to any distributive operations? *)
+  Lemma iterop_ldistr {m} (a : Vector R m) (b : R)
+    : op2 b (Σ a) = Σ (fun i => op2 b (a i)).
+  Proof.
+    induction m as [ | m' _].
+    { cbn. use rigmultx0. }
+    induction m' as [ | m'' IH ].
+    { apply idpath. }
+    cbn.
+    eapply pathscomp0. { apply rigldistr. }
+    apply maponpaths_2, IH.
+  Defined.
+
+  Lemma matrix_mult_assoc {m n p q}
+        (mat1 : Matrix R m n)
+        (mat2 : Matrix R n p)
+        (mat3 : Matrix R p q)
+    : ((mat1 ** mat2) ** mat3) = (mat1 ** (mat2 ** mat3)).
+  Proof.
+    apply matrix_path; intros i l.
+    unfold matrix_mult.
+    eapply pathscomp0.
+    { eapply maponpaths, vector_path. intros k.
+      apply iterop_rdistr. }
+    eapply pathscomp0.
+    2: { eapply maponpaths, vector_path. intros k.
+      apply pathsinv0, iterop_ldistr. }
+    eapply pathscomp0.
+    apply interchange_sum_simple.
+    apply maponpaths, funextfun; intros j.
+    apply maponpaths, funextfun; intros k.
+    apply rigassoc2.
+  Defined.
 
   (** Lemma 1.1.2 in arXiv:1012.5857v3 *)
   Lemma weighting_coweighting_sum {m n : nat} (mat : Matrix R m n)
-        (wei : weighting mat) (cowei : coweighting mat)
-        (assocax : matrix_mult_assoc_statement) :
+        (wei : weighting mat) (cowei : coweighting mat) :
     Σ (pr1 wei) = Σ (pr1 cowei).
   Proof.
     apply (invmaponpathsweq weq_matrix_1_1).
     intermediate_path ((row_vec (const_vec (1%rig))) ** (col_vec (pr1 wei))).
     - apply sum_entries1.
     - refine (!maponpaths (λ z, z ** _) (pr2 cowei) @ _).
-      refine (assocax _ _ _ _ _ _ _ @ _).
+      refine (matrix_mult_assoc _ _ _ @ _).
       refine (maponpaths (λ z, _ ** z) (pr2 wei) @ _).
       apply pathsinv0, sum_entries2 .
   Defined.
