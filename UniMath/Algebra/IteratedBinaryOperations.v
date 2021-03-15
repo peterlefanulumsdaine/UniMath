@@ -11,7 +11,8 @@ Require Import UniMath.MoreFoundations.NegativePropositions.
 
 - the n-ary operations obtained by iterating (typically associative) binary operations
 - generalised associativity for such operations
-- generalised commutativity for such operations
+- interaction with homomorphisms, and generalised distributivity
+- generalised commutativity
 - connections with cardinality on finite sets
 - unordered n-ary operations
 
@@ -393,14 +394,24 @@ End Distributivity.
 
 Section Commutativity_Properties.
 
-  (* One may want commutativity along an equivalence,
-  with the two sizes not obviously equal. *)
   Definition isCommutative_fun {X:UU} (unel:X) (op:binop X) :=
-    ∏ m n (x:⟦n⟧ -> X) (f:⟦m⟧≃⟦n⟧),
+    ∏ n (x:⟦n⟧ -> X) (f:⟦n⟧≃⟦n⟧),
     iterop_fun unel op (x ∘ f) = iterop_fun unel op x.
 
   Definition isCommutative_fun_mon (M:monoid) :=
     isCommutative_fun (@unel M) (@op M).
+
+  (* One may want commutativity along an equivalence,
+  with the two sizes not obviously equal.
+
+   Perhaps this should be the primary definition? *)
+  Definition isCommutative_gen_fun {X:UU} (unel:X) (op:binop X) :=
+    ∏ m n (x:⟦n⟧ -> X) (f:⟦m⟧≃⟦n⟧),
+    iterop_fun unel op (x ∘ f) = iterop_fun unel op x.
+
+  Definition isCommutative_gen_fun_mon (M:monoid) :=
+    isCommutative_gen_fun (@unel M) (@op M).
+
 
 End Commutativity_Properties.
 
@@ -542,26 +553,20 @@ Section Commutativity_Theorem_bis.
   Require Import UniMath.MoreFoundations.All.
   Require Import UniMath.Combinatorics.All.
 
-  (* TODO: look harder for this auxiliary material on [stn] upstream; if can’t find it, consider upstreaming it? *)
+  Local Definition iterop_fun_respects {m n} (e : ⟦m⟧ ≃ ⟦n⟧)
+    := ∏ (a : ⟦n⟧ -> M), iterop_fun_mon (a ∘ e) = iterop_fun_mon a.
 
-  Local Definition stn_sn_rect {n} (P : ⟦S n⟧ -> UU)
-        (P_last : P lastelement) (P_dni : ∏ i : ⟦n⟧, P (dni lastelement i))
-    : forall i, P i.
+  Local Definition iterop_fun_respects_idweq {n} : iterop_fun_respects (idweq (⟦n⟧)).
   Proof.
-  Admitted.
+    intros a; reflexivity.
+  Defined.
 
-  Local Definition stn_sn_rect_last {n} (P : ⟦S n⟧ -> UU)
-        (P_last : P lastelement) (P_dni : ∏ i : ⟦n⟧, P (dni lastelement i))
-    : stn_sn_rect P P_last P_dni lastelement = P_last.
+  Local Definition iterop_fun_respects_comp {n1 n2 n3} (e1 : ⟦n1⟧ ≃ ⟦n2⟧) (e2 : ⟦n2⟧ ≃ ⟦n3⟧)
+    (H_e1 : iterop_fun_respects e1) (H_e2 : iterop_fun_respects e2)
+    : iterop_fun_respects (weqcomp e1 e2).
   Proof.
-  Admitted.
-
-  Local Definition stn_sn_rect_dni {n} (P : ⟦S n⟧ -> UU)
-        (P_last : P lastelement) (P_dni : ∏ i : ⟦n⟧, P (dni lastelement i))
-        (i : ⟦n⟧)
-    : stn_sn_rect P P_last P_dni (dni lastelement i) = P_dni i.
-  Proof.
-  Admitted.
+    intros a. exact (H_e1 (a ∘ e2) @ H_e2 a).
+  Defined.
 
   (* TODO: perhaps upstream, globalise? *)
   Local Definition transpose_stn {n} (i j : ⟦n⟧) : ⟦n⟧ ≃ ⟦n⟧.
@@ -581,45 +586,66 @@ Section Commutativity_Theorem_bis.
     reflexivity.
   Defined.
 
-  (* slightly different computational behaviour from library [sub]:
-     this satisfies [sub' n 0 = n] judgementally, instead of [sub 0 n = 0] *)
-  Local Fixpoint sub' n m {struct m} :=
-    match m with
-    | 0 => n
-    | S m' => match n with
-                | 0 => 0
-                | S n' => sub' n' m'
-              end
-    end.
+  Local Definition stn_weq_extend {n m} : ⟦n⟧≃⟦m⟧ -> ⟦S n⟧≃⟦S m⟧.
+  Admitted.
 
-  (* TODO: move to tests *)
-  Local Definition sub'_test_1 n : sub' n 0 = n.
+  Local Definition iterop_fun_respects_extend {n m} (e : ⟦n⟧≃⟦m⟧)
+     : iterop_fun_respects e -> iterop_fun_respects (stn_weq_extend e).
+  Admitted.
+
+  Local Definition secondlast {n} : ⟦S (S n)⟧ := dni lastelement lastelement.
+
+  (* TODO: should be inlined in [move_to_top] below once proven;
+  split out for now to allow [move_to_top] to compute while this is admitted. *)
+  Local Definition stn_nonlast_todo {n} (i : ⟦S n⟧) (ne_i_l : i != @lastelement n)
+    : i < n.
+  Admitted.
+
+  (* the permutation moving [i] up to [lastelement] and otherwise order-preserving, *)
+  (* defined in a way that facilitates proving [iterop_fun_respects]. *)
+  Local Definition move_to_top n (i : ⟦ S n ⟧) : ⟦S n⟧ ≃ ⟦S n⟧.
   Proof.
-    reflexivity.
+    induction n as [ | n' IH].
+    { apply idweq. }
+    destruct (isdeceqstn _ i lastelement) as [ eq_i_l | neq_i_l ].
+    { apply idweq. }
+    refine (weqcomp _ (transpose_stn lastelement secondlast)).
+    apply stn_weq_extend, IH.
+    exists i. apply stn_nonlast_todo, neq_i_l.
   Defined.
 
-  (* TODO: move to tests *)
-  Local Definition sub'_test_2 n : sub' 0 n = 0.
+  Local Definition iterop_fun_respects_move_to_top {n} (i : ⟦S n⟧)
+    : iterop_fun_respects (move_to_top n i).
   Proof.
-    Fail reflexivity.
-    destruct n; reflexivity.
-  Defined.
+    induction n as [ | n' IH]; cbn.
+    { apply iterop_fun_respects_idweq. }
+    destruct (isdeceqstn _ i lastelement) as [ eq_i_l | neq_i_l ].
+    { apply iterop_fun_respects_idweq. }
+    apply iterop_fun_respects_comp.
+    { apply iterop_fun_respects_extend, IH. }
+    (* The following is the heart of the theorem,
+       the actual use of associativity + commutativity. *)
+    admit.
+  Admitted.
 
-  Local Definition last {n} : ⟦ S n ⟧ := lastelement.
-  Local Definition secondlast {n} : ⟦ S (S n) ⟧ := dni lastelement lastelement.
 
   (* Relevant lemmas: [cutonweq], [invcutonweq], [weqrecomplf] *)
 
-  Theorem iter_add_commutative : isCommutative_fun_mon M.
+  Theorem iter_add_commutative : isCommutative_gen_fun_mon M.
   Proof.
-    (* Outline: *)
-    (* Non-trivial case: have lastelement, and acted non-trivially.
-       Then must be in double successor.
-       Then any weq [ e : ⟦S S n⟧ -> ⟦ S S n⟧] factors as:
-       - [t1 := transpose_stn (e secondlast)]
-       - [t2 := transpose_stn (secondlast last)]
-       - [e1 := e . t1 . t2]
-    *)
+    intros m n a e.
+    induction m as [ | m' IH]; destruct n as [ | n'];
+    (* Cases where either [m] or [n] is [0] are trivial: *)
+    [ reflexivity | destruct (negweqstn0sn _ e) | destruct (negweqstnsn0 _ e) | ].
+    (* For the general case: treat it as
+      first push the new last element along to the end;
+      then (with the last element fixed) permute the rest.
+
+    Concretely, factor the weq [ e : ⟦S m⟧ -> ⟦ S m ⟧] as:
+       - [e1 := move_to_top m (e lastelement) ]
+       - [e2 := (e1^–1) ; e ]
+
+    We already showed iterop_fun respects [e1]; and [e2] fixes [lastelement], so is respected by induction. *)
   Admitted.
 
 End Commutativity_Theorem_bis.
