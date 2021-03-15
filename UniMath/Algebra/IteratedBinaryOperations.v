@@ -388,13 +388,15 @@ Section Distributivity.
 
 End Distributivity.
 
-(** generalized commutativity *)
+(** Generalized commutativity (definition) *)
 (* currently proven only for [iterop_seq], not yet [_list] or [_fun] *)
 
 Section Commutativity_Properties.
 
+  (* One may want commutativity along an equivalence,
+  with the two sizes not obviously equal. *)
   Definition isCommutative_fun {X:UU} (unel:X) (op:binop X) :=
-    ∏ n (x:⟦n⟧ -> X) (f:⟦n⟧≃⟦n⟧),
+    ∏ m n (x:⟦n⟧ -> X) (f:⟦m⟧≃⟦n⟧),
     iterop_fun unel op (x ∘ f) = iterop_fun unel op x.
 
   Definition isCommutative_fun_mon (M:monoid) :=
@@ -402,9 +404,11 @@ Section Commutativity_Properties.
 
 End Commutativity_Properties.
 
+(** Proof of generalised commutativity *)
+
 Section Commutativity_Theorem.
 
-  Open Scope multmonoid_scope.
+  Local Open Scope multmonoid_scope.
 
 Local Notation "s □ x" := (append s x) (at level 64, left associativity).
 
@@ -528,8 +532,100 @@ Defined.
 
 End Commutativity_Theorem.
 
-(** finite products (or sums) in monoids *)
+(** An alternate proof of generalised commutativity of iterated sums/products *)
+Section Commutativity_Theorem_bis.
 
+  Context {M : abmonoid}.
+
+  (* TODO: once done, pare these down to just what’s reqruied. *)
+  Require Import UniMath.Foundations.All.
+  Require Import UniMath.MoreFoundations.All.
+  Require Import UniMath.Combinatorics.All.
+
+  (* TODO: look harder for this auxiliary material on [stn] upstream; if can’t find it, consider upstreaming it? *)
+
+  Local Definition stn_sn_rect {n} (P : ⟦S n⟧ -> UU)
+        (P_last : P lastelement) (P_dni : ∏ i : ⟦n⟧, P (dni lastelement i))
+    : forall i, P i.
+  Proof.
+  Admitted.
+
+  Local Definition stn_sn_rect_last {n} (P : ⟦S n⟧ -> UU)
+        (P_last : P lastelement) (P_dni : ∏ i : ⟦n⟧, P (dni lastelement i))
+    : stn_sn_rect P P_last P_dni lastelement = P_last.
+  Proof.
+  Admitted.
+
+  Local Definition stn_sn_rect_dni {n} (P : ⟦S n⟧ -> UU)
+        (P_last : P lastelement) (P_dni : ∏ i : ⟦n⟧, P (dni lastelement i))
+        (i : ⟦n⟧)
+    : stn_sn_rect P P_last P_dni (dni lastelement i) = P_dni i.
+  Proof.
+  Admitted.
+
+  (* TODO: perhaps upstream, globalise? *)
+  Local Definition transpose_stn {n} (i j : ⟦n⟧) : ⟦n⟧ ≃ ⟦n⟧.
+  Proof.
+    use (weqtranspos i j); apply isisolatedinstn.
+  Defined.
+
+  (* TODO: move to tests? *)
+  Local Definition transpose_stn_test : @transpose_stn 8 (●3) (●5) (●5) = (●3).
+  Proof.
+    reflexivity.
+  Defined.
+
+  (* TODO: move to tests? *)
+  Local Definition transpose_stn_test_2 : @transpose_stn 8 (●3) (●5) (●4) = (●4).
+  Proof.
+    reflexivity.
+  Defined.
+
+  (* slightly different computational behaviour from library [sub]:
+     this satisfies [sub' n 0 = n] judgementally, instead of [sub 0 n = 0] *)
+  Local Fixpoint sub' n m {struct m} :=
+    match m with
+    | 0 => n
+    | S m' => match n with
+                | 0 => 0
+                | S n' => sub' n' m'
+              end
+    end.
+
+  (* TODO: move to tests *)
+  Local Definition sub'_test_1 n : sub' n 0 = n.
+  Proof.
+    reflexivity.
+  Defined.
+
+  (* TODO: move to tests *)
+  Local Definition sub'_test_2 n : sub' 0 n = 0.
+  Proof.
+    Fail reflexivity.
+    destruct n; reflexivity.
+  Defined.
+
+  Local Definition last {n} : ⟦ S n ⟧ := lastelement.
+  Local Definition secondlast {n} : ⟦ S (S n) ⟧ := dni lastelement lastelement.
+
+  (* Relevant lemmas: [cutonweq], [invcutonweq], [weqrecomplf] *)
+
+  Theorem iter_add_commutative : isCommutative_fun_mon M.
+  Proof.
+    (* Outline: *)
+    (* Non-trivial case: have lastelement, and acted non-trivially.
+       Then must be in double successor.
+       Then any weq [ e : ⟦S S n⟧ -> ⟦ S S n⟧] factors as:
+       - [t1 := transpose_stn (e secondlast)]
+       - [t2 := transpose_stn (secondlast last)]
+       - [e1 := e . t1 . t2]
+    *)
+  Admitted.
+
+End Commutativity_Theorem_bis.
+
+
+(** Products/sums over arbitrary finite sets, in commutative monoids *)
 
   Require Export UniMath.Combinatorics.FiniteSets.
   Require Export UniMath.Foundations.NaturalNumbers.
