@@ -147,9 +147,9 @@ End BinaryOperations.
 
 (** general associativity for monoids *)
 
-Local Open Scope multmonoid.
-
 Section Monoids.
+
+  Local Open Scope multmonoid.
 
   Context {M:monoid}.
 
@@ -205,6 +205,18 @@ Section Monoids.
     reflexivity.
   Defined.
 
+  Lemma iterop_fun_mon_step {n} (x : stn(S n) -> M) :
+    iterop_fun_mon x = (iterop_fun_mon (x ∘ dni lastelement)) * (x lastelement).
+  Proof.
+    apply iterop_fun_step, lunax.
+  Defined.
+
+  Lemma iterop_fun_mon_append {n} (x : stn n -> M) (y:M) :
+    iterop_fun_mon (append_vec x y) = (iterop_fun_mon x) * y.
+  Proof.
+    apply iterop_fun_append, lunax.
+  Defined.
+
   Local Lemma iterop_seq_mon_append (x:Sequence M) (m:M) :
     iterop_seq_mon (append x m) = iterop_seq_mon x * m.
   Proof.
@@ -242,6 +254,8 @@ End Monoids.
 
 (** The general associativity theorem. *)
 Section Associativity_Theorem.
+
+Local Open Scope multmonoid.
 
 Lemma iterop_list_mon_concatenate {M : monoid} (l s : list M) :
   iterop_list_mon (Lists.concatenate l s) = iterop_list_mon l * iterop_list_mon s.
@@ -307,7 +321,75 @@ Defined.
 
 End Associativity_Theorem.
 
+(** interaction with homomorphisms and distributivity *)
+(* currently developed only for [interop_fun], not yet [_list] or [_seq] *)
+
+Section Homomorphisms.
+
+  Local Open Scope multmonoid.
+
+  Context {X Y : monoid}.
+
+  (* this result doesn’t use associativity, so could be directly generalised
+     to [iterop_fun] instead of [iterop_fun_mon] if ever needed *)
+  Definition monoidfun_iterop_fun (f : monoidfun X Y) {n} (a : ⟦n⟧ -> X)
+    : f (iterop_fun_mon a) = iterop_fun_mon (fun i => f (a i)).
+  Proof.
+    induction n as [ | n' IH ].
+    { apply monoidfununel. }
+    repeat rewrite iterop_fun_mon_step.
+    rewrite monoidfunmul.
+    apply (maponpaths (fun x => x * _)), IH.
+  Defined.
+
+  Definition ismonoidfun_iterop_fun
+      (f : X -> Y) (H_f : ismonoidfun f)
+      {n} (a : ⟦n⟧ -> X)
+    : f (iterop_fun_mon a) = iterop_fun_mon (fun i => f (a i)).
+  Proof.
+    apply (monoidfun_iterop_fun (monoidfunconstr H_f)).
+  Defined.
+
+End Homomorphisms.
+
+Section Distributivity.
+
+  Local Open Scope rig_scope.
+
+  Context {A : rig}.
+
+  (* this result doesn’t use the full rig structure, in particular not commutativty of addition; so could be generalised to any distributive pair of operations (in the sense assuming the unit condition [a * 0 = 0], not just [a * (b + c) = a * b + a * c]) *)
+
+  Definition iter_add_rig {n} (a : ⟦n⟧ -> A) : A
+    := @iterop_fun_mon (rigaddabmonoid A) _ a.
+
+  Definition iter_add_ldistr (a : A) {n} (b : ⟦n⟧ -> A)
+    : a * (iter_add_rig b) = iter_add_rig (fun i => a * b i).
+  Proof.
+    use (@ismonoidfun_iterop_fun (rigaddabmonoid A) (rigaddabmonoid A) (fun x => a * x)).
+    (* TODO: abstract the following as e.g. [ismonoidfun_riglmult]? *)
+    split.
+    - intros ? ?; apply rigldistr.
+    - apply rigmultx0.
+  Defined.
+
+  Definition iter_add_rdistr {n} (a : ⟦n⟧ -> A) (b : A)
+    : (iter_add_rig a) * b = iter_add_rig (fun i => a i * b).
+  Proof.
+    refine (@ismonoidfun_iterop_fun (rigaddabmonoid A) (rigaddabmonoid A) (fun x => x * b) _ _ _).
+    (* TODO: abstract the following as e.g. [ismonoidfun_rigrmult]? *)
+    split.
+    - intros ? ?; apply rigrdistr.
+    - apply rigmult0x.
+  Defined.
+
+  Definition iter_mult_rig {n} (a : ⟦n⟧ -> A) : A
+    := @iterop_fun_mon (rigmultmonoid A) _ a.
+
+End Distributivity.
+
 (** generalized commutativity *)
+(* currently proven only for [iterop_seq], not yet [_list] or [_fun] *)
 
 Section Commutativity_Properties.
 
@@ -321,6 +403,8 @@ Section Commutativity_Properties.
 End Commutativity_Properties.
 
 Section Commutativity_Theorem.
+
+  Open Scope multmonoid_scope.
 
 Local Notation "s □ x" := (append s x) (at level 64, left associativity).
 
