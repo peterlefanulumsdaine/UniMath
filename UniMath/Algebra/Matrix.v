@@ -249,7 +249,7 @@ Section MatrixMult.
   Context {R : rig}.
 
   (** Summation and pointwise multiplication *)
-  Local Notation Σ := (iterop_fun rigunel1 op1).
+  Local Notation Σ := iter_add_rig.
   Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
 
   (** If A is m × n (so B is n × p),
@@ -274,7 +274,7 @@ Section MatrixMult.
 
 End MatrixMult.
 
-Local Notation Σ := (iterop_fun rigunel1 op1) (only parsing).
+Local Notation Σ := iter_add_rig (only parsing).
 Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
 Local Notation "A ** B" := (matrix_mult A B) (at level 80).
 
@@ -326,33 +326,6 @@ Section Weighting.
   Proof.
   Admitted.
 
-  (* TODO: upstream? and generalise to any distributive operations? *)
-  Lemma iterop_rdistr {m} (a : Vector R m) (b : R)
-    : op2 (Σ a) b = Σ (fun i => op2 (a i) b).
-  Proof.
-    induction m as [ | m' _].
-    { cbn. use rigmult0x. }
-    (* The extra case distinction in the definition of [iterop_fun] is a minor annoyance here (and will be in every other inductive proof about it).  Perhaps make an [iterop_fun'] defined the more “naïve” way, and prove that it’s equal to [iterop], so one can switch between them for such proofs? *)
-    induction m' as [ | m'' IH ].
-    { apply idpath. }
-    cbn.
-    eapply pathscomp0. { apply rigrdistr. }
-    apply maponpaths_2, IH.
-  Defined.
-
-    (* TODO: upstream? and generalise to any distributive operations? *)
-  Lemma iterop_ldistr {m} (a : Vector R m) (b : R)
-    : op2 b (Σ a) = Σ (fun i => op2 b (a i)).
-  Proof.
-    induction m as [ | m' _].
-    { cbn. use rigmultx0. }
-    induction m' as [ | m'' IH ].
-    { apply idpath. }
-    cbn.
-    eapply pathscomp0. { apply rigldistr. }
-    apply maponpaths_2, IH.
-  Defined.
-
   Lemma matrix_mult_assoc {m n p q}
         (mat1 : Matrix R m n)
         (mat2 : Matrix R n p)
@@ -363,10 +336,10 @@ Section Weighting.
     unfold matrix_mult.
     eapply pathscomp0.
     { eapply maponpaths, vector_path. intros k.
-      apply iterop_rdistr. }
+      apply iter_add_rdistr. }
     eapply pathscomp0.
     2: { eapply maponpaths, vector_path. intros k.
-      apply pathsinv0, iterop_ldistr. }
+      apply pathsinv0, iter_add_ldistr. }
     eapply pathscomp0.
     apply interchange_sum_simple.
     apply maponpaths, funextfun; intros j.
