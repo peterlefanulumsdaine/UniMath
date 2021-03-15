@@ -586,6 +586,22 @@ Section Commutativity_Theorem_bis.
     reflexivity.
   Defined.
 
+  Definition transpose_stn_comp1 {n} (i j : ⟦n⟧)
+    : (transpose_stn i j) i = j.
+  Proof.
+  Admitted.
+
+  Definition transpose_stn_comp2 {n} (i j : ⟦n⟧)
+    : (transpose_stn i j) j = i.
+  Proof.
+  Admitted.
+
+  Definition transpose_stn_comp_rest {n} (i j k : ⟦n⟧)
+      (ne_ik : i != k) (ne_jk : j != k)
+    : transpose_stn i j k = k.
+  Proof.
+  Admitted.
+
   Local Definition stn_weq_extend {n m} : ⟦n⟧≃⟦m⟧ -> ⟦S n⟧≃⟦S m⟧.
   Admitted.
 
@@ -595,15 +611,15 @@ Section Commutativity_Theorem_bis.
 
   Local Definition secondlast {n} : ⟦S (S n)⟧ := dni lastelement lastelement.
 
-  (* TODO: should be inlined in [move_to_top] below once proven;
-  split out for now to allow [move_to_top] to compute while this is admitted. *)
+  (* TODO: should be inlined in [move_to_last] below once proven;
+  split out for now to allow [move_to_last] to compute while this is admitted. *)
   Local Definition stn_nonlast_todo {n} (i : ⟦S n⟧) (ne_i_l : i != @lastelement n)
     : i < n.
   Admitted.
 
   (* the permutation moving [i] up to [lastelement] and otherwise order-preserving, *)
   (* defined in a way that facilitates proving [iterop_fun_respects]. *)
-  Local Definition move_to_top n (i : ⟦ S n ⟧) : ⟦S n⟧ ≃ ⟦S n⟧.
+  Local Definition move_to_last n (i : ⟦ S n ⟧) : ⟦S n⟧ ≃ ⟦S n⟧.
   Proof.
     induction n as [ | n' IH].
     { apply idweq. }
@@ -614,8 +630,8 @@ Section Commutativity_Theorem_bis.
     exists i. apply stn_nonlast_todo, neq_i_l.
   Defined.
 
-  Local Definition iterop_fun_respects_move_to_top {n} (i : ⟦S n⟧)
-    : iterop_fun_respects (move_to_top n i).
+  Local Definition iterop_fun_respects_move_to_last {n} (i : ⟦S n⟧)
+    : iterop_fun_respects (move_to_last n i).
   Proof.
     induction n as [ | n' IH]; cbn.
     { apply iterop_fun_respects_idweq. }
@@ -623,11 +639,20 @@ Section Commutativity_Theorem_bis.
     { apply iterop_fun_respects_idweq. }
     apply iterop_fun_respects_comp.
     { apply iterop_fun_respects_extend, IH. }
-    (* The following is the heart of the theorem,
+    (* The following is the heart of the theorem:
        the actual use of associativity + commutativity. *)
-    admit.
-  Admitted.
-
+    intros a.
+    repeat rewrite iterop_fun_mon_step.
+    unfold funcomp. repeat rewrite transpose_stn_comp1, transpose_stn_comp2.
+    repeat rewrite assocax.
+    eapply pathscomp0. { apply maponpaths, commax. }
+    apply (maponpaths (fun x => x * _)%multmonoid).
+    apply maponpaths, funextfun; intros j; apply maponpaths.
+    use transpose_stn_comp_rest.
+    { apply stnneq_to_nopath, dni_neq_i. }
+    use (negf (invmaponpathsincl _ _ _ _)). { apply isincldni. }
+    apply stnneq_to_nopath, dni_neq_i.
+  Defined.
 
   (* Relevant lemmas: [cutonweq], [invcutonweq], [weqrecomplf] *)
 
@@ -637,12 +662,12 @@ Section Commutativity_Theorem_bis.
     induction m as [ | m' IH]; destruct n as [ | n'];
     (* Cases where either [m] or [n] is [0] are trivial: *)
     [ reflexivity | destruct (negweqstn0sn _ e) | destruct (negweqstnsn0 _ e) | ].
-    (* For the general case: treat it as
+    (* For the general case:
       first push the new last element along to the end;
       then (with the last element fixed) permute the rest.
 
     Concretely, factor the weq [ e : ⟦S m⟧ -> ⟦ S m ⟧] as:
-       - [e1 := move_to_top m (e lastelement) ]
+       - [e1 := move_to_last m (e lastelement) ]
        - [e2 := (e1^–1) ; e ]
 
     We already showed iterop_fun respects [e1]; and [e2] fixes [lastelement], so is respected by induction. *)
