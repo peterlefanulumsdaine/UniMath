@@ -7,6 +7,18 @@ Require Import UniMath.MoreFoundations.Tactics.
 Require Import UniMath.Algebra.Groups.
 Require Import UniMath.MoreFoundations.NegativePropositions.
 
+(** Contents:
+
+- the n-ary operations obtained by iterating (typically associative) binary operations
+- generalised associativity for such operations
+- generalised commutativity for such operations
+- connections with cardinality on finite sets
+- unordered n-ary operations
+
+*)
+
+Local Open Scope stn.
+
 (* move upstream *)
 
 (* end of move upstream *)
@@ -42,50 +54,9 @@ Section BinaryOperations.
     exact (iterop_fun x).
   Defined.
 
-  (* now define products of products *)
-
-  Definition iterop_list_list : list(list X) -> X.
-  Proof.
-    intros w.
-    exact (iterop_list (map iterop_list w)).
-  Defined.
-
-  Definition iterop_fun_fun {n} {m:stn n -> nat} : (∏ i (j:stn (m i)), X) -> X.
-  Proof.
-    intros x.
-    exact (iterop_fun (λ i, iterop_fun (x i))).
-  Defined.
-
-  Definition iterop_seq_seq : Sequence (Sequence X) -> X.
-  Proof.
-    intros x.
-    exact (iterop_fun_fun (λ i j, x i j)).
-  Defined.
-
-  Definition isAssociative_list := ∏ (x:list (list X)), iterop_list (Lists.flatten x) = iterop_list_list x.
-
-  Definition isAssociative_fun :=
-    ∏ n (m:stn n -> nat) (x : ∏ i (j:stn (m i)), X), iterop_fun (StandardFiniteSets.flatten' x) = iterop_fun_fun x.
-
-  Definition isAssociative_seq :=
-    ∏ (x : Sequence (Sequence X)), iterop_seq (FiniteSequences.flatten x) = iterop_seq_seq x.
-
-  Local Open Scope stn.
-
-  Definition isCommutative_fun :=
-    ∏ n (x:⟦n⟧ -> X) (f:⟦n⟧≃⟦n⟧), iterop_fun (x ∘ f) = iterop_fun x.
-
-  Lemma assoc_fun_to_seq : isAssociative_fun -> isAssociative_seq.
-  Proof.
-    intros assoc x.
-    exact (assoc _ _ (λ i j, x i j)).
-  Defined.
-
-  Lemma assoc_seq_to_fun : isAssociative_seq -> isAssociative_fun.
-  Proof.
-    intros assoc n m x.
-    exact (assoc (functionToSequence (λ i, functionToSequence (x i)))).
-  Defined.
+  (* since [iterop] have the length-1 case special-cased,
+  they don’t definitionally satisfy the expected successor equation in general,
+  so we prove that equation as a lemma *)
 
   Definition iterop_list_step (runax : isrunit op unel) (x:X) (xs:list X) :
     iterop_list (x::xs) = op x (iterop_list xs).
@@ -132,6 +103,46 @@ Section BinaryOperations.
     reflexivity.
   Defined.
 
+  (* we can now define the generalised associativity property for [iterop] *)
+
+  Definition iterop_list_list : list(list X) -> X.
+  Proof.
+    intros w.
+    exact (iterop_list (map iterop_list w)).
+  Defined.
+
+  Definition iterop_fun_fun {n} {m:stn n -> nat} : (∏ i (j:stn (m i)), X) -> X.
+  Proof.
+    intros x.
+    exact (iterop_fun (λ i, iterop_fun (x i))).
+  Defined.
+
+  Definition iterop_seq_seq : Sequence (Sequence X) -> X.
+  Proof.
+    intros x.
+    exact (iterop_fun_fun (λ i j, x i j)).
+  Defined.
+
+  Definition isAssociative_list := ∏ (x:list (list X)), iterop_list (Lists.flatten x) = iterop_list_list x.
+
+  Definition isAssociative_fun :=
+    ∏ n (m:stn n -> nat) (x : ∏ i (j:stn (m i)), X), iterop_fun (StandardFiniteSets.flatten' x) = iterop_fun_fun x.
+
+  Definition isAssociative_seq :=
+    ∏ (x : Sequence (Sequence X)), iterop_seq (FiniteSequences.flatten x) = iterop_seq_seq x.
+
+  Lemma assoc_fun_to_seq : isAssociative_fun -> isAssociative_seq.
+  Proof.
+    intros assoc x.
+    exact (assoc _ _ (λ i j, x i j)).
+  Defined.
+
+  Lemma assoc_seq_to_fun : isAssociative_seq -> isAssociative_fun.
+  Proof.
+    intros assoc n m x.
+    exact (assoc (functionToSequence (λ i, functionToSequence (x i)))).
+  Defined.
+
 End BinaryOperations.
 
 (** general associativity for monoids *)
@@ -155,6 +166,12 @@ Section Monoids.
   Definition iterop_seq_seq_mon : Sequence (Sequence M) -> M := iterop_seq_seq uu oo.
 
   Definition iterop_list_list_mon : list (list M) -> M := iterop_list_list uu oo.
+
+  Definition isAssociative_list_mon := isAssociative_list uu oo.
+
+  Definition isAssociative_fun_mon := isAssociative_fun uu oo.
+
+  Definition isAssociative_seq_mon := isAssociative_seq uu oo.
 
   (* some rewriting rules *)
 
@@ -223,25 +240,8 @@ Section Monoids.
 
 End Monoids.
 
-Section Monoids2.
-
-  Context (M:monoid).
-
-  Let op := @op M.
-
-  Let unel := unel M.
-
-  Definition isAssociative_list_mon := isAssociative_list unel op.
-
-  Definition isAssociative_fun_mon := isAssociative_fun unel op.
-
-  Definition isAssociative_seq_mon := isAssociative_seq unel op.
-
-  Definition isCommutative_fun_mon := isCommutative_fun unel op.
-
-End Monoids2.
-
 (** The general associativity theorem. *)
+Section Associativity_Theorem.
 
 Lemma iterop_list_mon_concatenate {M : monoid} (l s : list M) :
   iterop_list_mon (Lists.concatenate l s) = iterop_list_mon l * iterop_list_mon s.
@@ -305,7 +305,22 @@ Proof.
   assert (L := flatten_partition f x). apply pathsinv0. exact (iterop_seq_mon_homot _ _ L).
 Defined.
 
+End Associativity_Theorem.
+
 (** generalized commutativity *)
+
+Section Commutativity_Properties.
+
+  Definition isCommutative_fun {X:UU} (unel:X) (op:binop X) :=
+    ∏ n (x:⟦n⟧ -> X) (f:⟦n⟧≃⟦n⟧),
+    iterop_fun unel op (x ∘ f) = iterop_fun unel op x.
+
+  Definition isCommutative_fun_mon (M:monoid) :=
+    isCommutative_fun (@unel M) (@op M).
+
+End Commutativity_Properties.
+
+Section Commutativity_Theorem.
 
 Local Notation "s □ x" := (append s x) (at level 64, left associativity).
 
@@ -313,8 +328,6 @@ Ltac change_lhs a := match goal with |- @paths ?T ?x ?y
                                      => change (@paths T x y) with (@paths T a y) end.
 Ltac change_rhs a := match goal with |- @paths ?T ?x ?y
                                      => change (@paths T x y) with (@paths T x a) end.
-
-Local Open Scope stn.
 
 Lemma commutativityOfProducts_helper {M:abmonoid} {n} (x:stn (S n) -> M) (j:stn (S n)) :
   iterop_seq_mon (S n,,x) = iterop_seq_mon (n,,x ∘ dni j) * x j.
@@ -428,6 +441,8 @@ Proof.
     rewrite (IH (x ∘ dni i') h).
     now apply iterop_seq_mon_homot.
 Defined.
+
+End Commutativity_Theorem.
 
 (** finite products (or sums) in monoids *)
 
