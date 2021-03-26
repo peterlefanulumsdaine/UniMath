@@ -403,9 +403,9 @@ Section Toys.
                 (mat2 : Matrix R m n),
   matrix_add mat1 mat2 = matrix_add mat2 mat1.
   Proof.
-  intros.   apply funextfun.
-  intros i. apply funextfun.
-  intros j. apply rigcomm1.
+    intros.   apply funextfun.
+    intros i. apply funextfun.
+    intros j. apply rigcomm1.
   Defined.
 
   Lemma matrix_add_assoc:
@@ -414,9 +414,9 @@ Section Toys.
     matrix_add (matrix_add mat1 mat2) mat3
   = matrix_add mat1 (matrix_add mat2 mat3).
   Proof.
-  intros.   apply funextfun.
-  intros i. apply funextfun.
-  intros j. apply rigassoc1.
+    intros.   apply funextfun.
+    intros i. apply funextfun.
+    intros j. apply rigassoc1.
   Defined.
 
 
@@ -439,13 +439,16 @@ Section Toys.
   {n : nat} (vec: Vector R n)
   := vec ^ (const_vec s).
 
+  (* This is just one case of maponpaths *)
+  (*
   Lemma funeq_implies_sumeq :
   ∏ (n:nat) (f1 f2: (⟦ n ⟧)%stn -> R),
     (f1 = f2) -> (Σ f1) = (Σ f2).
   Proof.
     intros. rewrite <- X.
-    reflexivity.
+    apply maponpaths, idpath.
   Defined.
+  *)
 
 
   Lemma sum_is_ldistr :
@@ -453,22 +456,18 @@ Section Toys.
     op2 s (Σ vec) =  Σ ((λ _ : (⟦ n ⟧)%stn, s ) ^ vec).
   Proof.
     intros. induction n.
-    + assert (x : ( Σ vec) = 0%rig).
+    + assert (x : (Σ vec) = 0%rig).
       - reflexivity.
-      - rewrite x. rewrite -> rigmultx0.
-        unfold iterop_fun. simpl.
-        reflexivity.
+      - rewrite x. apply rigmultx0.
     + rewrite  iterop_fun_step.
       unfold "∘". rewrite rigldistr.
       unfold "^". rewrite -> IHn.
       unfold "^". rewrite -> replace_dni_last.
       rewrite iterop_fun_step.
       - unfold "∘". rewrite -> replace_dni_last.
-        reflexivity.
-      - unfold islunit. intros. rewrite riglunax1.
-        reflexivity.
-      - unfold islunit. intros. rewrite riglunax1.
-        reflexivity.
+        apply idpath.
+      - apply riglunax1.
+      - apply riglunax1.
   Defined.
 
   Lemma sum_is_ldistr_switch:
@@ -477,23 +476,17 @@ Section Toys.
   Proof.
     intros. induction n.
     + assert (x : ( Σ vec) = 0%rig).
-      - reflexivity.
-      - rewrite x. rewrite -> rigmult0x.
-        unfold iterop_fun. simpl.
-        reflexivity.
+      - apply idpath.
+      - rewrite x. apply rigmult0x.
     + rewrite  iterop_fun_step.
         unfold "∘". rewrite rigrdistr.
         unfold "^". rewrite -> IHn.
         unfold "^". rewrite -> replace_dni_last.
         rewrite iterop_fun_step.
         - unfold "∘". rewrite -> replace_dni_last.
-          reflexivity.
-        - unfold islunit. intros.
-          rewrite riglunax1.
-          reflexivity.
-        - unfold islunit. intros.
-          rewrite riglunax1.
-          reflexivity.
+          apply idpath.
+        - apply riglunax1.
+        - apply riglunax1.
   Defined.
 
   Lemma matrix_sum_is_ldistr :
@@ -509,10 +502,9 @@ Section Toys.
                                          (mat1 i i0) *  ((mat2 i0 i1) * (mat3 i1 j)))))%rig))).
   Proof.
     intros.
-    apply funeq_implies_sumeq.
+    apply maponpaths.
     apply funextfun.
     intros k.
-    unfold iterop_fun. unfold nat_rect.
     apply sum_is_ldistr.
   Defined.
 
@@ -529,7 +521,7 @@ Section Toys.
                                       (mat1 i i1 * mat2 i1 i0) * mat3 i0 j))%ring).
   Proof.
     intros.
-    apply funeq_implies_sumeq.
+    apply maponpaths.
     apply funextfun.
     intros k.
     apply sum_is_ldistr_switch.
@@ -550,15 +542,15 @@ Section Toys.
     induction n.
     + reflexivity.
     + intros. rewrite iterop_fun_step.
-    - rewrite rigrunax1.
-
-      unfold  "∘".
-      rewrite -> IHn with ((λ _ : (⟦ n ⟧)%stn, 0%rig)).
-      reflexivity.
-      reflexivity.
-    -  unfold islunit. intros.  rewrite riglunax1. reflexivity.
+      - rewrite rigrunax1.
+        unfold  "∘".
+        rewrite -> IHn with ((λ _ : (⟦ n ⟧)%stn, 0%rig)).
+        reflexivity.
+        reflexivity.
+      - apply riglunax1.
   Defined.
 
+  (* TODO: this is not pretty, and likely, proof steps are performed for no good reason *)
   Lemma sums_to_op1_sum :
     ∏ (n : nat)
       (f1 f2 : (⟦ n ⟧)%stn -> R),
@@ -572,8 +564,7 @@ Section Toys.
     assert ( sum0': Σ (λ i : (⟦ 0 ⟧)%stn, f2 i) = 0%rig).
     reflexivity.
     + rewrite sum0. rewrite sum0'.
-      rewrite riglunax1.
-      reflexivity.
+      apply riglunax1.
     + rewrite iterop_fun_step.
       rewrite iterop_fun_step.
       rewrite <- rigassoc1.
@@ -588,14 +579,12 @@ Section Toys.
       rewrite rigcomm1.
       rewrite (rigcomm1 R (f2 lastelement)  (f1 lastelement)).
       reflexivity.
-      unfold islunit; intros; rewrite riglunax1; reflexivity.
-      unfold islunit; intros; rewrite riglunax1; reflexivity.
-      unfold islunit. intros. rewrite riglunax1. reflexivity.
+      apply riglunax1. apply riglunax1. apply riglunax1.
   Defined.
 
   Lemma interchange_sums :
     ∏ (m n : nat)
-      (f : (⟦ n ⟧)%stn ->  (⟦ m ⟧)%stn -> R),   (* really a matrix by definition *)
+      (f : (⟦ n ⟧)%stn ->  (⟦ m ⟧)%stn -> R),
     Σ (λ i: (⟦ m ⟧)%stn, Σ (λ j : (⟦ n ⟧)%stn, f j i) )
     = Σ (λ j: (⟦ n ⟧)%stn, Σ (λ i : (⟦ m ⟧)%stn, (flip f) i j)  ).
   Proof.
@@ -622,17 +611,15 @@ Section Toys.
           unfold  "∘".
           rewrite <- IHn.
           ++ rewrite sums_to_op1_sum.
-             apply funeq_implies_sumeq.
+             apply maponpaths.
              apply funextfun.
              intros i.
              rewrite -> iterop_fun_step.
-          -- unfold  "∘".
-             rewrite -> replace_dni_last.
-             reflexivity.
-          -- unfold islunit. intros.
-             rewrite riglunax1.
-             reflexivity.
-             ++ reflexivity.
+             -- unfold  "∘".
+                rewrite -> replace_dni_last.
+                reflexivity.
+             -- apply riglunax1.
+          ++ reflexivity.
    * unfold islunit. intros.
      rewrite riglunax1.
      reflexivity.
@@ -643,6 +630,7 @@ Section Toys.
 
   Notation "x * y" := (op2 x y) : rig_scope.
 
+  (*TODO: excessive unfolds? *)
   Lemma matrix_mult_assoc :
     ∏ (m n : nat) (mat1 : Matrix R m n)
       (p : nat) (mat2 : Matrix R n p)
@@ -659,9 +647,9 @@ Section Toys.
     rewrite -> matrix_sum_is_rdistr.
     rewrite interchange_sums.
     unfold flip.
-    apply funeq_implies_sumeq.
+    apply maponpaths.
     apply funextfun. intros k.
-    apply funeq_implies_sumeq.
+    apply maponpaths.
     apply funextfun. intros l.
     apply rigassoc2.
   Defined.
@@ -669,12 +657,12 @@ Section Toys.
   Local Notation "A ++' B" := (matrix_add A B) (at level 80).
 
   (*TODO: write proof *)
-  Lemma sum_distr :
+  Lemma eqlen_sums_mergable :
     ∏ (n : nat) (vec1 vec2 : Vector R n),
      (Σ (λ i : (⟦ n ⟧)%stn, (op1 (vec1 i)  (vec2 i))))
   =  (op1 (Σ (λ i : (⟦ n ⟧)%stn, (vec1 i)))  (Σ ( λ i : (⟦ n ⟧)%stn, vec2 i))).
   Proof.
-  intros.
+    intros.
   Admitted.
 
 
@@ -698,10 +686,10 @@ Section Toys.
     intros k.
     apply rigldistr.
   + rewrite distr.
-    rewrite sum_distr.
-    reflexivity.
+    apply eqlen_sums_mergable.
   Defined.
 
+  (*TODO again, many unfolds ...)
   Lemma matrix_mult_rdistr :
     ∏ (m n p: nat) (mat1 : Matrix R n p)
       (mat2 : Matrix R n p)
@@ -710,22 +698,21 @@ Section Toys.
   Proof.
     intros.
     unfold "**".
-    unfold matrix_add. unfold row. unfold col. unfold flip. unfold transpose.
+    unfold matrix_add. unfold row. unfold col.
+    unfold flip. unfold transpose.
     unfold pointwise. unfold flip.
     apply funextfun.
     intros i.
     apply funextfun.
     intros j.
-    assert (distr: (λ i0 : (⟦ p ⟧)%stn, (op1 (mat1 i i0)  (mat2 i i0)) * mat3 i0 j)%ring
+    assert (
+        distr: (λ i0 : (⟦ p ⟧)%stn, (op1 (mat1 i i0)  (mat2 i i0)) * mat3 i0 j)%ring
                = (λ i0 : (⟦ p ⟧)%stn,  op1 (op2 (mat1 i i0) (mat3 i0 j))
                                            (op2 (mat2 i i0) (mat3 i0 j)))%ring).
-    + apply funextfun.
-      intros k.
-      rewrite rigrdistr.
-      reflexivity.
+    + apply funextfun. intros k.
+      apply rigrdistr.
     + rewrite -> distr.
-      rewrite sum_distr.
-      reflexivity.
+      apply eqlen_sums_mergable.
   Defined.
 
 
