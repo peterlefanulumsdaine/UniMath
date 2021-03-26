@@ -421,7 +421,7 @@ Section Toys.
 
 
   (* TODOS *)
-  
+
   (* Additive inverse *)
 
   (* Also, right/left distributivity,
@@ -443,8 +443,8 @@ Section Toys.
   ∏ (n:nat) (f1 f2: (⟦ n ⟧)%stn -> R),
     (f1 = f2) -> (Σ f1) = (Σ f2).
   Proof.
-  intros. rewrite <- X.
-  reflexivity.
+    intros. rewrite <- X.
+    reflexivity.
   Defined.
 
 
@@ -459,19 +459,16 @@ Section Toys.
         unfold iterop_fun. simpl.
         reflexivity.
     + rewrite  iterop_fun_step.
-        unfold "∘". rewrite rigldistr.
-        unfold "^". rewrite -> IHn.
-        unfold "^".
-        rewrite -> replace_dni_last.
-        rewrite iterop_fun_step.
-        - unfold "∘". rewrite -> replace_dni_last.
-          reflexivity.
-        - unfold islunit. intros.
-          rewrite riglunax1.
-          reflexivity.
-        - unfold islunit. intros.
-          rewrite riglunax1.
-          reflexivity.
+      unfold "∘". rewrite rigldistr.
+      unfold "^". rewrite -> IHn.
+      unfold "^". rewrite -> replace_dni_last.
+      rewrite iterop_fun_step.
+      - unfold "∘". rewrite -> replace_dni_last.
+        reflexivity.
+      - unfold islunit. intros. rewrite riglunax1.
+        reflexivity.
+      - unfold islunit. intros. rewrite riglunax1.
+        reflexivity.
   Defined.
 
   Lemma sum_is_ldistr_switch:
@@ -487,8 +484,7 @@ Section Toys.
     + rewrite  iterop_fun_step.
         unfold "∘". rewrite rigrdistr.
         unfold "^". rewrite -> IHn.
-        unfold "^".
-        rewrite -> replace_dni_last.
+        unfold "^". rewrite -> replace_dni_last.
         rewrite iterop_fun_step.
         - unfold "∘". rewrite -> replace_dni_last.
           reflexivity.
@@ -500,52 +496,53 @@ Section Toys.
           reflexivity.
   Defined.
 
-  Lemma sum_is_lassoc :
+  Lemma matrix_sum_is_ldistr :
     ∏ (m n : nat) (mat1 : Matrix R m n)
       (p : nat) (mat2 : Matrix R n p)
       (q : nat) (mat3 : Matrix R p q)
       (i : (⟦ m ⟧)%stn)
       (j : (⟦ q ⟧)%stn),
-  (Σ (λ i0 : (⟦ n ⟧)%stn, (((mat1 i i0) * (Σ (λ i1 : (⟦ p ⟧)%stn,
-                            ((mat2 i0 i1) * (mat3 i1 j)))))%rig)))
-  =
-  (Σ (λ i0 : (⟦ n ⟧)%stn, (((Σ (λ i1 : (⟦ p ⟧)%stn,
-               (mat1 i i0) *  ((mat2 i0 i1) * (mat3 i1 j)))))%rig))).
+    (Σ (λ i0 : (⟦ n ⟧)%stn, (((mat1 i i0) * (Σ (λ i1 : (⟦ p ⟧)%stn,
+                                                       ((mat2 i0 i1) * (mat3 i1 j)))))%rig)))
+    =
+    (Σ (λ i0 : (⟦ n ⟧)%stn, (((Σ (λ i1 : (⟦ p ⟧)%stn,
+                                         (mat1 i i0) *  ((mat2 i0 i1) * (mat3 i1 j)))))%rig))).
   Proof.
-  intros.
-  apply funeq_implies_sumeq.
-  apply funextfun.
-  intros k.
-  unfold iterop_fun. unfold nat_rect.
-  apply sum_is_ldistr.
+    intros.
+    apply funeq_implies_sumeq.
+    apply funextfun.
+    intros k.
+    unfold iterop_fun. unfold nat_rect.
+    apply sum_is_ldistr.
   Defined.
 
-  Lemma sum_is_rassoc :
+  Lemma matrix_sum_is_rdistr :
     ∏ (m n : nat) (mat1 : Matrix R m n)
       (p : nat) (mat2 : Matrix R n p)
       (q : nat) (mat3 : Matrix R p q)
       (i : (⟦ m ⟧)%stn)
       (j : (⟦ q ⟧)%stn),
-     Σ (λ i0 : (⟦ p ⟧)%stn,
-    (Σ (λ i1 : (⟦ n ⟧)%stn, mat1 i i1 * mat2 i1 i0) * mat3 i0 j)%ring)
-  =  Σ (λ i0 : (⟦ p ⟧)%stn, (Σ (λ i1 : (⟦ n ⟧)%stn,
-        (mat1 i i1 * mat2 i1 i0) * mat3 i0 j))%ring).
+    Σ (λ i0 : (⟦ p ⟧)%stn,
+              (Σ (λ i1 : (⟦ n ⟧)%stn, mat1 i i1 * mat2 i1 i0) * mat3 i0 j)%ring)
+    =
+    Σ (λ i0 : (⟦ p ⟧)%stn, (Σ (λ i1 : (⟦ n ⟧)%stn,
+                                      (mat1 i i1 * mat2 i1 i0) * mat3 i0 j))%ring).
   Proof.
-  intros.
-  apply funeq_implies_sumeq.
-  apply funextfun.
-  intros k.
-  apply sum_is_ldistr_switch.
+    intros.
+    apply funeq_implies_sumeq.
+    apply funextfun.
+    intros k.
+    apply sum_is_ldistr_switch.
   Defined.
 
 
   (* How can we realize a Lemma by example ? *)
 
   Lemma zero_function_sums_to_zero:
-  ∏ (n : nat)
-    (f : (⟦ n ⟧)%stn -> R),
-  (λ i : (⟦ n ⟧)%stn, f i) = const_vec 0%rig ->
-  (Σ (λ i : (⟦ n ⟧)%stn, f i) ) = 0%rig.
+    ∏ (n : nat)
+      (f : (⟦ n ⟧)%stn -> R),
+    (λ i : (⟦ n ⟧)%stn, f i) = const_vec 0%rig ->
+    (Σ (λ i : (⟦ n ⟧)%stn, f i) ) = 0%rig.
   Proof.
     intros.
     rewrite X.
@@ -559,15 +556,14 @@ Section Toys.
       rewrite -> IHn with ((λ _ : (⟦ n ⟧)%stn, 0%rig)).
       reflexivity.
       reflexivity.
-
     -  unfold islunit. intros.  rewrite riglunax1. reflexivity.
   Defined.
 
   Lemma sums_to_op1_sum :
-  ∏ (n : nat)
-  (f1 f2 : (⟦ n ⟧)%stn -> R),   (* really a matrix by definition *)
-  op1 (Σ (λ i: (⟦ n ⟧)%stn, f1 i))  (Σ (λ i : (⟦ n ⟧)%stn, f2 i))
-  = Σ (λ i: (⟦ n ⟧)%stn, op1 (f1 i) (f2 i)).
+    ∏ (n : nat)
+      (f1 f2 : (⟦ n ⟧)%stn -> R),
+    op1 (Σ (λ i: (⟦ n ⟧)%stn, f1 i))  (Σ (λ i : (⟦ n ⟧)%stn, f2 i))
+    = Σ (λ i: (⟦ n ⟧)%stn, op1 (f1 i) (f2 i)).
   Proof.
     intros.
     induction n.
@@ -581,14 +577,10 @@ Section Toys.
     + rewrite iterop_fun_step.
       rewrite iterop_fun_step.
       rewrite <- rigassoc1.
-
-      rewrite -> rigcomm1.
-      rewrite -> rigcomm1.
-      rewrite -> rigcomm1.
+      do 3 rewrite -> rigcomm1.
       rewrite <- (rigcomm1 _ (f1 lastelement)).
       rewrite rigassoc1.
       rewrite IHn.
-
       unfold  "∘".
       rewrite iterop_fun_step.
       unfold  "∘".
@@ -596,54 +588,51 @@ Section Toys.
       rewrite rigcomm1.
       rewrite (rigcomm1 R (f2 lastelement)  (f1 lastelement)).
       reflexivity.
-      unfold islunit. intros. rewrite riglunax1. reflexivity.
-      unfold islunit. intros. rewrite riglunax1. reflexivity.
+      unfold islunit; intros; rewrite riglunax1; reflexivity.
+      unfold islunit; intros; rewrite riglunax1; reflexivity.
       unfold islunit. intros. rewrite riglunax1. reflexivity.
   Defined.
 
   Lemma interchange_sums :
-  ∏ (m n : nat)
-  (f : (⟦ n ⟧)%stn ->  (⟦ m ⟧)%stn -> R),   (* really a matrix by definition *)
-  Σ (λ i: (⟦ m ⟧)%stn, Σ (λ j : (⟦ n ⟧)%stn, f j i) )
-= Σ (λ j: (⟦ n ⟧)%stn, Σ (λ i : (⟦ m ⟧)%stn, (flip f) i j)  ).
+    ∏ (m n : nat)
+      (f : (⟦ n ⟧)%stn ->  (⟦ m ⟧)%stn -> R),   (* really a matrix by definition *)
+    Σ (λ i: (⟦ m ⟧)%stn, Σ (λ j : (⟦ n ⟧)%stn, f j i) )
+    = Σ (λ j: (⟦ n ⟧)%stn, Σ (λ i : (⟦ m ⟧)%stn, (flip f) i j)  ).
   Proof.
-  intros.
-  assert (x1 : ∏ (i : (⟦ n ⟧)%stn) (j : (⟦ m ⟧)%stn), f i j = flip f j i).
-  + apply flip.
-    reflexivity.
-  + intros.
-    induction n. induction m.
-    - reflexivity.
-    -  assert (x :
+    intros.
+    assert (x1 : ∏ (i : (⟦ n ⟧)%stn) (j : (⟦ m ⟧)%stn), f i j = flip f j i).
+    + apply flip;
+      reflexivity.
+    + intros. induction n. induction m.
+      reflexivity.
+      -  assert (x :
         (Σ (λ i : (⟦ 0 ⟧)%stn, Σ ((λ j : (⟦ _ ⟧)%stn, flip f j i) ))) = 0%rig).
-      * reflexivity.
-      * rewrite -> x.
-        assert (x' : (∏ i : (⟦S m ⟧)%stn,
-                     (Σ (λ j : (⟦ 0 ⟧)%stn, f j i)) = 0%rig)).
-        ++ intros.
-           reflexivity.
-        ++ apply zero_function_sums_to_zero.
-           apply funextfun. intros i.
-           reflexivity.
-    - unfold  "∘".
-      unfold flip.
-      unfold flip in IHn.
-      rewrite -> iterop_fun_step.
-      * rewrite -> replace_dni_last.
-        unfold  "∘".
-        rewrite <- IHn.
-        ++ rewrite sums_to_op1_sum.
-           apply funeq_implies_sumeq.
-           apply funextfun.
-           intros i.
-           rewrite -> iterop_fun_step.
-           -- unfold  "∘".
-              rewrite -> replace_dni_last.
-              reflexivity.
-           -- unfold islunit. intros.
-              rewrite riglunax1.
-              reflexivity.
-        ++ reflexivity.
+        * reflexivity.
+        * rewrite -> x.
+          assert (x' : (∏ i : (⟦S m ⟧)%stn,
+                              (Σ (λ j : (⟦ 0 ⟧)%stn, f j i)) = 0%rig)).
+          ++ intros.
+             reflexivity.
+          ++ apply zero_function_sums_to_zero.
+             apply funextfun. intros i.
+             reflexivity.
+      - unfold  "∘". unfold flip. unfold flip in IHn.
+        rewrite -> iterop_fun_step.
+        * rewrite -> replace_dni_last.
+          unfold  "∘".
+          rewrite <- IHn.
+          ++ rewrite sums_to_op1_sum.
+             apply funeq_implies_sumeq.
+             apply funextfun.
+             intros i.
+             rewrite -> iterop_fun_step.
+          -- unfold  "∘".
+             rewrite -> replace_dni_last.
+             reflexivity.
+          -- unfold islunit. intros.
+             rewrite riglunax1.
+             reflexivity.
+             ++ reflexivity.
    * unfold islunit. intros.
      rewrite riglunax1.
      reflexivity.
@@ -654,38 +643,30 @@ Section Toys.
 
   Notation "x * y" := (op2 x y) : rig_scope.
 
-  Lemma matrix_mult_assocc :
-
+  Lemma matrix_mult_assoc :
     ∏ (m n : nat) (mat1 : Matrix R m n)
       (p : nat) (mat2 : Matrix R n p)
       (q : nat) (mat3 : Matrix R p q),
     ((mat1 ** mat2) ** mat3) = (mat1 ** (mat2 ** mat3)).
   Proof.
-  intros.
-  unfold matrix_mult.
-  change (mat1 ** mat2) with (mat1 ** mat2).
-  apply funextfun.
-  intro i.
-  apply funextfun.
-  intro j.
-  unfold row. unfold col. unfold transpose. (*unfold flip.*)
-  unfold pointwise.
-  unfold flip.
-  rewrite -> sum_is_lassoc.
-  rewrite -> sum_is_rassoc.
-  rewrite interchange_sums.
-  unfold flip.
-  apply funeq_implies_sumeq.
-  apply funextfun.
-  intros k.
-  apply funeq_implies_sumeq.
-  apply funextfun.
-  intros l.
-  apply rigassoc2.
+    intros.
+    unfold matrix_mult.
+    apply funextfun. intro i.
+    apply funextfun. intro j.
+    unfold row. unfold col. unfold transpose. (*unfold flip.*)
+    unfold pointwise. unfold flip.
+    rewrite -> matrix_sum_is_ldistr.
+    rewrite -> matrix_sum_is_rdistr.
+    rewrite interchange_sums.
+    unfold flip.
+    apply funeq_implies_sumeq.
+    apply funextfun. intros k.
+    apply funeq_implies_sumeq.
+    apply funextfun. intros l.
+    apply rigassoc2.
   Defined.
 
   Local Notation "A ++' B" := (matrix_add A B) (at level 80).
-
 
   (*TODO: write proof *)
   Lemma sum_distr :
@@ -704,24 +685,20 @@ Section Toys.
     ((mat1 ** (mat2 ++' mat3))) = ((mat1 ** mat2) ++' (mat1 ** mat3)).
   Proof.
   intros.
-  unfold "**".
-  unfold matrix_add.
-  unfold row. unfold col. unfold flip. unfold transpose.
-  unfold pointwise. unfold flip.
-  apply funextfun.
-  intros i.
-  apply funextfun.
-  intros j.
-  set (mat1fun := λ i0 : (⟦ n ⟧)%stn, mat1 i i0).
-  set (mat2fun := λ i0 : (⟦ n ⟧)%stn, (mat2 i0) j).
-  set (mat3fun := λ i0 : (⟦ n ⟧)%stn, (mat3 i0) j).
-  assert (distr: (λ i0 : (⟦ n ⟧)%stn, (mat1fun i0 * (mat2 i0 j + mat3 i0 j))%ring)
-               = (λ i0 : (⟦ n ⟧)%stn, op1 (op2 (mat1fun i0) (mat2 i0 j)) (op2 (mat1fun i0) (mat3 i0 j)))%ring).
+    unfold "**". unfold matrix_add.
+    unfold row. unfold col. unfold flip. unfold transpose.
+    unfold pointwise. unfold flip.
+    apply funextfun.
+    intros i.
+    apply funextfun.
+    intros j.
+    assert (distr: (λ i0 : (⟦ n ⟧)%stn, (mat1 i i0 * (mat2 i0 j + mat3 i0 j))%ring)
+                   = (λ i0 : (⟦ n ⟧)%stn, op1 (op2 (mat1 i i0) (mat2 i0 j)) (op2 (mat1 i i0) (mat3 i0 j)))%ring).
   + apply funextfun.
     intros k.
     apply rigldistr.
   + rewrite distr.
-    rewrite  sum_distr.
+    rewrite sum_distr.
     reflexivity.
   Defined.
 
@@ -731,24 +708,24 @@ Section Toys.
       (q : nat) (mat3 : Matrix R p q),
     ((mat1 ++' mat2) ** mat3) = ((mat1 ** mat3) ++' (mat2 ** mat3)).
   Proof.
-  intros.
-  unfold "**".
-  unfold matrix_add. unfold row. unfold col. unfold flip. unfold transpose.
-  unfold pointwise. unfold flip.
-  apply funextfun.
-  intros i.
-  apply funextfun.
-  intros j.
-  assert (distr: (λ i0 : (⟦ p ⟧)%stn, (op1 (mat1 i i0)  (mat2 i i0)) * mat3 i0 j)%ring
+    intros.
+    unfold "**".
+    unfold matrix_add. unfold row. unfold col. unfold flip. unfold transpose.
+    unfold pointwise. unfold flip.
+    apply funextfun.
+    intros i.
+    apply funextfun.
+    intros j.
+    assert (distr: (λ i0 : (⟦ p ⟧)%stn, (op1 (mat1 i i0)  (mat2 i i0)) * mat3 i0 j)%ring
                = (λ i0 : (⟦ p ⟧)%stn,  op1 (op2 (mat1 i i0) (mat3 i0 j))
                                            (op2 (mat2 i i0) (mat3 i0 j)))%ring).
-  + apply funextfun.
-    intros k.
-    rewrite rigrdistr.
-    reflexivity.
-  + rewrite -> distr.
-    rewrite sum_distr.
-    reflexivity.
+    + apply funextfun.
+      intros k.
+      rewrite rigrdistr.
+      reflexivity.
+    + rewrite -> distr.
+      rewrite sum_distr.
+      reflexivity.
   Defined.
 
 
