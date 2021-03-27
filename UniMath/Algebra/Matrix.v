@@ -489,6 +489,7 @@ Section Toys.
         - apply riglunax1.
   Defined.
 
+  (* TODO: this should not be necessary, and if it is, construct in Lemma where needed.*)
   Lemma matrix_sum_is_ldistr :
     ∏ (m n : nat) (mat1 : Matrix R m n)
       (p : nat) (mat2 : Matrix R n p)
@@ -551,6 +552,7 @@ Section Toys.
   Defined.
 
   (* TODO: this is not pretty, and likely, proof steps are performed for no good reason *)
+
   Lemma sums_to_op1_sum :
     ∏ (n : nat)
       (f1 f2 : (⟦ n ⟧)%stn -> R),
@@ -689,7 +691,7 @@ Section Toys.
     apply eqlen_sums_mergable.
   Defined.
 
-  (*TODO again, many unfolds ...)
+  (*TODO again, many unfolds ...*)
   Lemma matrix_mult_rdistr :
     ∏ (m n p: nat) (mat1 : Matrix R n p)
       (mat2 : Matrix R n p)
@@ -716,58 +718,55 @@ Section Toys.
   Defined.
 
 
+  Definition matrix_mult_sq
+    {n: nat} (mat1 mat2: Matrix R n n)
+    := mat1 ** mat2.
 
-  Local Notation Π := (iterop_fun identity_matrix matrix_mult).
+  Local Notation Π := (iterop_fun identity_matrix matrix_mult_sq).
 
-  (*
-  Definition nth_pow_mat
-    {m n : nat} (mat : Matrix R m n)
+  Definition nth_pow_sq_mat
+    {n n : nat} (mat : Matrix R n n)
     (pow : nat) := Π (λ _ : (⟦ pow ⟧)%stn, mat).
-  *)
 
   (* Gauss should be moved to a separate folder later *)
 
-  (*
-  Definition gauss_add_row :
+  (* Actually, we need to generalize Gaussian Elimination and
+     doing this over arbitrary rings will not work. *)
+
+  Definition gauss_add_row
     {m n : nat} (mat : Matrix R m n)
-    ( i: (⟦ m ⟧)%stn) (j : (⟦ n ⟧)%stn) :  Matrix R m n.
+    (row_from row_to: (⟦ m ⟧)%stn) :  Matrix R m n.
     Proof.
+    intros i.
+    induction (stn_eq_or_neq i row_to).
+    - exact ((pointwise n op1 (mat row_from) (mat row_to))). (* The multiplicative identity *)
+    - exact (mat i). (* The additive identity *)
+  Defined.
+
+  Definition gauss_mult_row
+    {m n : nat} (mat : Matrix R m n)
+    (s : R) (row: (⟦ m ⟧)%stn) :  Matrix R m n.
+    Proof.
+    intros i.
+    induction (stn_eq_or_neq i row).
+    - exact (scalar_lmult_vec s (mat i)). (* The multiplicative identity *)
+    - exact (mat i). (* The additive identity *)
+  Defined.
+
+  Definition gauss_switch_row {m : nat} {n : nat}
+  { r1: (⟦ m ⟧)%stn} { r2 : (⟦ m ⟧)%stn} (mat: (Matrix R m n) )
+  : (Matrix R m n).
+  Proof.
     intros i j.
-    induction (stn_eq_or_neq i j).
-    - exact (rigunel2). (* The multiplicative identity *)
-    - exact (rigunel1). (* The additive identity *)
-
-  Defined.
-  *)
-
-  (* What does this mean precisely ? *)
-
-
-  (*
-  Lemma gauss_add_row {m : nat} {n : nat}
-  { i: (⟦ m ⟧)%stn} {j : (⟦ m ⟧)%stn} (mat: (Matrix R m n) )
-  : (Matrix R m n).
-  Proof.
-    intros k l.
-    induction (stn_eq_or_neq k j).
+    induction (stn_eq_or_neq r1 i).
     - exact (op1 (mat k i) (mat k j)). (* The multiplicative identity *)
     - exact (mat (k l)). (* The additive identity *)
 
   Defined.
-  *)
 
-  (*
-  Lemma gauss_switch_row {m : nat} {n : nat}
-  { i: (⟦ m ⟧)%stn} {j : (⟦ m ⟧)%stn} (mat: (Matrix R m n) )
-  : (Matrix R m n).
-  Proof.
-    intros k l.
-    induction (stn_eq_or_neq k j).
-    - exact (op1 (mat k i) (mat k j)). (* The multiplicative identity *)
-    - exact (mat (k l)). (* The additive identity *)
 
-  Defined.
-  *)
+
+
 
   (* Lemma gauss_scalar_mult {m : nat} {n : nat} *)
 
