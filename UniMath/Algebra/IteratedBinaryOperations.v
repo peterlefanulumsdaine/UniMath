@@ -553,17 +553,19 @@ Section Commutativity_Theorem_bis.
   Require Import UniMath.MoreFoundations.All.
   Require Import UniMath.Combinatorics.All.
 
-  Local Definition iterop_fun_respects {m n} (e : ⟦m⟧ ≃ ⟦n⟧)
+  (* We only expect sums to respect a function (in this simple sense) when the function is an equivalence; but it’s convenient to be able to talk about the property for arbitrary functions. *)
+  Local Definition iterop_fun_respects {m n} (e : ⟦m⟧ -> ⟦n⟧)
     := ∏ (a : ⟦n⟧ -> M), iterop_fun_mon (a ∘ e) = iterop_fun_mon a.
 
-  Local Definition iterop_fun_respects_idweq {n} : iterop_fun_respects (idweq (⟦n⟧)).
+  Local Definition iterop_fun_respects_idfun {n}
+    : iterop_fun_respects (idfun (⟦n⟧)).
   Proof.
     intros a; reflexivity.
   Defined.
 
   Local Definition iterop_fun_respects_comp {n1 n2 n3} (e1 : ⟦n1⟧ ≃ ⟦n2⟧) (e2 : ⟦n2⟧ ≃ ⟦n3⟧)
     (H_e1 : iterop_fun_respects e1) (H_e2 : iterop_fun_respects e2)
-    : iterop_fun_respects (weqcomp e1 e2).
+    : iterop_fun_respects (e2 ∘ e1).
   Proof.
     intros a. exact (H_e1 (a ∘ e2) @ H_e2 a).
   Defined.
@@ -615,7 +617,18 @@ Section Commutativity_Theorem_bis.
   split out for now to allow [move_to_last] to compute while this is admitted. *)
   Local Definition stn_nonlast_todo {n} (i : ⟦S n⟧) (ne_i_l : i != @lastelement n)
     : i < n.
+  Proof.
+    destruct i as [i lt_i_Sn]; simpl.
+    destruct (natlthorgeh i n) as [ lt_i_n | ge_i_n ].
+    - exact lt_i_n.
+    -
+
   Admitted.
+
+  Local Definition cut_last_from_stn {n m} (e : ⟦S n⟧ -> ⟦S m⟧)
+      (H_e : e lastelement = lastelement)
+    :
+
 
   (* the permutation moving [i] up to [lastelement] and otherwise order-preserving, *)
   (* defined in a way that facilitates proving [iterop_fun_respects]. *)
@@ -634,22 +647,20 @@ Section Commutativity_Theorem_bis.
     : iterop_fun_respects (move_to_last n i).
   Proof.
     induction n as [ | n' IH]; cbn.
-    { apply iterop_fun_respects_idweq. }
+    { apply iterop_fun_respects_idfun. }
     destruct (isdeceqstn _ i lastelement) as [ eq_i_l | neq_i_l ].
-    { apply iterop_fun_respects_idweq. }
-    apply iterop_fun_respects_comp.
+    { apply iterop_fun_respects_idfun. }
+    use iterop_fun_respects_comp.
     { apply iterop_fun_respects_extend, IH. }
     (* The following is the heart of the theorem:
        the actual use of associativity + commutativity. *)
-    intros a.
-    repeat rewrite iterop_fun_mon_step.
+    intros a. repeat rewrite iterop_fun_mon_step.
     unfold funcomp. repeat rewrite transpose_stn_comp1, transpose_stn_comp2.
     repeat rewrite assocax.
     eapply pathscomp0. { apply maponpaths, commax. }
     apply (maponpaths (fun x => x * _)%multmonoid).
     apply maponpaths, funextfun; intros j; apply maponpaths.
-    use transpose_stn_comp_rest.
-    { apply stnneq_to_nopath, dni_neq_i. }
+    use transpose_stn_comp_rest. { apply stnneq_to_nopath, dni_neq_i. }
     use (negf (invmaponpathsincl _ _ _ _)). { apply isincldni. }
     apply stnneq_to_nopath, dni_neq_i.
   Defined.
