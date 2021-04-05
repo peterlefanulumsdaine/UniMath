@@ -51,7 +51,25 @@ Proof.
     + exact (mat i j).
 Defined.
 
-(*
+
+(*  Gaussian elimination  *)
+
+
+
+(*   Smiths Normal Form   *)
+
+
+(* Such code might go intro Matrix.v *)
+Definition is_diagonal { m n : nat} (mat : Matrix R m n) :=
+  ∏ (i : ⟦ m ⟧%stn ) (j : ⟦ n ⟧%stn ),  (stntonat _ i != (stntonat _ j)) -> (mat i j) = 0%rig.
+
+
+Print natcommrig.
+Definition divisibility_over_diagonal {m n : nat} (mat : Matrix R m n) :=
+
+
+(*  This might be a non-trivial property to prove, based on the current formalization.
+
 Lemma test_row_switch {m n : nat} (mat : Matrix R m n)
   (r1 r2 : ⟦ m ⟧%stn) : (gauss_switch_row (gauss_switch_row mat r1 r2) r1 r2) = mat.
 Proof.
