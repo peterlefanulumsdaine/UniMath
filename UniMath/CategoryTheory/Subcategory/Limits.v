@@ -71,14 +71,13 @@ Lemma terminal_in_full_subcategory {C : precategory} (C' : hsubtype (ob C))
 Proof.
   use tpair.
   - use precategory_object_in_subcat.
-    + exact (TerminalObject TC).
+    + exact TC.
     + assumption.
-  - cbn.
-    intros X.
+  - intros X.
     use make_iscontr.
     + use morphism_in_full_subcat.
       apply TerminalArrow.
-    + intro; apply eq_in_sub_precategory; cbn.
+    + intro; apply eq_in_sub_precategory.
       apply TerminalArrowUnique.
 Defined.
 
@@ -207,14 +206,13 @@ Lemma initial_in_full_subcategory {C : precategory} (C' : hsubtype (ob C))
 Proof.
   use tpair.
   - use precategory_object_in_subcat.
-    + exact (InitialObject IC).
+    + exact IC.
     + assumption.
-  - cbn.
-    intros X.
+  - intros X.
     use make_iscontr.
     + use morphism_in_full_subcat.
       apply InitialArrow.
-    + intro; apply eq_in_sub_precategory; cbn.
+    + intro; apply eq_in_sub_precategory.
       apply InitialArrowUnique.
 Defined.
 

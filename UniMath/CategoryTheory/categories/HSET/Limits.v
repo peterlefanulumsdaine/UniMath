@@ -197,8 +197,9 @@ Lemma TerminalHSET : Terminal HSET.
 Proof.
   apply (make_Terminal unitHSET).
   apply make_isTerminal; intro a.
+  (* Is the [abstract] here really useful, or could we just [apply iscontrfuntounit] wihout the [exists] first? *)
   exists (λ _, tt).
-  abstract (simpl; intro f; apply funextfun; intro x; case (f x); apply idpath).
+  abstract (apply iscontrfuntounit).
 Defined.
 
 (** *** Terminal object from general limits [TerminalHSET_from_Lims] *)
@@ -307,9 +308,7 @@ Proof.
       apply invweq.
       apply dirprod_with_contr_r.
       use make_iscontr.
-      * apply proofirrelevance.
-        apply hlevelntosn.
-        apply (pr2 TerminalHSET). (** TODO: should be an accessor *)
+      * apply TerminalArrowEq.
       * intro; apply proofirrelevance; apply setproperty.
     + unfold hfiber_hSet, hfiber; cbn.
       use make_iscontr.

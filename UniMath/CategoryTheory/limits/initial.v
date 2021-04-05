@@ -11,6 +11,7 @@ Require Import UniMath.Foundations.PartD.
 Require Import UniMath.Foundations.Propositions.
 Require Import UniMath.Foundations.Sets.
 Require Import UniMath.MoreFoundations.Tactics.
+Require Import UniMath.MoreFoundations.Propositions.
 
 Require Import UniMath.CategoryTheory.Core.Categories.
 Require Import UniMath.CategoryTheory.Core.Isos.
@@ -22,34 +23,41 @@ Require Import UniMath.CategoryTheory.Epis.
 Require Import UniMath.CategoryTheory.limits.coproducts.
 
 Local Open Scope cat.
+Local Open Scope logic.
 
 Section def_initial.
 
 Context {C : precategory}.
 
-Definition isInitial (a : C) : UU := ∏ b : C, iscontr (a --> b).
+Definition isInitial (a : C) : UU := ∀ b : C, iscontr_hProp (a --> b).
+
+Definition isInitial_iscontr {b:C} (b_term : isInitial b) (a : C)
+  : iscontr (b --> a)
+:= b_term a.
+
+Definition make_isInitial (b : C) (H : ∏ (a : C), iscontr (b --> a)) :
+  isInitial b.
+Proof.
+  exact H.
+Defined.
+
+Lemma isaprop_isInitial (x : C) : isaprop (isInitial x).
+Proof.
+  apply propproperty.
+Qed.
 
 Definition Initial : UU := ∑ a, isInitial a.
 
 Definition InitialObject (O : Initial) : C := pr1 O.
 Coercion InitialObject : Initial >-> ob.
 
+Definition Initial_property (O : Initial) : isInitial O := pr2 O.
+
 Definition InitialArrow (O : Initial) (b : C) : O --> b := pr1 (pr2 O b).
-
-Lemma InitialArrowUnique {I : Initial} {a : C} (f : C⟦InitialObject I,a⟧) :
-  f = InitialArrow I _.
-Proof.
-exact (pr2 (pr2 I _ ) _ ).
-Defined.
-
-Lemma InitialEndo_is_identity {O : Initial} (f : O --> O) : f = identity O.
-Proof.
-apply proofirrelevancecontr, (pr2 O O).
-Qed.
 
 Lemma InitialArrowEq {O : Initial} {a : C} (f g : O --> a) : f = g.
 Proof.
-now rewrite (InitialArrowUnique f), (InitialArrowUnique g).
+  apply proofirrelevancecontr, (Initial_property O a).
 Qed.
 
 Definition make_Initial (a : C) (H : isInitial a) : Initial.
@@ -58,11 +66,16 @@ Proof.
   exact H.
 Defined.
 
-Definition make_isInitial (a : C) (H : ∏ (b : C), iscontr (a --> b)) :
-  isInitial a.
+Lemma InitialArrowUnique {I : Initial} {a : C} (f : C⟦InitialObject I,a⟧) :
+  f = InitialArrow I _.
 Proof.
-  exact H.
+  apply InitialArrowEq.
 Defined.
+
+Lemma InitialEndo_is_identity {O : Initial} (f : O --> O) : f = identity O.
+Proof.
+  apply InitialArrowEq.
+Qed.
 
 Lemma isiso_from_Initial_to_Initial (O O' : Initial) :
    is_iso (InitialArrow O O').
@@ -86,10 +99,7 @@ Proof.
   apply invproofirrelevance.
   intros O O'.
   apply (total2_paths_f (isotoid _ H (iso_Initials O O')) ).
-  apply proofirrelevance.
-  unfold isInitial.
-  apply impred.
-  intro t ; apply isapropiscontr.
+  apply proofirrelevance. apply isaprop_isInitial.
 Qed.
 
 End Initial_Unique.
@@ -173,16 +183,15 @@ use make_Initial.
     * intros c; apply (InitialObject ID).
     * simpl; intros a b f; apply (InitialArrow ID).
   + split.
-    * intro a; apply InitialEndo_is_identity.
-    * intros a b c f g; apply pathsinv0, InitialArrowUnique.
+    * intro a; apply InitialArrowEq.
+    * intros a b c f g; apply pathsinv0, InitialArrowEq.
 - intros F.
   use tpair.
   + use make_nat_trans; simpl.
     * intro a; apply InitialArrow.
     * intros a b f; simpl.
-      rewrite (InitialEndo_is_identity (InitialArrow ID ID)), id_left.
-      now apply pathsinv0, InitialArrowUnique.
-  + abstract (intros α; apply (nat_trans_eq hsD); intro a; apply InitialArrowUnique).
+      apply InitialArrowEq.
+  + abstract (intros α; apply (nat_trans_eq hsD); intro a; apply InitialArrowEq).
 Defined.
 
 End InitialFunctorCat.

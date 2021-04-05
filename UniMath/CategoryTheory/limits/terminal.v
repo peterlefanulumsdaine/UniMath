@@ -11,6 +11,7 @@ Require Import UniMath.Foundations.PartD.
 Require Import UniMath.Foundations.Propositions.
 Require Import UniMath.Foundations.Sets.
 Require Import UniMath.MoreFoundations.Tactics.
+Require Import UniMath.MoreFoundations.Propositions.
 
 Require Import UniMath.CategoryTheory.Core.Categories.
 Require Import UniMath.CategoryTheory.Core.Isos.
@@ -22,34 +23,41 @@ Require Import UniMath.CategoryTheory.limits.products.
 Require Import UniMath.CategoryTheory.Monics.
 
 Local Open Scope cat.
+Local Open Scope logic.
 
 Section def_terminal.
 
 Context {C : precategory}.
 
-Definition isTerminal (b : C) : UU := ∏ a : C, iscontr (a --> b).
+Definition isTerminal (b : C) : UU := ∀ a : C, iscontr_hProp (a --> b).
+
+Definition isTerminal_iscontr {b:C} (b_term : isTerminal b) (a : C)
+  : iscontr (a --> b)
+:= b_term a.
+
+Definition make_isTerminal (b : C) (H : ∏ (a : C), iscontr (a --> b)) :
+  isTerminal b.
+Proof.
+  exact H.
+Defined.
+
+Lemma isaprop_isTerminal (x : C) : isaprop (isTerminal x).
+Proof.
+  apply propproperty.
+Qed.
 
 Definition Terminal : UU := ∑ a, isTerminal a.
 
 Definition TerminalObject (T : Terminal) : C := pr1 T.
 Coercion TerminalObject : Terminal >-> ob.
 
+Definition Terminal_property (T : Terminal) : isTerminal T := pr2 T.
+
 Definition TerminalArrow (T : Terminal) (b : C) : b --> T := pr1 (pr2 T b).
-
-Lemma TerminalArrowUnique {T : Terminal} {a : C} (f : C⟦a,TerminalObject T⟧) :
-  f = TerminalArrow T _.
-Proof.
-exact (pr2 (pr2 T _ ) _ ).
-Defined.
-
-Lemma TerminalEndo_is_identity {T : Terminal} (f : T --> T) : f = identity T.
-Proof.
-apply proofirrelevancecontr, (pr2 T T).
-Qed.
 
 Lemma TerminalArrowEq {T : Terminal} {a : C} (f g : a --> T) : f = g.
 Proof.
-now rewrite (TerminalArrowUnique f), (TerminalArrowUnique g).
+  apply proofirrelevancecontr, (Terminal_property T a).
 Qed.
 
 Definition make_Terminal (b : C) (H : isTerminal b) : Terminal.
@@ -57,11 +65,16 @@ Proof.
   exists b; exact H.
 Defined.
 
-Definition make_isTerminal (b : C) (H : ∏ (a : C), iscontr (a --> b)) :
-  isTerminal b.
+Lemma TerminalArrowUnique {T : Terminal} {a : C} (f : C⟦a,TerminalObject T⟧) :
+  f = TerminalArrow T _.
 Proof.
-  exact H.
+  apply TerminalArrowEq.
 Defined.
+
+Lemma TerminalEndo_is_identity {T : Terminal} (f : T --> T) : f = identity T.
+Proof.
+  apply TerminalArrowEq.
+Qed.
 
 Lemma isiso_from_Terminal_to_Terminal (T T' : Terminal) :
    is_iso (TerminalArrow T T').
@@ -84,10 +97,7 @@ Proof.
   apply invproofirrelevance.
   intros T T'.
   apply (total2_paths_f (isotoid _ H (iso_Terminals T T')) ).
-  apply proofirrelevance.
-  unfold isTerminal.
-  apply impred.
-  intro t ; apply isapropiscontr.
+  apply proofirrelevance. apply isaprop_isTerminal.
 Qed.
 
 End Terminal_Unique.
@@ -175,16 +185,15 @@ use make_Terminal.
     * intros c; apply (TerminalObject ID).
     * simpl; intros a b f; apply (TerminalArrow ID).
   + split.
-    * intro a; apply TerminalEndo_is_identity.
-    * intros a b c f g; apply pathsinv0, TerminalArrowUnique.
+    * intro a; apply TerminalArrowEq.
+    * intros a b c f g; apply TerminalArrowEq.
 - intros F.
   use tpair.
   + use make_nat_trans; simpl.
     * intro a; apply TerminalArrow.
     * intros a b f; simpl.
-      rewrite (TerminalEndo_is_identity (TerminalArrow ID ID)), id_right.
-      apply TerminalArrowUnique.
-  + abstract (intros α; apply (nat_trans_eq hsD); intro a; apply TerminalArrowUnique).
+      apply TerminalArrowEq.
+  + abstract (intros α; apply (nat_trans_eq hsD); intro a; apply TerminalArrowEq).
 Defined.
 
 End TerminalFunctorCat.

@@ -705,9 +705,9 @@ use make_Initial.
 - intros y.
   use unique_exists; simpl.
   * apply InitialArrow.
-  * abstract (apply pathsinv0, InitialArrowUnique).
+  * abstract (apply InitialArrowEq).
   * abstract (intros f; apply hsC).
-  * abstract (intros f Hf; apply InitialArrowUnique).
+  * abstract (intros f Hf; apply InitialArrowEq).
 Defined.
 
 End slicecat_initial.
