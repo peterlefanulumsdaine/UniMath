@@ -20,6 +20,38 @@ Local Open Scope subtype.
 (** ** Background material
 
 As ever, all these should eventually be upstreamed, and unified with overlapping material upstream where possible. *)
+Section Subsets.
+
+Definition subset_comprehension {X : hSet} (A : hsubtype X) : UU
+  := carrier_subset A.
+
+Declare Scope new_subset.
+Delimit Scope new_subset with new_subset.
+Notation "{ x .. y | P }"
+  := (subset_comprehension (λ x,.. (subset_comprehension (λ y, P))..))
+  (at level 200, x binder, y binder, right associativity) : new_subset.
+
+Local Open Scope new_subset.
+
+Definition pr1_subset {X : hSet} (A : hsubtype X) : { x : X | A x } -> X
+  := pr1carrier _.
+
+Coercion pr1_subset : subset_comprehension >-> pr1hSet.
+
+(* TODO: tidy this up *)
+Lemma temp_test {X : hSet} (A : hsubtype X) (x : X) (y : {x : X | A x}) : x = y.
+Abort.
+
+End Subsets.
+
+Notation "{ x .. y | P }"
+  := (subset_comprehension (λ x,.. (subset_comprehension (λ y, P))..))
+  (at level 200, x binder, y binder, right associativity) : new_subset.
+
+Local Open Scope new_subset.
+
+Notation "A -> B" := (forall_hSet (fun _:A => B)) : set.
+
 Section Auxiliary.
 
 Definition lt_to_nleq {P : Poset} {x y : P} : x < y ⇒ ¬ (y ≤ x).
@@ -192,16 +224,14 @@ Note these are just endo-_functions_, not “maps” in the sense of morphisms o
 
 Section ProgressiveMaps.
 
-Definition isprogressive {P : Poset} : hsubtype (P -> P) : UU
+Definition isprogressive {P : Poset} : hsubtype (P -> P)%set
   := fun f => ∀ (x : P), x ≤ f x.
 
-Definition Progressive_map (P : Poset) := carrier (@isprogressive P).
+Definition Progressive_map (P : Poset) := { f : (P -> P)%set | isprogressive f }.
 
-Definition pr1_Progressive_map {P : Poset} : Progressive_map P -> (P -> P)
-:= pr1carrier _.
-Coercion pr1_Progressive_map : Progressive_map >-> Funclass.
+Identity Coercion id_Progressive_map : Progressive_map >-> subset_comprehension.
 
-Definition progressive_property {P} (f : Progressive_map P)
+Definition progressive_property {P:Poset} (f : Progressive_map P)
   : isprogressive f
 := pr2 f.
 
