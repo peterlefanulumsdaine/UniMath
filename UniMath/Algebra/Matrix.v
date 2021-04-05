@@ -385,10 +385,8 @@ Section Toys.
   := λ (i : (⟦ n ⟧)%stn),
      Σ (col mat i).
 
-
   Definition is_square
   {m n: nat} (_ : Matrix R m n) : UU := m = n.
-
 
   Definition matrix_add
   {m n : nat}
@@ -419,7 +417,6 @@ Section Toys.
     intros j. apply rigassoc1.
   Defined.
 
-
   Definition scalar_lmult_vec
   (s : R)
   {n : nat} (vec: Vector R n)
@@ -429,6 +426,7 @@ Section Toys.
   (s : R)
   {n : nat} (vec: Vector R n)
   := vec ^ (const_vec s).
+
 
   Lemma zero_function_sums_to_zero:
     ∏ (n : nat)
@@ -450,6 +448,7 @@ Section Toys.
       + apply riglunax1.
   Defined.
 
+
   Lemma sum_is_ldistr :
     ∏ (n : nat) (vec : Vector R n) (s : R),
     op2 s (Σ vec) =  Σ ((λ _ : (⟦ n ⟧)%stn, s ) ^ vec).
@@ -470,6 +469,7 @@ Section Toys.
       unfold "∘". rewrite -> replace_dni_last.
       apply idpath.
   Defined.
+
 
   Lemma sum_is_rdistr:
     ∏ (n : nat) (vec : Vector R n) (s : R),
@@ -603,20 +603,20 @@ Section Toys.
   Proof.
     intros.
     induction n.
-    - repeat rewrite zero_function_sums_to_zero;
+    -   rewrite zero_function_sums_to_zero;
         try rewrite riglunax1; try apply idpath;
         apply funextfun; intros i;
         apply fromempty; use weqstn0toempty;
         assumption.
-    - repeat rewrite iterop_fun_step; try apply riglunax1.
+    - do 3 try rewrite iterop_fun_step; try apply riglunax1;
       repeat unfold "∘"; rewrite replace_dni_last.   (* 3 times *)
-      + repeat rewrite <- rigassoc1. (* 2 times *)
+      + do 2 rewrite <- rigassoc1. (* 2 times *)
         (*rewrite <- rigassoc1.*)
-        repeat rewrite <- (rigcomm1 _ (vec2 lastelement)). (* all 2 times*)
-        repeat rewrite <- (rigcomm1 _ (vec1 lastelement)).
+        do 2 rewrite <- (rigcomm1 _ (vec2 lastelement)). (* all 2 times*)
+        do 2 rewrite <- (rigcomm1 _ (vec1 lastelement)).
         rewrite <- rigassoc1.
         rewrite IHn.
-        repeat rewrite rigassoc1.
+        do 2 rewrite rigassoc1.
         reflexivity.
   Defined.
 
