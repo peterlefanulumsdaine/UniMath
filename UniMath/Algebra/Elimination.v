@@ -64,8 +64,8 @@ Definition is_diagonal { m n : nat} (mat : Matrix R m n) :=
   ∏ (i : ⟦ m ⟧%stn ) (j : ⟦ n ⟧%stn ),  (stntonat _ i != (stntonat _ j)) -> (mat i j) = 0%rig.
 
 
-Print natcommrig.
-Definition divisibility_over_diagonal {m n : nat} (mat : Matrix R m n) :=
+(*
+Definition divisibility_over_diagonal {m n : nat} (mat : Matrix R m n) := *)
 
 
 (*  This might be a non-trivial property to prove, based on the current formalization.
