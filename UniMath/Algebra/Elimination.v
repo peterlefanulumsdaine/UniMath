@@ -21,6 +21,7 @@ Require Import UniMath.NumberSystems.RationalNumbers.
 
 Require Import UniMath.Combinatorics.WellOrderedSets.
 
+Require Import UniMath.Combinatorics.Vectors.
 
 Local Definition R := pr1hSet natcommrig.
 
@@ -39,8 +40,6 @@ Section Gauss.
     - exact (mat r1 j). (* Regular row (ID)*)
   Defined.
 
-  About identity_matrix.
-  Search "identity_matrix".
 
   (* Is stating this as a Lemma more in the style of other UniMath work?*)
   Local Definition identity_matrix {n : nat} : (Matrix F n n).
@@ -94,40 +93,60 @@ Section Gauss.
   Definition test_row_switch_statement {m n : nat} (mat : Matrix F m n)
     (r1 r2 : ⟦ m ⟧%stn) := (gauss_switch_row (gauss_switch_row mat r1 r2) r1 r2) = mat.
 
-  About hq.
+
+  (* Do we need to redefine this ? *)
   Definition max_hq (a b : hq) : hq.
     induction (hqgthorleh a b).
     - exact a.
     - exact b.
   Defined.
 
-  (* Fixpoint definitions are disallowed by UniMath guidelines.
-     How can we re-state this without Fixpoint ? *)
+  Definition max_hq_one_arg (a : hq) : hq -> hq := max_hq a.
 
-  (*
-  Fixpoint argmax_stnhq' (max': nat) { n : nat } (vec' : Vector F n) : F.
+  (* This should exist somewhere *)
+  Definition tl' { n : nat }  (vec: Vector F n) : Vector F (n - 1).
     induction (natgtb n 0).
-    - exact (max_hq max' (argmax_stnhq' (max') (tl vec'))).
-    - exact max'.
-    match body with
-    | Abs xp e => Abs 0 (substitute x t (replace x 0 e))
-    | _ => Unit
+     assert  ( b: (n - 1 <= n)). { apply (natlehtolehm1 n n). apply isreflnatleh. }
+    + exact (λ i : (⟦ n - 1 ⟧%stn), vec (stnmtostnn (n - 1) n b i)).
+    + exact (λ i : (⟦ n - 1 ⟧%stn), 0%hq). (* Zero length vector with placeholder *)
+  Defined.
+
+
+(*
+  Fixpoint argmax_stnhq'  { n : nat } (vec' : Vector F n) (max' : F) (idx : nat) : nat :=
+    match n with
+    | 0 => idx (*max'*)
+    | _ =>
+      match (max_hq max' (argmax_stnhq'  (tl' vec' ) max' idx) )
+      with | max' -> idx
+           | _    ->
     end.
-
+*)
   (* We can generalize this to just ordered sets *)
-  Definition argmax_stnhq {n : nat} (f : (⟦ n ⟧%stn) → hq) : nat
-    := (hd f)
 
-  Definition argmax_mat {m n : nat} (mat Matrix F n n) : nat
-    := argmax (hd (hd mat)) ( λ i : (⟦ m ⟧), argmax (hd (mat i))).
-  *)
+  (*Definition max_hq_index (e : F)  (i : nat) (e' : F) (i' : nat) : hq × nat.
+*)Definition max_hq_index (ei ei' : hq × nat) : hq × nat.
+    induction (hqgthorleh (pr1 ei) (pr1 ei')).
+    - exact (ei).
+    - exact (ei').
+  Defined.
 
+  Definition max_hq_index_one_arg (ei : hq × nat)  : hq × nat -> hq × nat
+    := max_hq_index ei.
+
+  Definition max_argmax_stnhq {n : nat} (vec : Vector F n) : hq × nat
+    :=  (foldleft (0%hq ,, 0) (max_hq_index_one_arg) (λ i : (⟦ n ⟧%stn), (vec i) ,, (stntonat _ i))).
+
+  Definition select_pivot_row {m n : nat} (mat : Matrix F n n) ( k : nat ) : nat
+    := pr2 (max_argmax_stnhq  ( λ i : (⟦ n ⟧%stn),  pr1 (max_argmax_stnhq ( ((transpose mat) i))))).
+
+  (* partial pivoting *)
   (*
-  Definition gauss_step (h : (⟦ m ⟧%stn)) (k : (⟦ n ⟧%stn))
-
+  Definition gauss_step { m : nat } { n : nat } (h : (⟦ m ⟧%stn)) (k : (⟦ n ⟧%stn)) (mat : Matrix F m n) : Matrix F m n.
+  induction
   *)
 
-  (* TODO : this one is reversed in the induction steps ... *)
+  (* TODO : this one has reversed, incorrect induction steps ... *)
   Definition make_minor {n : nat} ( i j : ⟦ S n ⟧%stn )  (mat : Matrix F (S n) (S n)) : Matrix F n n.
   Proof.
     intros i' j'.
