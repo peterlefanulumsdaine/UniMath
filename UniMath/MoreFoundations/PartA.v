@@ -2,7 +2,9 @@
 Require Import UniMath.Foundations.All.
 Require Import UniMath.MoreFoundations.Tactics.
 
-(** * Generalisations of [maponpaths]
+(** * Path-algebra *)
+
+(** ** Generalisations of [maponpaths]
 
 The following are a uniformly-named set of lemmas giving how multi-argument (non-dependent) functions act on paths, generalising [maponpaths].
 
@@ -51,6 +53,18 @@ Definition maponpaths_1234 {W Z Y X A : UU} (f : W -> Z -> Y -> X -> A)
 
 (* NOTE: some of the lemmas above have been re-proved independently multiple times elsewhere in the library, including some pure duplicates, and some specialisations (maybe for good reason, maybe not). TODO: chase the duplicates down; work out + document which ones seem justified; and unify the rest. *)
 
+(** ** Specialisations of the [maponpaths] family *)
+
+(* direct product of 3 paths; extends pathsdirprod *)
+Definition paths3 {X Y Z} {x x':X} {y y':Y} {z z':Z} :
+  x = x' -> y = y' -> z = z' -> @paths (_×_×_) (x,,y,,z) (x',,y',,z').
+Proof.
+  intros e_x e_y e_z.
+  apply maponpaths_12; try apply maponpaths_12; assumption.
+Defined.
+
+(** ** Lemmas about [maponpaths] etc *)
+
 Lemma maponpaths_for_constant_function {T1 T2 : UU} (x : T2) {t1 t2 : T1}
       (e: t1 = t2): maponpaths (fun _: T1 => x) e = idpath x.
 Proof.
@@ -63,6 +77,26 @@ Lemma base_paths_pair_path_in2 {X : UU} (P : X → UU) {x : X} {p q : P x} (e : 
 Proof.
 now induction e.
 Qed.
+
+Definition maponpaths_naturality {X Y : UU} {f : X -> Y}
+           {x x' x'' : X} {p : x = x'} {q : x' = x''}
+           {p': f x = f x'} {q': f x' = f x''}
+           (r : maponpaths f p = p') (s : maponpaths f q = q') :
+  maponpaths f (p @ q) = p' @ q'.
+Proof.
+  intros. induction r, s. apply maponpathscomp0.
+Defined.
+
+Definition maponpaths_naturality' {X Y : UU} {f : X -> Y}
+           {x x' x'' : X} {p : x' = x} {q : x' = x''}
+           {p' : f x' = f x} {q' : f x' = f x''}
+           (r : maponpaths f p = p') (s : maponpaths f q = q') :
+  maponpaths f (!p @ q) = (!p') @ q'.
+Proof.
+  intros. induction r, s, p, q. reflexivity.
+Defined.
+
+(** ** General transport lemmas *)
 
 Lemma transportf_transpose_right
       {X : UU}
@@ -111,37 +145,32 @@ Proof.
   induction e; apply idfun.
 Defined.
 
-(* taken from TypeTheory/Display_Cats/Auxiliary.v *)
-(** Very handy for reasoning with “dependent paths” —
+(** [transportf_pathsinv0] is very handy for reasoning with “dependent paths” —
 
 Note: similar to [transportf_pathsinv0_var], [transportf_pathsinv0'],
 but not quite a special case of them, or (as far as I can find) any other
 library lemma.
  *)
-
+(* TODO: this is very close to [transportf_transpose_left]. Check usage; unify? *)
 Definition transportf_pathsinv0 {X} (P:X->UU) {x y:X} (p:x = y) (u:P x) (v:P y) :
   transportf _ (!p) v = u -> transportf _ p u = v.
-Proof. intro e. induction p, e. reflexivity. Defined.
+Proof.
+  intros.
+  apply transportf_transpose_left. symmetry; assumption.
+Defined.
 
 Lemma transportf_comp_lemma (X : UU) (B : X -> UU) {A A' A'': X} (e : A = A'') (e' : A' = A'')
   (x : B A) (x' : B A')
   : transportf _ (e @ !e') x = x'
   -> transportf _ e x = transportf _ e' x'.
 Proof.
-  intro H.
-  eapply pathscomp0.
-  2: { apply maponpaths. exact H. }
-  eapply pathscomp0.
-  2: { symmetry. apply transport_f_f. }
-  apply (maponpaths (λ p, transportf _ p x)).
-  apply pathsinv0.
-  eapply pathscomp0.
-  - apply @pathsinv0, path_assoc.
-  - eapply pathscomp0.
-    apply maponpaths.
-    apply pathsinv0l.
-    apply pathscomp0rid.
+  intros.
+  apply transportf_transpose_right.
+  etrans. 2: { eassumption. }
+  apply transport_f_f.
 Defined.
+
+(** ** transport in sets *)
 
 Lemma transportf_comp_lemma_hset (X : UU) (B : X -> UU) (A : X) (e : A = A)
   {x x' : B A} (hs : isaset X)
@@ -155,7 +184,6 @@ Proof.
   - exact ex.
 Qed.
 
-
 Lemma transportf_set {A : UU} (B : A → UU)
       {a : A} (e : a = a) (b : B a)
       (X : isaset A)
@@ -166,7 +194,6 @@ Proof.
   - apply idpath.
 Defined.
 
-
 Lemma transportf_pair {A B} (P : A × B -> UU) {a a' : A} {b b' : B}
       (eA : a = a') (eB : b = b') (p : P (a,,b))
       : transportf P (pathsdirprod eA eB) p =
@@ -174,6 +201,8 @@ Lemma transportf_pair {A B} (P : A × B -> UU) {a a' : A} {b b' : B}
 Proof.
   induction eA. induction eB. apply idpath.
 Defined.
+
+(** * Equivalences *)
 
 Lemma weqhomot {A B : UU} (f : A -> B) (w : A ≃ B) (H : w ~ f) : isweq f.
 Proof.
@@ -187,6 +216,8 @@ Proof.
   apply (invmaponpathsweq f).
   etrans. apply homotweqinvweq. apply H.
 Defined.
+
+(** * Sigma-types / total spaces *)
 
 Lemma pr1_transportf {A : UU} {B : A -> UU} {P : ∏ a, B a -> UU}
    {a a' : A} (e : a = a') (xs : ∑ b : B a, P _ b):
@@ -204,6 +235,73 @@ Proof.
   apply pathsinv0.
   apply (transport_map (λ a, pr2 (P := λ _, B2 a))).
 Defined.
+
+(** The subtypes of a type of hlevel S n are also of hlevel S n.
+    This doesn't work for types of hlevel 0: a subtype of a contractible
+    type might be empty, not contractible! *)
+Lemma isofhlevel_hsubtype {X : UU} {n : nat} (isof : isofhlevel (S n) X) :
+  ∏ subt : hsubtype X, isofhlevel (S n) subt.
+Proof.
+  intros subt.
+  apply isofhleveltotal2.
+  - assumption.
+  - intro.
+    apply isofhlevelsnprop.
+    apply propproperty.
+Defined.
+
+(** Homotopy equivalence on total spaces.
+
+  This result [weqtotal2] combines [weqfp] and [weqfibtototal] conveniently.
+  *)
+Lemma weqtotal2 {X Y:Type} {P:X->Type} {Q:Y->Type} (f : X ≃ Y) :
+  (∏ x, P x ≃ Q (f x)) -> (∑ x:X, P x) ≃ (∑ y:Y, Q y).
+Proof.
+  intros e. exists (λ xp, (f(pr1 xp),,e (pr1 xp) (pr2 xp))).
+  exact (twooutof3c _ _ (isweqfibtototal P (Q ∘ f) e) (pr2 (weqfp f Q))).
+Defined.
+
+Lemma hlevel_total2 n {A : UU} {B : A → UU} :
+  isofhlevel n (∑ (x :A), B x) → isofhlevel (S n) A → ∏ (x : A), isofhlevel n (B x).
+Proof.
+  intros ic ia x.
+  exact (isofhlevelweqf _ (invweq (ezweqpr1 _ _)) (isofhlevelffromXY _ _ ic ia _)).
+Defined.
+
+Definition path_sigma_hprop
+           {A : UU}
+           (B : A → UU)
+           (x y : ∑ (z : A), B z)
+           (HB : isaprop (B (pr1 y)))
+  : x = y ≃ pr1 x = pr1 y.
+Proof.
+  refine (weqpr1 _ _ ∘ total2_paths_equiv _ _ _)%weq.
+  intros.
+  apply HB.
+Defined.
+
+(** associativity of ∑ *)
+
+Definition weq_total2_prod {X Y} (Z:Y->Type) : (∑ y, X × Z y) ≃ (X × ∑ y, Z y).
+Proof.
+  (* move upstream *)
+  intros. simple refine (make_weq _ (isweq_iso _ _ _ _)).
+  { intros [y [x z]]. exact (x,,y,,z). }
+  { intros [x [y z]]. exact (y,,x,,z). }
+  { intros [y [x z]]. reflexivity. }
+  { intros [x [y z]]. reflexivity. }
+Defined.
+
+Definition totalAssociativity {X:UU} {Y: ∏ (x:X), UU} (Z: ∏ (x:X) (y:Y x), UU) : (∑ (x:X) (y:Y x), Z x y) ≃ (∑ (p:∑ (x:X), Y x), Z (pr1 p) (pr2 p)).
+Proof.
+  intros. simple refine (_,,isweq_iso _ _ _ _).
+  { intros [x [y z]]. exact ((x,,y),,z). }
+  { intros [[x y] z]. exact (x,,(y,,z)). }
+  { intros [x [y z]]. reflexivity. }
+  { intros [[x y] z]. reflexivity. }
+Defined.
+
+(** * Coproduct types *)
 
 Lemma coprodcomm_coprodcomm {X Y : UU} (v : X ⨿ Y) : coprodcomm Y X (coprodcomm X Y v) = v.
 Proof.
@@ -246,10 +344,13 @@ Proof.
   apply idpath.
 Defined.
 
+(** * General utility functions *)
+
 (** Flip the arguments of a function *)
 Definition flipsec {A B : UU} {C : A -> B -> UU} (f : ∏ a b, C a b) : ∏ b a, C a b :=
   λ x y, f y x.
 Notation flip := flipsec.
+(* TODO: is there any reason why [flip] isn’t just the name? *)
 
 (** Flip is a weak equivalence (in fact, it is an involution) *)
 Lemma isweq_flipsec {A B : UU} {C : A -> B -> UU} : isweq (@flipsec A B C).
@@ -260,51 +361,10 @@ Defined.
 Definition flipsec_weq {A B : UU} {C : A -> B -> UU} :
   (∏ a b, C a b) ≃ (∏ b a, C a b) := make_weq flipsec isweq_flipsec.
 
-(** The subtypes of a type of hlevel S n are also of hlevel S n.
-    This doesn't work for types of hlevel 0: a subtype of a contractible
-    type might be empty, not contractible! *)
-Lemma isofhlevel_hsubtype {X : UU} {n : nat} (isof : isofhlevel (S n) X) :
-  ∏ subt : hsubtype X, isofhlevel (S n) subt.
-Proof.
-  intros subt.
-  apply isofhleveltotal2.
-  - assumption.
-  - intro.
-    apply isofhlevelsnprop.
-    apply propproperty.
-Defined.
+(** Constant function *)
+Definition confun T {Y} (y:Y) := λ _:T, y.
 
-(** Homotopy equivalence on total spaces.
-
-  This result combines weqfp and weqfibtototal conveniently.
-  *)
-Lemma weqtotal2 {X Y:Type} {P:X->Type} {Q:Y->Type} (f : X ≃ Y) :
-  (∏ x, P x ≃ Q (f x)) -> (∑ x:X, P x) ≃ (∑ y:Y, Q y).
-Proof.
-  intros e. exists (λ xp, (f(pr1 xp),,e (pr1 xp) (pr2 xp))).
-  exact (twooutof3c _ _ (isweqfibtototal P (Q ∘ f) e) (pr2 (weqfp f Q))).
-Defined.
-
-Lemma hlevel_total2 n {A : UU} {B : A → UU} :
-  isofhlevel n (∑ (x :A), B x) → isofhlevel (S n) A → ∏ (x : A), isofhlevel n (B x).
-Proof.
-  intros ic ia x.
-  exact (isofhlevelweqf _ (invweq (ezweqpr1 _ _)) (isofhlevelffromXY _ _ ic ia _)).
-Defined.
-
-Definition path_sigma_hprop
-           {A : UU}
-           (B : A → UU)
-           (x y : ∑ (z : A), B z)
-           (HB : isaprop (B (pr1 y)))
-  : x = y ≃ pr1 x = pr1 y.
-Proof.
-  refine (weqpr1 _ _ ∘ total2_paths_equiv _ _ _)%weq.
-  intros.
-  apply HB.
-Defined.
-
-(** ** Pointed types *)
+(** * Pointed types *)
 
 Section PointedTypes.
   Definition PointedType := ∑ X, X.
@@ -321,36 +381,10 @@ Section PointedTypes.
   Definition Ω := loopSpace.
 End PointedTypes.
 
-(** associativity of ∑ *)
+(** ** More general path algebra *)
 
-Definition weq_total2_prod {X Y} (Z:Y->Type) : (∑ y, X × Z y) ≃ (X × ∑ y, Z y).
-Proof.
-  (* move upstream *)
-  intros. simple refine (make_weq _ (isweq_iso _ _ _ _)).
-  { intros [y [x z]]. exact (x,,y,,z). }
-  { intros [x [y z]]. exact (y,,x,,z). }
-  { intros [y [x z]]. reflexivity. }
-  { intros [x [y z]]. reflexivity. }
-Defined.
+(* TODO: most of this group seems to duplicate material elsewhere, and/or be unused. Prune a bit? *)
 
-Definition totalAssociativity {X:UU} {Y: ∏ (x:X), UU} (Z: ∏ (x:X) (y:Y x), UU) : (∑ (x:X) (y:Y x), Z x y) ≃ (∑ (p:∑ (x:X), Y x), Z (pr1 p) (pr2 p)).
-Proof.
-  intros. simple refine (_,,isweq_iso _ _ _ _).
-  { intros [x [y z]]. exact ((x,,y),,z). }
-  { intros [[x y] z]. exact (x,,(y,,z)). }
-  { intros [x [y z]]. reflexivity. }
-  { intros [[x y] z]. reflexivity. }
-Defined.
-
-(* direct product of 3 paths; extends pathsdirprod *)
-Definition paths3 {X Y Z} {x x':X} {y y':Y} {z z':Z} :
-  x = x' -> y = y' -> z = z' -> @paths (_×_×_) (x,,y,,z) (x',,y',,z').
-Proof.
-  intros p q r. induction p, q, r. reflexivity.
-Defined.
-
-(* paths *)
-Definition confun T {Y} (y:Y) := λ _:T, y.
 Definition path_type {X} {x x':X} (p:x = x') := X.
 Definition path_start {X} {x x':X} (p:x = x') := x.
 Definition path_end {X} {x x':X} (p:x = x') := x'.
@@ -381,7 +415,9 @@ Proof.
   intros. induction q. reflexivity.
 Defined.
 
-(** ** Paths *)
+(** ** More general path-algebra *)
+
+(* TODO: some of this section duplicates material elsewhere.  Prune a bit? *)
 
 Definition pathsinv0_to_right {X} {x y z:X} (p:y = x) (q:y = z) (r:x = z) :
   q = p @ r -> !p @ q = r.
@@ -401,6 +437,12 @@ Proof.
   intros e. apply pathsinv0_to_right'. rewrite pathscomp0rid. exact e.
 Defined.
 
+Definition path_inv_rotate_2 {X} {a b c d:X} (p:a = b) (p':c = d) (q:a = c) (q':b = d) :
+  q @ p' = p @ q' -> p' @ ! q' = !q @ p.
+Proof.
+  induction q,q'. simpl. repeat rewrite pathscomp0rid. apply idfun.
+Defined.
+
 Definition loop_power_nat {Y} {y:Y} (l:y = y) (n:nat) : y = y.
 Proof.
   intros. induction n as [|n p].
@@ -410,39 +452,15 @@ Defined.
 
 Lemma irrel_paths {X} (irr:∏ x y:X, x = y) {x y:X} (p q:x = y) : p = q.
 Proof.
-  intros.
+  (* Alternate proof: [apply isasetaprop, invproofirrelevance; exact irr].
+  But it’s enlightening to have a direct proof too. *)
   assert (k : ∏ z:X, ∏ r:x = z, r @ irr z z = irr x z).
   { intros. induction r. reflexivity. }
   assert (l := k y p @ !k y q).
   apply (pathscomp_cancel_right _ _ _ l).
 Defined.
 
-Definition path_inv_rotate_2 {X} {a b c d:X} (p:a = b) (p':c = d) (q:a = c) (q':b = d) :
-  q @ p' = p @ q' -> p' @ ! q' = !q @ p.
-Proof.
-  induction q,q'. simpl. repeat rewrite pathscomp0rid. apply idfun.
-Defined.
-
-Definition maponpaths_naturality {X Y : UU} {f : X -> Y}
-           {x x' x'' : X} {p : x = x'} {q : x' = x''}
-           {p': f x = f x'} {q': f x' = f x''}
-           (r : maponpaths f p = p') (s : maponpaths f q = q') :
-  maponpaths f (p @ q) = p' @ q'.
-Proof.
-  intros. induction r, s. apply maponpathscomp0.
-Defined.
-
-Definition maponpaths_naturality' {X Y : UU} {f : X -> Y}
-           {x x' x'' : X} {p : x' = x} {q : x' = x''}
-           {p' : f x' = f x} {q' : f x' = f x''}
-           (r : maponpaths f p = p') (s : maponpaths f q = q') :
-  maponpaths f (!p @ q) = (!p') @ q'.
-Proof.
-  intros. induction r, s, p, q. reflexivity.
-Defined.
-
-
-(** ** Pairs *)
+(** ** Pairs and projections *)
 
 Definition pr2_of_make_hfiber {X Y} {f:X->Y} {x:X} {y:Y} {e:f x = y} :
   pr2 (make_hfiber f x e) = e.
@@ -460,15 +478,6 @@ Proof.
   reflexivity.
 Defined.
 
-(** ** Paths between pairs *)
-
-(* replace all uses of this by uses of subtypePairEquality *)
-Definition pair_path_props {X} {P:X->Type} {x y:X} {p:P x} {q:P y} :
-  x = y -> (∏ z, isaprop (P z)) -> x,,p = y,,q.
-Proof.
-  intros e is. now apply subtypePairEquality.
-Abort.
-
 Local Open Scope transport.
 
 Definition pair_path2 {A} {B:A->UU} {a a1 a2} {b1:B a1} {b2:B a2}
@@ -476,8 +485,6 @@ Definition pair_path2 {A} {B:A->UU} {a a1 a2} {b1:B a1} {b2:B a2}
 Proof.
   intros. induction p,q; compute in e. induction e. reflexivity.
 Defined.
-
-(** ** Projections from pair types *)
 
 Definition pair_path_in2_comp1 {X} (P:X->Type) {x:X} {p q:P x} (e:p = q) :
   maponpaths pr1 (maponpaths (tpair P _) e) = idpath x.
@@ -507,6 +514,7 @@ Defined.
 
 (** ** Sections and functions *)
 
+(* TODO: any reason for this alternate name? *)
 Notation homotsec := homot.
 
 (** Naturality of homotopies *)
