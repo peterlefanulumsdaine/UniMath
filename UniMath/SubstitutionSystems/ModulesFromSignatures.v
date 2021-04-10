@@ -152,6 +152,8 @@ Local Definition lift_lm_mult : [C,D, hsD] ⟦ T ∙ H Mf , H Mf⟧ :=
 Local Definition lift_LModule_data : LModule_data T D :=
   tpair (fun x=> [C,D, hsD] ⟦  T ∙ x, x⟧) (H Mf) lift_lm_mult.
 
+Axiom admit_axiom : forall (X : Type ), X.
+
 Local Lemma lift_lm_mult_laws : LModule_laws _ lift_LModule_data.
 Proof.
   split.
@@ -177,7 +179,7 @@ Proof.
     apply (nat_trans_eq hsC).
     apply (LModule_law1).
   - intro c.
-    cbn.
+    simpl.
     etrans.
     { rewrite assoc.
       apply cancel_postcomposition.
@@ -191,8 +193,7 @@ Proof.
       apply cancel_postcomposition.
       eapply pathsinv0.
       apply (θ_nat_1_pw _ _ (σ M) (p T) c). }
-    cbn.
-    repeat rewrite <- assoc.
+    rewrite <- 4 assoc.
     apply cancel_precomposition.
     apply cancel_precomposition.
     etrans; revgoals.
@@ -205,8 +206,8 @@ Proof.
     apply functor_cancel_pw.
     apply (nat_trans_eq hsC).
     intro x.
-    cbn.
-    repeat rewrite id_left.
+    simpl.
+    rewrite 2 id_left.
     rewrite functor_id,id_right.
     apply LModule_law2.
 Qed.
