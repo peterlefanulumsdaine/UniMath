@@ -32,11 +32,11 @@ Section Gauss.
 
 
   Definition gauss_add_row {m n : nat} (mat : Matrix F m n)
-             (r1 r2 : ⟦ m ⟧%stn) : (Matrix F m n).
+    (s : F) (r1 r2 : ⟦ m ⟧%stn) : (Matrix F m n).
   Proof.
     intros i j.
     induction (stn_eq_or_neq i r1).
-    - exact (op1 (mat r1 j)  (mat r2 j)). (* Target row *)
+    - exact (op1 (mat r1 j)  (op2 s (mat r2 j))). (* Target row *)
     - exact (mat r1 j). (* Regular row (ID)*)
   Defined.
 
@@ -51,7 +51,6 @@ Section Gauss.
   Defined.
 
 
-
   (* Need again to restate several definitions to use the identity on rationals*)
   Local Notation Σ := (iterop_fun 0%hq op1).
   Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
@@ -63,11 +62,11 @@ Section Gauss.
   Local Notation "A ** B" := (matrix_mult A B) (at level 80).
 
   (* Can be defined inductively, directly, too.*)
-  Definition make_add_row_matrix { n : nat } (r1 r2 : ⟦ n ⟧%stn)  :=
-    gauss_add_row (identity_matrix) r1 r2.
+  Definition make_add_row_matrix { n : nat } (r1 r2 : ⟦ n ⟧%stn) (s : F)  :=
+    gauss_add_row (identity_matrix) s r1 r2.
 
-  Definition add_row_by_matmul { n m : nat } ( r1 r2 : ⟦ m ⟧%stn ) (mat : Matrix F m n) : Matrix F m n :=
-    (make_add_row_matrix r1 r2) **  mat.
+  Definition add_row_by_matmul { n m : nat } ( r1 r2 : ⟦ m ⟧%stn ) (mat : Matrix F m n) (s : F) : Matrix F m n :=
+    (make_add_row_matrix r1 r2 s ) **  mat.
 
   Definition gauss_scalar_mult_row { m n : nat} (mat : Matrix F m n)
              (s : F) (r : ⟦ m ⟧%stn): Matrix F m n.
@@ -112,39 +111,94 @@ Section Gauss.
   Defined.
 
 
-(*
-  Fixpoint argmax_stnhq'  { n : nat } (vec' : Vector F n) (max' : F) (idx : nat) : nat :=
-    match n with
-    | 0 => idx (*max'*)
-    | _ =>
-      match (max_hq max' (argmax_stnhq'  (tl' vec' ) max' idx) )
-      with | max' -> idx
-           | _    ->
-    end.
-*)
   (* We can generalize this to just ordered sets *)
-
-  (*Definition max_hq_index (e : F)  (i : nat) (e' : F) (i' : nat) : hq × nat.
-*)Definition max_hq_index (ei ei' : hq × nat) : hq × nat.
+  (*Definition max_hq_index (e : F)  (i : nat) (e' : F) (i' : nat) : hq × nat.*)
+  Definition max_hq_index { n : nat } (ei ei' : hq × ⟦ n ⟧%stn) : hq × ⟦ n ⟧%stn.
     induction (hqgthorleh (pr1 ei) (pr1 ei')).
-    - exact (ei).
-    - exact (ei').
+    - exact ei.
+    - exact ei'.
   Defined.
 
-  Definition max_hq_index_one_arg (ei : hq × nat)  : hq × nat -> hq × nat
+  Definition max_hq_index_one_arg { n : nat } (ei : hq × ⟦ n ⟧%stn) : (hq × ⟦ n ⟧%stn) -> (hq × ⟦ n ⟧%stn)
     := max_hq_index ei.
 
-  Definition max_argmax_stnhq {n : nat} (vec : Vector F n) : hq × nat
-    :=  (foldleft (0%hq ,, 0) (max_hq_index_one_arg) (λ i : (⟦ n ⟧%stn), (vec i) ,, (stntonat _ i))).
 
-  Definition select_pivot_row {m n : nat} (mat : Matrix F n n) ( k : nat ) : nat
-    := pr2 (max_argmax_stnhq  ( λ i : (⟦ n ⟧%stn),  pr1 (max_argmax_stnhq ( ((transpose mat) i))))).
+  (* These are very specific and could be better without the general definition form, or we
+     could write these as local definitions *)
+  Definition max_argmax_stnhq {n : nat} (vec : Vector F n) (pn : n > 0) : hq × (⟦ n ⟧)%stn.
+      (*:=  (foldleft (0%hq ,, 0) (max_hq_index_one_arg) (λ i : (⟦ n ⟧%stn), (vec i) ,, (stntonat _ i))).*)
+  Proof.
+    set (max_and_idx := (foldleft (0%hq,,(0%nat,,pn)) max_hq_index (λ i : (⟦ n ⟧%stn), (vec i) ,, i))).
+    exact (max_and_idx).
+  Defined.
 
-  (* partial pivoting *)
+  (* To be refactored *)
+  Local Definition truncate_pr1 { n : nat } ( f : ⟦ n ⟧%stn → hq) ( k : ⟦ n ⟧%stn ) : ( ⟦ n ⟧%stn → hq).
+  Proof.
+    intros.
+    induction (natgtb X k).
+    - exact (f X).
+    - exact (f k).
+  Defined.
+
+  Definition select_pivot_row {m n : nat} (mat : Matrix F m n) ( k : ⟦ m ⟧%stn ) (pm : m > 0) (pn : n > 0) : ⟦ m ⟧%stn
+    := pr2 (max_argmax_stnhq (truncate_pr1  ( λ i : (⟦ m ⟧%stn),  pr1 (max_argmax_stnhq ( ( mat) i) pn)) k ) pm).
+
+  (* Helper Lemma. Possibly unecessary. *)
+  Local Definition opt_matrix_op {n : nat} (b : bool) (mat : Matrix F n n) (f : Matrix F n n -> Matrix F n n) : Matrix F n n.
+  Proof.
+    induction b.
+    - exact (f mat).
+    - exact mat.
+  Defined.
+
+  (* We can probably assert at this point that m and n are > 0, as the base cases can be handled by caller *)
+  (* Performed k times . *)
+  Definition gauss_step { m : nat } { n : nat } (k : (⟦ n ⟧%stn)) (mat : Matrix F n n) (pm : m > 0) (pn : n > 0) : Matrix F n n × ⟦ n ⟧%stn.
+  Proof.
+    set (ik := (select_pivot_row mat k pn pn)).
+    use tpair. 2: {exact ik. }
+    intros i j.
+    induction (natlthorgeh i k) as [LT | GTH]. {exact ((mat i j)). }
+    set (mat' := gauss_switch_row mat k ik).
+    set (mat'' := gauss_scalar_mult_row mat' ((- 1%hq)%hq * (hqmultinv ( mat' k k )))%hq i%nat).
+    induction (natgtb j k).
+    - exact (((mat'' i j) + (mat'' i k) * (mat k j))%hq).
+    - exact (mat'' i j).
+  Defined.
+
+  (* k  : 1 -> n - 1 *)
+  Definition vec_row_ops_step { n : nat } (k pivot_ik: ⟦ n ⟧%stn)  (mat : Matrix F n n) (vec : Matrix F n 1) : Matrix F n 1.
+  Proof.
+  intros i.
+  induction (natlthorgeh i k). 2 : {exact (vec i). }
+  set (vec' := gauss_switch_row vec pivot_ik k).
+  assert (pr2stn1 : 0 < 1). { reflexivity. }
+  set ( j := make_stn 1 0 pr2stn1).
+  exact ( weq_vector_1 ((((vec' i) j) + ((vec' k) j) * (mat i k))%hq)).  (* Would like to verify this construction works*)
+  Defined.
+
+  (* The backwards substitution step is done backwards . *)
   (*
-  Definition gauss_step { m : nat } { n : nat } (h : (⟦ m ⟧%stn)) (k : (⟦ n ⟧%stn)) (mat : Matrix F m n) : Matrix F m n.
-  induction
+  Definition back_sub_step { n : nat }  (vec : Matrix F n 1) : Matrix F n 1.
+  Proof.
+  intros i.
+  induction (natlehchoice i (n - 1)) as [LT | GTH].
+  + exact ((vec i) - ∑
+  +
+  Defined.
   *)
+
+  (* 3 steps :
+     Partial pivoting on A.
+     Row operations on B.
+     Back substitution on B. *)
+
+  Definition gaussian_elimination { m n : nat } (mat : Matrix F n n) (vec : Matrix F 1 n) (pn : n > 0) : Matrix F n n × Matrix F 1 n.
+  Proof.
+    exact (mat,, vec). (* Placeholder *)
+  Defined.
+
 
   (* TODO : this one has reversed, incorrect induction steps ... *)
   Definition make_minor {n : nat} ( i j : ⟦ S n ⟧%stn )  (mat : Matrix F (S n) (S n)) : Matrix F n n.
@@ -165,7 +219,7 @@ Section Gauss.
       + exact (mat stn_si stn_sj).
   Defined.
 
-  (* TODO recursive step *)
+  (* TODO: need to figure out the recursive step ! *)
   (*
   Definition determinant { n : nat} (mat : Matrix F n n) : F.
   Proof.
@@ -191,17 +245,19 @@ Section Gauss.
 End Gauss.
 
 
+
+
+
+
 Section SmithNF.
  (* Generalized elimination over the ring of integers *)
-
-
 
 (* Such code might go intro Matrix.v *)
 Definition is_diagonal { m n : nat } (mat : Matrix R m n) :=
   ∏ (i : ⟦ m ⟧%stn ) (j : ⟦ n ⟧%stn ),  (stntonat _ i != (stntonat _ j)) -> (mat i j) = 0%rig.
 
-
-End SmithNF.
-
 (*
 Definition divisibility_over_diagonal {m n : nat} (mat : Matrix R m n) := *)
+
+
+End SmithNF.
