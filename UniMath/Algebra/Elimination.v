@@ -260,21 +260,13 @@ Section Gauss.
   Definition back_sub_step { n : nat } (mat : Matrix F n n) (vec : Vector F n) : Vector F n.
   Proof.
     intros i.
-    induction (natlehchoice i (n - 1)) as [LT | GTH].
+    set ( m := pr1 i ).
+    induction (natlehchoice ((S m) ) (n)) as [LT | GTH].
     - exact ((((vec i) - Σ (clamp_f vec i)) * (hqmultinv (mat i i)))%hq).
     - exact ((vec i) * (hqmultinv (mat i i)))%hq.
     - unfold stn in i.
-      apply natlthp1toleh.
-      replace (n - 1 + 1) with (n).
-      apply i.
-      (*rewrite <- plusminusnmm.*)
-      (* n = n -1 + 1*)
-   Admitted.
-
-  (* 3 steps :
-     Partial pivoting on A.
-     Row operations on B.
-     Back substitution on B. *)
+      apply (pr2 i).
+  Defined.
 
   Definition gaussian_elimination { m n : nat } (mat : Matrix F n n) (vec : Matrix F 1 n) (pn : n > 0) : Matrix F n n × Matrix F 1 n.
   Proof.
@@ -331,8 +323,6 @@ Section Gauss.
 
 
 End Gauss.
-
-
 
 
 
