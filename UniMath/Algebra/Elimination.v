@@ -23,6 +23,8 @@ Require Import UniMath.Combinatorics.WellOrderedSets.
 
 Require Import UniMath.Combinatorics.Vectors.
 
+Require Import UniMath.Foundations.NaturalNumbers.
+
 Local Definition R := pr1hSet natcommrig.
 
 Section Gauss.
@@ -152,10 +154,28 @@ Section Gauss.
     - exact mat.
   Defined.
 
+  Local Lemma stn_implies_nneq0 { n : nat } (i : ⟦ n ⟧%stn) : n ≠ 0.
+  Proof.
+    induction (natchoice0 n) as [T | F].
+    - rewrite <- T in i.
+      apply weqstn0toempty in i. apply fromempty. assumption.
+    - change (0 < n) with (n > 0) in F.
+      destruct n.
+      + apply isirreflnatgth in F. apply fromempty. assumption.
+      + apply natgthtoneq in F. reflexivity.
+  Defined.
+
+  Local Lemma stn_implies_ngt0 { n : nat} (i : ⟦ n ⟧%stn) : n > 0.
+  Proof.
+    exact (natneq0to0lth n (stn_implies_nneq0 i)).
+  Defined.
+
   (* We can probably assert at this point that m and n are > 0, as the base cases can be handled by caller *)
   (* Performed k times . *)
-  Definition gauss_step { m : nat } { n : nat } (k : (⟦ n ⟧%stn)) (mat : Matrix F n n) (pm : m > 0) (pn : n > 0) : Matrix F n n × ⟦ n ⟧%stn.
+  (* We should be able to assert n, m > 0 wherever needed, by raa.*)
+  Definition gauss_step  { n : nat } (k : (⟦ n ⟧%stn)) (mat : Matrix F n n) : Matrix F n n × ⟦ n ⟧%stn.
   Proof.
+    assert (pn : (n > 0)). { exact (stn_implies_ngt0 k). }
     set (ik := (select_pivot_row mat k pn pn)).
     use tpair. 2: {exact ik. }
     intros i j.
@@ -167,27 +187,89 @@ Section Gauss.
     - exact (mat'' i j).
   Defined.
 
+  (* ( i,, i < n) to (i-1,, i-1 < n *)
+  Check ⟦ 1 ⟧%stn.
+  Definition decrement_stn { n : nat } ( i : (⟦ n ⟧)%stn ) : ⟦ n ⟧%stn. (* (⟦ n ⟧)%stn.*)
+  Proof.
+    induction (natgtb (pr1 i) 0).
+    (*- assert ( p : ((pr1 i) - 1) < n). {  unfold stn in i. apply natlthtolthm1. apply i.  }*)
+    - assert ( p :  ((pr1 i) - 1) < n). {  unfold stn in i. apply natlthtolthm1. apply i.  }
+      exact ((pr1 i) - 1,, p).
+    - exact i.
+  Defined.
+
+  Definition decrement_stn_by_m { n : nat } ( i : (⟦ n ⟧)%stn ) (m : nat) : ⟦ n ⟧%stn. (* (⟦ n ⟧)%stn.*)
+  Proof.
+    induction (natgehchoice m 0).
+    - assert ( p :  ((pr1 i) - m) < n).
+        {  unfold stn in i. set (p0 := pr2 i). assert (pr1 i < n).
+           - exact (pr2 i).
+           - assert ((pr1 i - m <= ( pr1 i))). {apply (natminuslehn ). }
+              apply (natlehlthtrans (pr1 i - m) (pr1 i) ).
+              + assumption.
+              + assumption.
+        }
+      exact (pr1 i - m,, p).
+    - exact i.
+    - reflexivity.
+  Defined.
+
+  Local Definition mltntommin1ltn { n m : nat } (p : m < n) : (m - 1 < n).
+  Proof.
+    apply natlthtolthm1. assumption.
+  Defined.
+
+  Fixpoint iter_fun_n (n : nat) {A : UU} (el : A) (f : A -> A) { struct n } : A :=
+  match n with
+  | 0 => f el
+  | S m => iter_fun_n (m) (f el) f
+  end.
+
+  (* Iterates over a matrix changing , *)
+  Fixpoint gauss_iterate ( pr1i : nat ) { n : nat } ( current_idx : ⟦ n ⟧%stn) (start_idx : ⟦ n ⟧%stn ) (mat : Matrix F n n) {struct pr1i }: Matrix F n n :=
+
+  let current_idx := decrement_stn_by_m start_idx (n - pr1i)  in
+  let idx_nat := pr1 current_idx in
+  let proof   := pr2 current_idx in
+  match pr1i with
+  | 0 => mat
+  | S m =>
+            let mat' := (pr1 ((gauss_step current_idx mat))) in
+            gauss_iterate m current_idx start_idx mat'
+  end.
+
   (* k  : 1 -> n - 1 *)
   Definition vec_row_ops_step { n : nat } (k pivot_ik: ⟦ n ⟧%stn)  (mat : Matrix F n n) (vec : Matrix F n 1) : Matrix F n 1.
   Proof.
-  intros i.
-  induction (natlthorgeh i k). 2 : {exact (vec i). }
-  set (vec' := gauss_switch_row vec pivot_ik k).
-  assert (pr2stn1 : 0 < 1). { reflexivity. }
-  set ( j := make_stn 1 0 pr2stn1).
-  exact ( weq_vector_1 ((((vec' i) j) + ((vec' k) j) * (mat i k))%hq)).  (* Would like to verify this construction works*)
+    intros i.
+    induction (natlthorgeh i k). 2 : {exact (vec i). }
+    set (vec' := gauss_switch_row vec pivot_ik k).
+    assert (pr2stn1 : 0 < 1). { reflexivity. }
+    set ( j := make_stn 1 0 pr2stn1).
+    exact ( weq_vector_1 ((((vec' i) j) + ((vec' k) j) * (mat i k))%hq)).  (* Would like to verify this construction works*)
+  Defined.
+
+  Local Definition clamp_f {n : nat} (f : ⟦ n ⟧%stn -> hq) (cutoff : ⟦ n ⟧%stn) : (⟦ n ⟧%stn -> hq).
+    intros i.
+    induction (natlthorgeh i cutoff) as [LT | GTH].
+    - exact 0%hq.
+    - exact (f i).
   Defined.
 
   (* The backwards substitution step is done backwards . *)
-  (*
-  Definition back_sub_step { n : nat }  (vec : Matrix F n 1) : Matrix F n 1.
+  Definition back_sub_step { n : nat } (mat : Matrix F n n) (vec : Vector F n) : Vector F n.
   Proof.
-  intros i.
-  induction (natlehchoice i (n - 1)) as [LT | GTH].
-  + exact ((vec i) - ∑
-  +
-  Defined.
-  *)
+    intros i.
+    induction (natlehchoice i (n - 1)) as [LT | GTH].
+    - exact ((((vec i) - Σ (clamp_f vec i)) * (hqmultinv (mat i i)))%hq).
+    - exact ((vec i) * (hqmultinv (mat i i)))%hq.
+    - unfold stn in i.
+      apply natlthp1toleh.
+      replace (n - 1 + 1) with (n).
+      apply i.
+      (*rewrite <- plusminusnmm.*)
+      (* n = n -1 + 1*)
+   Admitted.
 
   (* 3 steps :
      Partial pivoting on A.
@@ -241,6 +323,12 @@ Section Gauss.
         exact (mat stn_0 stn_0).
   Defined.
   *)
+
+  (*How do we produce either a smaller matrix or scalar value? *)
+  (*
+  Fixpoint determinant_iter {n : nat} (mat : Matrix F (S n) (S n)) := Matrix F n n.
+  *)
+
 
 End Gauss.
 
