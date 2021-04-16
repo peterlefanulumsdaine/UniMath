@@ -71,13 +71,25 @@ Section Gauss.
     (make_add_row_matrix r1 r2 s ) **  mat.
 
   Definition gauss_scalar_mult_row { m n : nat} (mat : Matrix F m n)
-             (s : F) (r : ⟦ m ⟧%stn): Matrix F m n.
+    (s : F) (r : ⟦ m ⟧%stn): Matrix F m n.
   Proof.
     intros i j.
     induction (stn_eq_or_neq i r).
     - exact (s * (mat i j))%rig.
     - exact (mat i j).
   Defined.
+
+  (* These could really be m x n ...*)
+  Definition make_scalar_mult_row_matrix { n : nat}
+    (s : F) (r : ⟦ n ⟧%stn): Matrix F n n.
+  Proof.
+    intros i.
+    induction (stn_eq_or_neq i r).
+    + exact ((gauss_scalar_mult_row identity_matrix s r) r).
+    + exact (identity_matrix r).
+  Defined.
+
+
 
   Definition gauss_switch_row {m n : nat} (mat : Matrix F m n)
              (r1 r2 : ⟦ m ⟧%stn) : Matrix F m n.
@@ -90,9 +102,62 @@ Section Gauss.
       + exact (mat i j).
   Defined.
 
+  Definition make_gauss_switch_row_matrix (n : nat)  (r1 r2 : ⟦ n ⟧ %stn) : Matrix F n n.
+  Proof.
+    intros i.
+    induction (stn_eq_or_neq i r1).
+    - exact (identity_matrix r2).
+    - induction (stn_eq_or_neq i r2).
+      + exact (identity_matrix r1).
+      + exact (identity_matrix i).
+  Defined.
+
+
+
   (*  This might be a non-trivial property to prove, especially in the current double induction-based formalization.*)
   Definition test_row_switch_statement {m n : nat} (mat : Matrix F m n)
     (r1 r2 : ⟦ m ⟧%stn) := (gauss_switch_row (gauss_switch_row mat r1 r2) r1 r2) = mat.
+
+
+  Lemma matrix_scalar_mult_is_elementary_row_op {n : nat} (mat : Matrix F n n) (s : F) (r : ⟦ n ⟧%stn) :
+    ((make_scalar_mult_row_matrix s r) ** mat) = gauss_scalar_mult_row mat s r.
+  Proof.
+    intros.
+  Abort.
+
+  (* Order of arguments should probably be identical ... *)
+  Lemma matrix_row_mult_is_elementary_row_op {n : nat} (r1 r2 : ⟦ n ⟧%stn) (mat : Matrix F n n) (s : F) :
+    ((make_add_row_matrix r1 r2 s) ** mat) = gauss_add_row mat s r1 r2.
+  Proof.
+    intros.
+  Abort.
+
+  Lemma matrix_switch_row_is_elementary_row_op {n : nat} (mat : Matrix F n n) (r1 r2 : ⟦ n ⟧%stn) :
+    gauss_switch_row mat r1 r2 = ((make_gauss_switch_row_matrix n r1 r2) ** mat).
+  Proof.
+    intros.
+  Abort.
+
+
+  Lemma eq_sol_invar_under_scalar_mult {n : nat} (A : Matrix F n n) (x : Matrix F n 1) (b : Matrix F 1 n) (s : F) (r : ⟦ n ⟧%stn) :
+    (A ** x) = (transpose b) -> ((make_scalar_mult_row_matrix s r) ** A ** x)  = ((make_scalar_mult_row_matrix s r) ** (transpose b)).
+  Proof.
+    intros.
+  Abort.
+
+  Lemma eq_sol_invar_under_row_add {n : nat} (A : Matrix F n n) (x : Matrix F n 1) (b : Matrix F 1 n) (s : F) (r1 r2 : ⟦ n ⟧%stn) :
+    (A ** x) = (transpose b) -> ((make_add_row_matrix r1 r2 s) ** A ** x)  = ((make_add_row_matrix r1 r2 s)  ** (transpose b)).
+  Proof.
+    intros.
+  Abort.
+
+  Lemma eq_sol_invar_under_row_switch {n : nat} (A : Matrix F n n) (x : Matrix F n 1) (b : Matrix F 1 n) (s : F) (r1 r2 : ⟦ n ⟧%stn) :
+    (A ** x) = (transpose b) -> ((make_gauss_switch_row_matrix n r1 r2) ** A ** x)  = ((make_gauss_switch_row_matrix n r1 r2) ** (transpose b)).
+  Proof.
+    intros.
+  Abort.
+
+
 
 
   (* Do we need to redefine this ? *)
@@ -219,34 +284,25 @@ Section Gauss.
     apply natlthtolthm1. assumption.
   Defined.
 
-  Fixpoint iter_fun_n (n : nat) {A : UU} (el : A) (f : A -> A) { struct n } : A :=
-  match n with
-  | 0 => f el
-  | S m => iter_fun_n (m) (f el) f
-  end.
-
-  (* Iterates over a matrix changing , *)
-  Fixpoint gauss_iterate ( pr1i : nat ) { n : nat } ( current_idx : ⟦ n ⟧%stn) (start_idx : ⟦ n ⟧%stn ) (mat : Matrix F n n) {struct pr1i }: Matrix F n n :=
-
-  let current_idx := decrement_stn_by_m start_idx (n - pr1i)  in
-  let idx_nat := pr1 current_idx in
-  let proof   := pr2 current_idx in
-  match pr1i with
-  | 0 => mat
-  | S m =>
-            let mat' := (pr1 ((gauss_step current_idx mat))) in
-            gauss_iterate m current_idx start_idx mat'
-  end.
+  Definition switch_vector_els { n : nat } (vec : Vector F n) (e1 e2 : ⟦ n ⟧%stn) : Vector F n.
+  Proof.
+    intros i.
+    induction (stn_eq_or_neq i e1).
+    - exact (vec e2).
+    - induction (stn_eq_or_neq i e2).
+      + exact (vec e1).
+      + exact (vec i).
+  Defined.
 
   (* k  : 1 -> n - 1 *)
-  Definition vec_row_ops_step { n : nat } (k pivot_ik: ⟦ n ⟧%stn)  (mat : Matrix F n n) (vec : Matrix F n 1) : Matrix F n 1.
+  Definition vec_row_ops_step { n : nat } (k pivot_ik: ⟦ n ⟧%stn)  (mat : Matrix F n n) (vec : Vector F n) : Vector F n.
   Proof.
     intros i.
     induction (natlthorgeh i k). 2 : {exact (vec i). }
-    set (vec' := gauss_switch_row vec pivot_ik k).
+    set (vec' := switch_vector_els vec pivot_ik k).
     assert (pr2stn1 : 0 < 1). { reflexivity. }
     set ( j := make_stn 1 0 pr2stn1).
-    exact ( weq_vector_1 ((((vec' i) j) + ((vec' k) j) * (mat i k))%hq)).  (* Would like to verify this construction works*)
+    exact (  ((((vec' i)) + ((vec' k)) * (mat i k))%hq)).  (* Would like to verify this construction works*)
   Defined.
 
   Local Definition clamp_f {n : nat} (f : ⟦ n ⟧%stn -> hq) (cutoff : ⟦ n ⟧%stn) : (⟦ n ⟧%stn -> hq).
@@ -257,29 +313,124 @@ Section Gauss.
   Defined.
 
   (* The backwards substitution step is done backwards . *)
-  Definition back_sub_step { n : nat } (mat : Matrix F n n) (vec : Vector F n) : Vector F n.
+  (* This one especially needs to be checked for correctness (use of indices) *)
+  Definition back_sub_step { n : nat } ( iter : ⟦ n ⟧%stn ) (mat : Matrix F n n) (vec : Vector F n) : Vector F n.
   Proof.
     intros i.
     set ( m := pr1 i ).
-    induction (natlehchoice ((S m) ) (n)) as [LT | GTH].
+    induction (natlehchoice ((S (pr1 iter)) ) (n)) as [LT | GTH].
     - exact ((((vec i) - Σ (clamp_f vec i)) * (hqmultinv (mat i i)))%hq).
     - exact ((vec i) * (hqmultinv (mat i i)))%hq.
     - unfold stn in i.
-      apply (pr2 i).
+      apply (pr2 iter).
   Defined.
 
-  Definition gaussian_elimination { m n : nat } (mat : Matrix F n n) (vec : Matrix F 1 n) (pn : n > 0) : Matrix F n n × Matrix F 1 n.
+  Definition zero_vector_hq (n : nat) : ⟦ n ⟧%stn -> hq :=
+    λ i : ⟦ n ⟧%stn, 0%hq.
+
+  Definition zero_vector_nat (n : nat) : ⟦ n ⟧%stn -> nat :=
+    λ i : ⟦ n ⟧%stn, 0%nat.
+
+  (* Does this work ? *)
+  Definition zero_vector_stn (n : nat) : ⟦ n ⟧%stn -> ⟦ n ⟧%stn.
   Proof.
-    exact (mat,, vec). (* Placeholder *)
+    intros i.
+    assumption.
+  Defined.
+
+  Definition set_stn_vector_el { n : nat } (vec : Vector (⟦ n ⟧%stn) n) (idx : ⟦ n ⟧%stn) (el : (⟦ n ⟧%stn)) : Vector (⟦ n ⟧%stn) n.
+  Proof.
+  intros i.
+  induction (stn_eq_or_neq i idx).
+  + exact el.
+  + exact (vec i).
+  Defined.
+
+  (* Iterates over a matrix changing , *)
+  Fixpoint gauss_iterate ( pr1i : nat ) { n : nat } ( current_idx : ⟦ n ⟧%stn) (start_idx : ⟦ n ⟧%stn ) (mat : Matrix F n n) (pivots : Vector (⟦ n ⟧%stn) n) {struct pr1i }: (Matrix F n n) × (Vector (⟦ n ⟧%stn) n) :=
+
+  let current_idx := decrement_stn_by_m start_idx (n - pr1i)  in
+  let idx_nat := pr1 current_idx in
+  let proof   := pr2 current_idx in
+  match pr1i with
+  | 0 => mat,, pivots
+  | S m =>
+            let mat_vec_tup := ((gauss_step current_idx mat)) in
+            let mat' := pr1 mat_vec_tup in
+            let piv  := (pr2 mat_vec_tup) in
+            let pivots' := set_stn_vector_el pivots current_idx piv in
+            gauss_iterate m current_idx start_idx mat' pivots'
+  end.
+
+
+Fixpoint vec_ops_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn) (b : Vector F n) ( pivots : Vector (⟦ n ⟧%stn) n) (mat : Matrix F n n) { struct iter }: Vector F n :=
+  let current_idx := decrement_stn_by_m start_idx (n - iter)  in
+  match iter with
+  | 0 => b
+  | S m => vec_ops_iterate m start_idx (vec_row_ops_step current_idx (pivots current_idx) mat b) pivots mat
+  end.
+
+
+  Fixpoint back_sub_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn) (b : Vector F n) ( pivots : Vector (⟦ n ⟧%stn) n) (mat : Matrix F n n) { struct iter }: Vector F n :=
+  let current_idx := decrement_stn_by_m start_idx (n - iter)  in
+  match iter with
+  | 0 => b
+  | S m => back_sub_iterate m start_idx ( back_sub_step current_idx mat b) pivots mat
+  end.
+
+
+  Definition gaussian_elimination { n : nat } (mat : Matrix F n n) (b : Vector F n) (pn : n > 0) : Matrix F n n × Vector F n.
+  Proof.
+    set (A_and_pivots := gauss_iterate n (0,,pn) (0,,pn) mat (zero_vector_stn n)).
+    set (A  := pr1 A_and_pivots).
+    set (pv := pr2 A_and_pivots).
+    set (b'  := vec_ops_iterate 0 (0,,pn) b pv A).
+    set (b'' := back_sub_iterate n (0,, pn) b' pv A).
+    exact (A,, b').
   Defined.
 
 
-  (* TODO : this one has reversed, incorrect induction steps ... *)
+  Definition is_upper_triangular { m n : nat } (mat : Matrix F m n) :=
+    ∏ i : ⟦ m ⟧%stn, ∏ j : ⟦ n ⟧%stn, i < j -> mat i j = 0%hq.
+
+  Definition is_upper_triangular_to_k { m n : nat} ( k : nat ) (mat : Matrix F m n) :=
+    ∏ i : ⟦ m ⟧%stn, ∏ j : ⟦ n ⟧%stn, i < k -> i < j -> mat i j = 0%hq.
+
+
+  Lemma gauss_step_clears_row  { n : nat } (k : (⟦ n ⟧%stn)) (mat : Matrix F n n) :
+    is_upper_triangular_to_k (pr1 k) (pr1 (gauss_step k mat)).
+  Proof.
+    intros.
+  Abort.
+
+  Lemma A_is_upper_triangular { n : nat} ( temp_proof_0_lt_n : 0 < n ) (mat : Matrix F n n) :
+    is_upper_triangular (pr1 (gauss_iterate 0 (0,, temp_proof_0_lt_n) (0,, temp_proof_0_lt_n) mat (zero_vector_stn n))).
+  Proof.
+    intros.
+  Abort.
+
+(*
+  Lemma eq_sol_invar_under_row_switch {n : nat} (A : Matrix F n n) (x : Matrix F n 1) (b : Matrix F 1 n) (s : F) (r1 r2 : ⟦ n ⟧%stn) :
+    (A ** x) = (transpose b) -> ((make_gauss_switch_row_matrix n r1 r2) ** A ** x)  = ((make_gauss_switch_row_matrix n r1 r2) ** (transpose b)).
+  Proof.
+    intros.
+  Abort.
+*)
+(*
+  Definition gaussian_elimination { m n : nat } (mat : Matrix F n n) (b : Vector F n) (pn : n > 0) : Matrix F n n × Vector F n.
+*)
+
+  (* Reliance on pn, coercing matrices could be done away with. *)
+  Lemma sol_is_invariant_under_gauss  {n : nat} (A : Matrix F n n) (x : Matrix F n 1) (b : Matrix F 1 n)  (pn : n > 0) (pn' : 1 > 0) :
+    (A ** x) = (transpose b) -> ((pr1 (gaussian_elimination A (b (0,, pn')) pn)) ** A ** x)  = ((pr1 (gaussian_elimination A (b (0,, pn')) pn)) ** (transpose b)).
+  Proof.
+    intros.
+  Abort.
+
+  (* TODO : Verify this is close to accurate ... *)
   Definition make_minor {n : nat} ( i j : ⟦ S n ⟧%stn )  (mat : Matrix F (S n) (S n)) : Matrix F n n.
   Proof.
     intros i' j'.
-    assert (bound_n : n <= (S n)). { exact (natlehnsn n). }
-    assert (bound_sn : (S n) <= (S n)). { change ((S n) <= (S n)) with (n <= n). apply isreflnatleh. }
     assert (bound_si : (S i') < (S n)). {exact (pr2 i'). }
     assert (bound_sj : (S j') < (S n)). {exact (pr2 j'). }
     set (stn_si := make_stn (S n) (S i') bound_si).
@@ -293,19 +444,64 @@ Section Gauss.
       + exact (mat stn_si stn_sj).
   Defined.
 
+
   (* TODO: need to figure out the recursive step ! *)
   (*
-  Definition determinant { n : nat} (mat : Matrix F n n) : F.
+  Definition determinant_step { n : nat} (mat : Matrix F (S n) (S n)) : (Matrix F n n) × F.
   Proof.
-    intros.
     set (exp_row := 0).
-    induction (natgtb n 1).
-    - induction (nat_eq_or_neq n 2).
-      assert (x :  0 < n). {rewrite a. reflexivity.}.
-      assert (x' : 1 < n). {rewrite a. reflexivity.}.
-      set (stn_0 := make_stn n 0 x).
-      set (stn_1 := make_stn n 1 x').
-      + exact ((mat stn_0 stn_0) * (mat stn_1 stn_1) - (mat stn_0 stn_1) * (mat stn_1 stn_0))%hq.
+    use tpair.
+    - (* Minors *)
+      intros i j.
+      (* Carefully do induction on S n, not n. *)
+      induction (natlthorgeh n 2) as [L | G]. (* Possibly better using natneqchoice on n != 2 *)
+        + (* n ∈ ⦃0, 1⦄ *)
+(*
+          assert (x  : 0 < (S n)). {apply (istransnatgth (S n) n 0).
+                                    - apply natlthnsn.
+                                    - apply (istransnatgth n 1 0).
+                                      + apply
+G.
+                                      + reflexivity.
+                                   }
+*)
+           induction (nat_eq_or_neq n 1) as [T' | F'].
+           * exact 1%hq.
+           * exact 0%hq.
+        + induction (nat_eq_or_neq n 2) as [T' | F'].
+          * exact 1%hq.
+          * assert (x  : 0 < (S n)). {apply (istransnatgth (S n) n 0).
+                                       - apply natlthnsn.
+                                       - apply (istransnatgth n 1 0).
+                                         + apply G.
+                                         + reflexivity.
+                                     }
+            assert (x' : 1 < (S n)). {apply (istransnatgth (S n) n 1).
+                                       - apply natlthnsn.
+                                       - apply G. }
+            assert (pexp : exp_row < S n). { reflexivity. }
+            assert (psj : (pr1 j) < S n). {  apply natlthtolths. exact (pr2 j). }.
+            set (stn_0 := make_stn (S n) 0 x ).
+            set (stn_1 := make_stn (S n) 1 x').
+            set (cof := 1%hq). (* TODO : this is a dummy for (-1)^(i + j) *)
+            exact (Σ (λ j : (⟦ S n ⟧%stn), cof * (mat (exp_row,, pexp) (j)))%hq).
+    - (* Scalar terms *)
+      intros i j.
+      set (exp_row := 0).
+      induction (natlthorgeh n 2) as [L | G]. (* Possibly better using natneqchoice on n != 2 *)
+        + (* n ∈ ⦃0, 1⦄ *)
+           induction (nat_eq_or_neq n 1) as [T' | F'].
+           * exact 1%hq.
+           * exact 0%hq.
+        + induction (nat_eq_or_neq n 2) as [T' | F'].
+
+    induction (natgtb n 1) as [T | F].
+    - induction (nat_eq_or_neq n 2) as [T' | F'].
+      assert (x :  0 < (S n)). {rewrite T'. reflexivity.}.
+      assert (x' : 1 < (S n)). {rewrite T'. reflexivity.}.
+      set (stn_0 := make_stn (S n) 0 x).
+      set (stn_1 := make_stn (S n) 1 x').
+      + exact (1%hq,, (mat stn_0 stn_0) * (mat stn_1 stn_1) - (mat stn_0 stn_1) * (mat stn_1 stn_0))%hq).
       + set (cof := 1). (* TODO : this is a dummy for (-1)^(i + j) *)
         exact (Σ (λ j : (⟦ n ⟧%stn), cof * mat ( exp_row j) (determinant ( make_minor i j mat)))).  (* TODO *)
     - induction (nat_eq_or_neq n 0).
