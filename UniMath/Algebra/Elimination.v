@@ -119,13 +119,16 @@ Section Gauss.
     (r1 r2 : ⟦ m ⟧%stn) := (gauss_switch_row (gauss_switch_row mat r1 r2) r1 r2) = mat.
 
 
+  (* The following three lemmata test the equivalence of multiplication by elementary matrices
+     to swaps of indices. *)
+
   Lemma matrix_scalar_mult_is_elementary_row_op {n : nat} (mat : Matrix F n n) (s : F) (r : ⟦ n ⟧%stn) :
     ((make_scalar_mult_row_matrix s r) ** mat) = gauss_scalar_mult_row mat s r.
   Proof.
     intros.
   Abort.
 
-  (* Order of arguments should probably be identical ... *)
+  (* Order of arguments should be standardized... *)
   Lemma matrix_row_mult_is_elementary_row_op {n : nat} (r1 r2 : ⟦ n ⟧%stn) (mat : Matrix F n n) (s : F) :
     ((make_add_row_matrix r1 r2 s) ** mat) = gauss_add_row mat s r1 r2.
   Proof.
@@ -139,18 +142,23 @@ Section Gauss.
   Abort.
 
 
+
+  (* The following three lemmata test the correctness of elementary row operations, i.e. they do not affect the solution set. *)
+
   Lemma eq_sol_invar_under_scalar_mult {n : nat} (A : Matrix F n n) (x : Matrix F n 1) (b : Matrix F 1 n) (s : F) (r : ⟦ n ⟧%stn) :
     (A ** x) = (transpose b) -> ((make_scalar_mult_row_matrix s r) ** A ** x)  = ((make_scalar_mult_row_matrix s r) ** (transpose b)).
   Proof.
     intros.
   Abort.
 
+  (* s != 0 ... *)
   Lemma eq_sol_invar_under_row_add {n : nat} (A : Matrix F n n) (x : Matrix F n 1) (b : Matrix F 1 n) (s : F) (r1 r2 : ⟦ n ⟧%stn) :
     (A ** x) = (transpose b) -> ((make_add_row_matrix r1 r2 s) ** A ** x)  = ((make_add_row_matrix r1 r2 s)  ** (transpose b)).
   Proof.
     intros.
   Abort.
 
+  (* s != 0 ... *)
   Lemma eq_sol_invar_under_row_switch {n : nat} (A : Matrix F n n) (x : Matrix F n 1) (b : Matrix F 1 n) (s : F) (r1 r2 : ⟦ n ⟧%stn) :
     (A ** x) = (transpose b) -> ((make_gauss_switch_row_matrix n r1 r2) ** A ** x)  = ((make_gauss_switch_row_matrix n r1 r2) ** (transpose b)).
   Proof.
@@ -158,9 +166,8 @@ Section Gauss.
   Abort.
 
 
+  (* The following definitions set up helper functions on finite sets which are then used in formalizing Gaussian Elimination*)
 
-
-  (* Do we need to redefine this ? *)
   Definition max_hq (a b : hq) : hq.
     induction (hqgthorleh a b).
     - exact a.
@@ -174,12 +181,11 @@ Section Gauss.
     induction (natgtb n 0).
      assert  ( b: (n - 1 <= n)). { apply (natlehtolehm1 n n). apply isreflnatleh. }
     + exact (λ i : (⟦ n - 1 ⟧%stn), vec (stnmtostnn (n - 1) n b i)).
-    + exact (λ i : (⟦ n - 1 ⟧%stn), 0%hq). (* Zero length vector with placeholder *)
+    + exact (λ i : (⟦ n - 1 ⟧%stn), 0%hq). (* ? *)
   Defined.
 
 
   (* We can generalize this to just ordered sets *)
-  (*Definition max_hq_index (e : F)  (i : nat) (e' : F) (i' : nat) : hq × nat.*)
   Definition max_hq_index { n : nat } (ei ei' : hq × ⟦ n ⟧%stn) : hq × ⟦ n ⟧%stn.
     induction (hqgthorleh (pr1 ei) (pr1 ei')).
     - exact ei.
@@ -189,17 +195,14 @@ Section Gauss.
   Definition max_hq_index_one_arg { n : nat } (ei : hq × ⟦ n ⟧%stn) : (hq × ⟦ n ⟧%stn) -> (hq × ⟦ n ⟧%stn)
     := max_hq_index ei.
 
-
-  (* These are very specific and could be better without the general definition form, or we
+  (* Some of the following lemmata are very specific and could be better without the general definition form, or we
      could write these as local definitions *)
   Definition max_argmax_stnhq {n : nat} (vec : Vector F n) (pn : n > 0) : hq × (⟦ n ⟧)%stn.
-      (*:=  (foldleft (0%hq ,, 0) (max_hq_index_one_arg) (λ i : (⟦ n ⟧%stn), (vec i) ,, (stntonat _ i))).*)
   Proof.
     set (max_and_idx := (foldleft (0%hq,,(0%nat,,pn)) max_hq_index (λ i : (⟦ n ⟧%stn), (vec i) ,, i))).
     exact (max_and_idx).
   Defined.
 
-  (* To be refactored *)
   Local Definition truncate_pr1 { n : nat } ( f : ⟦ n ⟧%stn → hq) ( k : ⟦ n ⟧%stn ) : ( ⟦ n ⟧%stn → hq).
   Proof.
     intros.
@@ -219,7 +222,7 @@ Section Gauss.
     - exact mat.
   Defined.
 
-  Local Lemma stn_implies_nneq0 { n : nat } (i : ⟦ n ⟧%stn) : n ≠ 0.
+  Lemma stn_implies_nneq0 { n : nat } (i : ⟦ n ⟧%stn) : n ≠ 0.
   Proof.
     induction (natchoice0 n) as [T | F].
     - rewrite <- T in i.
@@ -230,10 +233,14 @@ Section Gauss.
       + apply natgthtoneq in F. reflexivity.
   Defined.
 
-  Local Lemma stn_implies_ngt0 { n : nat} (i : ⟦ n ⟧%stn) : n > 0.
+  Lemma stn_implies_ngt0 { n : nat} (i : ⟦ n ⟧%stn) : n > 0.
   Proof.
     exact (natneq0to0lth n (stn_implies_nneq0 i)).
   Defined.
+
+
+
+  (* Stepwise Gaussian Elimination definitions *)
 
   (* We can probably assert at this point that m and n are > 0, as the base cases can be handled by caller *)
   (* Performed k times . *)
@@ -253,7 +260,6 @@ Section Gauss.
   Defined.
 
   (* ( i,, i < n) to (i-1,, i-1 < n *)
-  Check ⟦ 1 ⟧%stn.
   Definition decrement_stn { n : nat } ( i : (⟦ n ⟧)%stn ) : ⟦ n ⟧%stn. (* (⟦ n ⟧)%stn.*)
   Proof.
     induction (natgtb (pr1 i) 0).
@@ -305,6 +311,7 @@ Section Gauss.
     exact (  ((((vec' i)) + ((vec' k)) * (mat i k))%hq)).  (* Would like to verify this construction works*)
   Defined.
 
+  (* Not really a clamp but setting every element at low indices to zero.  *)
   Local Definition clamp_f {n : nat} (f : ⟦ n ⟧%stn -> hq) (cutoff : ⟦ n ⟧%stn) : (⟦ n ⟧%stn -> hq).
     intros i.
     induction (natlthorgeh i cutoff) as [LT | GTH].
@@ -312,7 +319,6 @@ Section Gauss.
     - exact (f i).
   Defined.
 
-  (* The backwards substitution step is done backwards . *)
   (* This one especially needs to be checked for correctness (use of indices) *)
   Definition back_sub_step { n : nat } ( iter : ⟦ n ⟧%stn ) (mat : Matrix F n n) (vec : Vector F n) : Vector F n.
   Proof.
@@ -331,7 +337,7 @@ Section Gauss.
   Definition zero_vector_nat (n : nat) : ⟦ n ⟧%stn -> nat :=
     λ i : ⟦ n ⟧%stn, 0%nat.
 
-  (* Does this work ? *)
+  (* This is not really a zero vector, it might be [0 1 2 3] ... Serves the purpose of a placeholder however. *)
   Definition zero_vector_stn (n : nat) : ⟦ n ⟧%stn -> ⟦ n ⟧%stn.
   Proof.
     intros i.
@@ -346,7 +352,10 @@ Section Gauss.
   + exact (vec i).
   Defined.
 
-  (* Iterates over a matrix changing , *)
+
+  (* Now, three fixpoint definitions for three subroutines.
+     Partial pivoting on "A", defining b according to pivots on A,
+     then back-substitution. *)
   Fixpoint gauss_iterate ( pr1i : nat ) { n : nat } ( current_idx : ⟦ n ⟧%stn) (start_idx : ⟦ n ⟧%stn ) (mat : Matrix F n n) (pivots : Vector (⟦ n ⟧%stn) n) {struct pr1i }: (Matrix F n n) × (Vector (⟦ n ⟧%stn) n) :=
 
   let current_idx := decrement_stn_by_m start_idx (n - pr1i)  in
@@ -362,7 +371,6 @@ Section Gauss.
             gauss_iterate m current_idx start_idx mat' pivots'
   end.
 
-
 Fixpoint vec_ops_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn) (b : Vector F n) ( pivots : Vector (⟦ n ⟧%stn) n) (mat : Matrix F n n) { struct iter }: Vector F n :=
   let current_idx := decrement_stn_by_m start_idx (n - iter)  in
   match iter with
@@ -371,7 +379,7 @@ Fixpoint vec_ops_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn
   end.
 
 
-  Fixpoint back_sub_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn) (b : Vector F n) ( pivots : Vector (⟦ n ⟧%stn) n) (mat : Matrix F n n) { struct iter }: Vector F n :=
+Fixpoint back_sub_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn) (b : Vector F n) ( pivots : Vector (⟦ n ⟧%stn) n) (mat : Matrix F n n) { struct iter }: Vector F n :=
   let current_idx := decrement_stn_by_m start_idx (n - iter)  in
   match iter with
   | 0 => b
@@ -379,6 +387,7 @@ Fixpoint vec_ops_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn
   end.
 
 
+  (* The main definition using above Fixpoints, which in turn use stepwise definitions.*)
   Definition gaussian_elimination { n : nat } (mat : Matrix F n n) (b : Vector F n) (pn : n > 0) : Matrix F n n × Vector F n.
   Proof.
     set (A_and_pivots := gauss_iterate n (0,,pn) (0,,pn) mat (zero_vector_stn n)).
@@ -389,6 +398,9 @@ Fixpoint vec_ops_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn
     exact (A,, b').
   Defined.
 
+
+
+  (* Some properties on the above procedure which we would like to prove. *)
 
   Definition is_upper_triangular { m n : nat } (mat : Matrix F m n) :=
     ∏ i : ⟦ m ⟧%stn, ∏ j : ⟦ n ⟧%stn, i < j -> mat i j = 0%hq.
@@ -409,16 +421,6 @@ Fixpoint vec_ops_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn
     intros.
   Abort.
 
-(*
-  Lemma eq_sol_invar_under_row_switch {n : nat} (A : Matrix F n n) (x : Matrix F n 1) (b : Matrix F 1 n) (s : F) (r1 r2 : ⟦ n ⟧%stn) :
-    (A ** x) = (transpose b) -> ((make_gauss_switch_row_matrix n r1 r2) ** A ** x)  = ((make_gauss_switch_row_matrix n r1 r2) ** (transpose b)).
-  Proof.
-    intros.
-  Abort.
-*)
-(*
-  Definition gaussian_elimination { m n : nat } (mat : Matrix F n n) (b : Vector F n) (pn : n > 0) : Matrix F n n × Vector F n.
-*)
 
   (* Reliance on pn, coercing matrices could be done away with. *)
   Lemma sol_is_invariant_under_gauss  {n : nat} (A : Matrix F n n) (x : Matrix F n 1) (b : Matrix F 1 n)  (pn : n > 0) (pn' : 1 > 0) :
@@ -426,6 +428,12 @@ Fixpoint vec_ops_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn
   Proof.
     intros.
   Abort.
+
+
+
+
+
+  (* Determinants, minors, minor expansions ... *)
 
   (* TODO : Verify this is close to accurate ... *)
   Definition make_minor {n : nat} ( i j : ⟦ S n ⟧%stn )  (mat : Matrix F (S n) (S n)) : Matrix F n n.
@@ -523,15 +531,22 @@ End Gauss.
 
 
 
+
 Section SmithNF.
  (* Generalized elimination over the ring of integers *)
 
-(* Such code might go intro Matrix.v *)
-Definition is_diagonal { m n : nat } (mat : Matrix R m n) :=
-  ∏ (i : ⟦ m ⟧%stn ) (j : ⟦ n ⟧%stn ),  (stntonat _ i != (stntonat _ j)) -> (mat i j) = 0%rig.
+  Local Definition I := hz.
 
-(*
+  (* Such code might go intro Matrix.v *)(*
+  Definition is_diagonal { m n : nat } (mat : Matrix I m n) :
+    ∏ (i : ⟦ m ⟧%stn ) (j : ⟦ n ⟧%stn ),  (stntonat _ i != (stntonat _ j)) -> (mat i j) = 0%rig.
+ *)
+
+  (*
 Definition divisibility_over_diagonal {m n : nat} (mat : Matrix R m n) := *)
 
+(*
+  Definition is_smith_normal { m n : nat } (A : Matrix I m n ) (W : Matrix I n n) (T : Matrix I m m) : ∏ (i : ⟦ m ⟧%stn) (i' j : ⟦ n ⟧%stn),  (i < n) -> (pr1 j = ((pr1 i) - 1)) ->  (A (i) / A (i - 1)) = 0.
+*)
 
 End SmithNF.
