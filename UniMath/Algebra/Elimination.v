@@ -537,16 +537,22 @@ Section SmithNF.
 
   Local Definition I := hz.
 
-  (* Such code might go intro Matrix.v *)(*
-  Definition is_diagonal { m n : nat } (mat : Matrix I m n) :
+  (* Such code might go intro Matrix.v *)
+  Definition is_diagonal { m n : nat } (mat : Matrix R m n) :=
     ∏ (i : ⟦ m ⟧%stn ) (j : ⟦ n ⟧%stn ),  (stntonat _ i != (stntonat _ j)) -> (mat i j) = 0%rig.
- *)
 
-  (*
-Definition divisibility_over_diagonal {m n : nat} (mat : Matrix R m n) := *)
 
-(*
-  Definition is_smith_normal { m n : nat } (A : Matrix I m n ) (W : Matrix I n n) (T : Matrix I m m) : ∏ (i : ⟦ m ⟧%stn) (i' j : ⟦ n ⟧%stn),  (i < n) -> (pr1 j = ((pr1 i) - 1)) ->  (A (i) / A (i - 1)) = 0.
-*)
+  Definition nat_lt_minmn_to_stnm_stnn {m n : nat} (i : nat) (p : i < min m n) : ⟦ m ⟧%stn × ⟦ n ⟧%stn.
+  Proof.
+   (* unfold min in p. *)
+    assert (i < n).
+    (* cbn in p. *)
+    induction (natgehchoice m n) as [MGT | NGE].
+  Abort.
+
+  Definition MinAij {m n : nat} (A : Matrix I m n) (s : nat) (p : s < min m n) : I.
+  Proof.
+  Abort.
+
 
 End SmithNF.
