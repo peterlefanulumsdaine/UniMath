@@ -86,8 +86,6 @@ Section Gauss.
     + exact (identity_matrix r).
   Defined.
 
-
-
   Definition gauss_switch_row {m n : nat} (mat : Matrix F m n)
              (r1 r2 : ⟦ m ⟧%stn) : Matrix F m n.
   Proof.
@@ -132,7 +130,6 @@ Section Gauss.
       + reflexivity.
   Defined.
 
-
   Lemma pulse_function_sums_to_point {n : nat } (f : ⟦ n ⟧%stn -> F) :
     ∑ (i : ⟦ n ⟧%stn), (f i != 0%hq × ∏ (j : ⟦ n ⟧ % stn), (f j != 0%hq) -> j = i)
     -> Σ f = f i.
@@ -173,10 +170,7 @@ Section Gauss.
     intros.
   Abort.
 
-
-
   (* The following three lemmata test the correctness of elementary row operations, i.e. they do not affect the solution set. *)
-
   Lemma eq_sol_invar_under_scalar_mult {n : nat} (A : Matrix F n n) (x : Matrix F n 1) (b : Matrix F 1 n) (s : F) (r : ⟦ n ⟧%stn) :
     (A ** x) = (transpose b) -> ((make_scalar_mult_row_matrix s r) ** A ** x)  = ((make_scalar_mult_row_matrix s r) ** (transpose b)).
   Proof.
@@ -406,6 +400,12 @@ Section Gauss.
     exact (gauss_iterate m _ current_idx start_idx mat' pivots').
 Defined.
 
+Fixpoint vec_ops_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn) (b : Vector F n) ( pivots : Vector (⟦ n ⟧%stn) n) (mat : Matrix F n n) { struct iter }: Vector F n :=
+  let current_idx := decrement_stn_by_m start_idx (n - iter)  in
+  match iter with
+  | 0 => b
+  | S m => vec_ops_iterate m start_idx (vec_row_ops_step current_idx (pivots current_idx) mat b) pivots mat
+  end.
 
 Fixpoint back_sub_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn) (b : Vector F n) ( pivots : Vector (⟦ n ⟧%stn) n) (mat : Matrix F n n) { struct iter }: Vector F n :=
   let current_idx := decrement_stn_by_m start_idx (n - iter)  in
