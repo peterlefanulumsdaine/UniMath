@@ -335,22 +335,42 @@ Defined.
         + apply j. exact h.
    Defined.
 
-  Definition is_pulse_function { n : nat } (f : ⟦ n ⟧%stn -> R) :=
-    ∏ (i j: ⟦ n ⟧%stn), (f i != 0%rig) -> (i  ≠ j) -> (f j = 0%rig).
+  Definition is_pulse_function { n : nat } ( i : ⟦ n ⟧%stn )  (f : ⟦ n ⟧%stn -> R) :=
 
-  Lemma id_math_row_is_pf { n : nat }  : ∏ (r : ⟦ n ⟧%stn), is_pulse_function (identity_matrix r).
+    ∏ (j: ⟦ n ⟧%stn), (f i != 0%rig) -> (i ≠ j) -> (f j = 0%rig).
+
+  Lemma pulse_function_sums_to_point_rig' { n : nat } ( i : ⟦ n ⟧%stn ) {f : ⟦ n ⟧%stn -> R}
+    (p : is_pulse_function i f) : (Σ f = f i).
+  Proof.
+    unfold is_pulse_function in p.
+    revert p.
+    intros.
+  Admitted. (* Tired ... *)
+  (*
+    rewrite (rigsum_dni f i).
+    apply rigsum_dni.
+    refine p.
+    specialize (p ).
+    revert p.
+
+    apply (pulse_function_sums_to_point_rig).
+    use tpair.
+    apply p.
+    destruct p.
+  Defined.
+  *)
+
+  Lemma id_math_row_is_pf { n : nat }  : ∏ (r : ⟦ n ⟧%stn), (is_pulse_function r (identity_matrix r) ).
   Proof.
     unfold is_pulse_function.
-    intros r i j.
-    set (f := identity_matrix r).
-    intros f_i_neq_0 i_neq_j.
-    unfold f. unfold identity_matrix.
-    destruct (stn_eq_or_neq r j).
-    - assert (i = r). {
-        unfold f in f_i_neq_0.
-        unfold identity_matrix in f_i_neq_0.
-        rewrite <- p in i_neq_j.
-  Abort.
+    intros r i rr_neq_0 r_neq_j.
+    unfold identity_matrix.
+    destruct (stn_eq_or_neq r i) as [T | F].
+    - rewrite T in r_neq_j.
+      apply isirrefl_natneq in r_neq_j. apply fromempty. assumption.
+    - rewrite coprod_rect_compute_2.
+      reflexivity.
+  Defined.
 
     (* Is n ≥ 1 necessary ? *)
   Definition vector_n_to_vector_snm1 { n : nat } (v : Vector R n) (p : n ≥ 1) : (Vector R (S ( n - 1 ))).
@@ -363,52 +383,46 @@ Defined.
   Defined.
 
 
-  (* Is this true ? *)
+  (* This should be trivially true but how do we correctly formulate / prove it ? *)
   Lemma isirrefl_rigunel1_to_empty : (@rigunel1 R != @rigunel1 R ) -> ∅.
   Admitted.
 
-  (* We might want a general lemma for (S (n - 1 )) *)
+
+
   Lemma matlunel2 : ∏ (n : nat) (mat : Matrix R n n),
     (identity_matrix ** mat) = mat.
   Proof.
     intros.
-    (*unfold identity_matrix.*)
     apply funextfun. intros i.
     apply funextfun. intros j.
-    destruct (stn_eq_or_neq i j).
+
     - unfold "**". unfold row. unfold "^".
-      assert (is_pulse_function (λ i0 : (⟦ n ⟧)%stn, op2 (identity_matrix i i0) (col mat j i0))).
+
+      assert (X: is_pulse_function i (λ i0 : (⟦ n ⟧)%stn, op2 (identity_matrix i i0) (col mat j i0))).
       { unfold is_pulse_function.
 
-        intros.
-        rewrite <- p.
-        rewrite <- p in X.
-        unfold identity_matrix in X.
-        destruct (stn_eq_or_neq i i0).
-        - rewrite coprod_rect_compute_1 in X.
-          unfold identity_matrix.
-          rewrite <- p0 in X0.
-          destruct (stn_eq_or_neq i j0).
-          + rewrite p1 in X0.
-            apply isirrefl_natneq in X0. (* Generalize ! *)
-            apply fromempty. assumption.
-          + rewrite coprod_rect_compute_2.
-            apply rigmult0x.
-        - unfold identity_matrix.
-          destruct (stn_eq_or_neq i j0).
-          +
-            rewrite coprod_rect_compute_1.
-            (* Slightly annoying chain of nat inequalities *)
-            rewrite coprod_rect_compute_2 in X.
-            rewrite rigmult0x in X.
-
-            apply isirrefl_rigunel1_to_empty in X.
-            apply fromempty. assumption.
-          +  rewrite coprod_rect_compute_2.
-             apply rigmult0x.
+        intros k id_ii_m_neq_0 i_neq_k.
+        unfold identity_matrix.
+        destruct (stn_eq_or_neq i k) as [i_eq_k | i_neq_k'].
+        - rewrite i_eq_k in i_neq_k.
+          apply isirrefl_natneq in i_neq_k.
+          apply fromempty. assumption.
+        - rewrite coprod_rect_compute_2.
+          apply rigmult0x.
       }
-      unfold is_pulse_function in X.
-  Abort.
+      set (f :=  (λ i0 : (⟦ n ⟧)%stn, op2 (identity_matrix i i0) (col mat j i0)) ).
+      unfold f.
+      rewrite (pulse_function_sums_to_point_rig' i X).
+      unfold identity_matrix.
+      destruct (stn_eq_or_neq i i).
+      + rewrite coprod_rect_compute_1.
+        apply riglunax2.
+      + (*apply isirrefl_natneq in h. *)
+        rewrite coprod_rect_compute_2.
+        apply isirrefl_natneq in h.
+        apply fromempty. assumption.
+
+  Defined.
 
   Definition matrix_is_invertible {n : nat} (A : Matrix R n n) :=
     ∑ (B : Matrix R n n), ((A ** B) = identity_matrix) × ((B ** A) = identity_matrix).
