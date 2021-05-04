@@ -180,6 +180,9 @@ End PrelStn.
 
 Section Matrices.
 
+
+  Context { R : rig }.
+
   Definition matunel2 { n : nat } := @identity_matrix R n.
 
   Local Notation  Σ := (iterop_fun rigunel1 op1).
@@ -289,14 +292,14 @@ Proof.
         apply maponpaths. apply subtypePath_prop.
         induction e. rewrite idpath_transportf. rewrite stn_left_compute.
         unfold dni,di, stntonat; simpl.
-        induction (natlthorgeh i j) as [R|R].
+        induction (natlthorgeh i j) as [R'|R'].
         -- unfold stntonat; simpl; rewrite transport_stn; simpl.
            induction (natlthorgeh i j) as [a|b].
            ++ apply idpath.
-           ++ contradicts R (natlehneggth b).
+           ++ contradicts R' (natlehneggth b).
         -- unfold stntonat; simpl; rewrite transport_stn; simpl.
            induction (natlthorgeh i j) as [V|V].
-           ++ contradicts I (natlehneggth R).
+           ++ contradicts I (natlehneggth R').
            ++ apply idpath.
       * apply rigsum_eq; intro i. induction i as [i I]. apply maponpaths.
         unfold dni,di, stn_right, stntonat; repeat rewrite transport_stn; simpl.
@@ -424,6 +427,10 @@ Defined.
 
   Defined.
 
+  Lemma matrunel2 : ∏ (n : nat) (mat : Matrix R n n),
+    (mat ** identity_matrix) = mat.
+  Admitted.
+
   Definition matrix_is_invertible {n : nat} (A : Matrix R n n) :=
     ∑ (B : Matrix R n n), ((A ** B) = identity_matrix) × ((B ** A) = identity_matrix).
 
@@ -435,28 +442,50 @@ Defined.
     ∑ (B : Matrix R n n), ((B ** A) = identity_matrix).
 
 
+
+  (* The product of two invertible matrices being invertible *)
   Lemma inv_matrix_prod_is_inv {n : nat} (A : Matrix R n n)
     (A' : Matrix R n n) (pa : matrix_is_invertible A) (pb : matrix_is_invertible A') :
     (matrix_is_invertible (A ** A')).
   Proof.
     intros.
-    unfold matrix_is_invertible in pa.
-    unfold matrix_is_invertible in pb.
-    unfold matrix_is_invertible.
     use tpair. { exact ((pr1 pb) ** (pr1 pa)). }
     use tpair.
     - rewrite matrix_mult_assoc.
       rewrite <- (matrix_mult_assoc A' _ _).
-  (* We need I ** M = M *)
-  Abort.
+      replace (A' ** pr1 pb) with (@identity_matrix R n).
+      + rewrite matlunel2.
+        replace (A ** pr1 pa) with (@identity_matrix R n).
+        2 : { symmetry.
+              set (p := (pr1 (pr2 pa))). rewrite p.
+              reflexivity.
+        }
+        reflexivity.
+      + rewrite <- matrunel2.
+        replace (A' ** pr1 pb) with (@identity_matrix R n).
+        { rewrite matlunel2.
+          reflexivity. }
+        set (p := pr1 (pr2 pb)). rewrite p.
+        reflexivity.
+    - simpl.
+      rewrite <- matrix_mult_assoc.
+      rewrite  (matrix_mult_assoc (pr1 pb) _ _).
+      replace (pr1 pa ** A) with (@identity_matrix R n).
+      2 : { symmetry. rewrite (pr2 (pr2 pa)). reflexivity. }
+      replace (pr1 pb ** identity_matrix) with (pr1 pb).
+      2 : { rewrite matrunel2. reflexivity. }
+      rewrite (pr2 (pr2 pb)).
+      reflexivity.
+  Defined.
 
   Lemma identity_is_inv { n : nat } : matrix_is_invertible (@identity_matrix _ n).
   Proof.
     unfold matrix_is_invertible.
     use tpair. { exact identity_matrix. }
-    set (id := @identity_matrix R n).
-    Abort.
-
+    use tpair.
+    - apply matlunel2.
+    - apply matlunel2.
+  Defined.
   (*
   Definition eq_set_invar_by_invmatrix_mm { n : nat } ( A : Matrix R n n )
     (C : Matrix R n n)
@@ -471,7 +500,7 @@ End Matrices.
 
 Section MatricesF.
 
-
+  Context { R : rig }.
 
   (* Not really a clamp but setting every element at low indices to zero.  *)
   Local Definition clamp_f {n : nat} (f : ⟦ n ⟧%stn -> hq) (cutoff : ⟦ n ⟧%stn) : (⟦ n ⟧%stn -> hq).
@@ -567,6 +596,15 @@ End MatricesF.
 Section Gauss.
   (* Gaussian elimination over the field of rationals *)
 
+  (* TODO better (or any) comments for all these functions including assumptions*)
+
+  (* TODO Carot operator is used similarly throughout the document, move out *)
+  Local Notation Σ := (iterop_fun 0%hq op1).
+  Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
+
+  Context { R : rig }.
+  (* Gaussian elimination over the field of rationals *)
+
 
   Definition gauss_add_row { m n : nat } ( mat : Matrix F m n )
     ( s : F ) ( r1 r2 : ⟦ m ⟧%stn ) : ( Matrix F m n ).
@@ -585,8 +623,8 @@ Section Gauss.
 
 
   (* Need again to restate several definitions to use the identity on rationals*)
-  Local Notation Σ := (iterop_fun 0%hq op1).
-  Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
+  (*Local Notation Σ := (iterop_fun 0%hq op1).*)(*
+  Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).*)
 
   (* TODO: replace with upstream version? *)
   Local Definition matrix_mult {m n : nat} (mat1 : Matrix F m n)
@@ -615,10 +653,14 @@ Section Gauss.
   Definition make_scalar_mult_row_matrix { n : nat}
     (s : F) (r : ⟦ n ⟧%stn): Matrix F n n.
   Proof.
-    intros i.
-    induction (stn_eq_or_neq i r).
-    + exact ((gauss_scalar_mult_row identity_matrix s r) r).
-    + exact (identity_matrix r).
+    intros i j.
+    induction (stn_eq_or_neq i j).
+      - induction (stn_eq_or_neq i r).
+        + exact s.
+        + exact 1%hq.
+      - exact 0%hq.
+(*    + exact ((gauss_scalar_mult_row identity_matrix s r) r).
+    + exact (identity_matrix r). *)
   Defined.
 
   Definition gauss_switch_row {m n : nat} (mat : Matrix F m n)
@@ -683,9 +725,240 @@ Section Gauss.
     unfold coprod_rect. unfold identity_matrix.
     destruct (stn_eq_or_neq i r) as [? | ?] ; simpl.
     - rewrite p.
-      rewrite stn_neq_or_neq_refl.
       (* apply pulse_function_sums_to_point.*)
   Abort.
+
+
+
+  Definition unit_vector { n : nat } (i : ⟦ n ⟧%stn) : Vector R n.
+  Proof.
+    intros j.
+    induction (stn_eq_or_neq i j) as [T | F].
+    - exact (1%rig).
+    - exact (0%rig).
+  Defined.
+
+  Lemma weq_mat_vector {X : UU} { n : nat } : (Matrix X 1 n ) ≃ Vector X n.
+    (*unfold Matrix. unfold Vector.*)
+  Abort.
+
+  Lemma compute_lambda { n : nat } (f : Vector R n) (i : ⟦ n ⟧%stn) : ((λ i : ( ⟦ n ⟧%stn ), f i ) i) =
+    f i.
+  Proof.
+    reflexivity.
+  Defined.
+
+  (*
+  Lemma mult_by_ei { n : nat } (v : Vector R n) (i : ⟦ n ⟧%stn) {e : unit_vector i}
+    : e_i
+  *)
+  (* TODO : F should also be a general field, not short-hand for rationals specifically.
+            This does not mandate any real change in any proofs ?*)
+  Lemma scalar_mult_matrix_is_inv { n : nat } ( i : ⟦ n ⟧%stn ) ( s : F ) ( ne : hqneq s 0%hq ) :
+    @matrix_is_invertible F n (make_scalar_mult_row_matrix s i ).
+  Proof.
+    (*unfold matrix_is_invertible.
+    unfold make_scalar_mult_row_matrix.*)
+    use tpair.
+    { exact (make_scalar_mult_row_matrix (hqmultinv s ) i). }
+    use tpair.
+
+    - apply funextfun. intros k.
+      apply funextfun. intros l.
+      destruct (stn_eq_or_neq k l) as [T' | F'].
+      + (*rewrite T.*)
+        unfold gauss_scalar_mult_row.
+        unfold identity_matrix.
+        unfold make_scalar_mult_row_matrix.
+        unfold Matrix.matrix_mult.
+        unfold row. unfold col. unfold transpose. unfold "^". unfold flip.
+        unfold Matrix.identity_matrix.
+        destruct (stn_eq_or_neq l i).
+        *
+          destruct (stn_eq_or_neq l l).
+          -- rewrite T'. rewrite p.
+             destruct (stn_eq_or_neq i i).
+             ++ do 2rewrite coprod_rect_compute_1.
+                rewrite (@pulse_function_sums_to_point_rig' F n l).
+                rewrite p.
+                destruct (stn_eq_or_neq i i).
+                ** do 3 rewrite coprod_rect_compute_1.
+                   apply (hqisrinvmultinv). assumption.
+                ** do 2 rewrite coprod_rect_compute_2.
+                   apply isirrefl_natneq in h.
+                   apply fromempty. assumption.
+                ** unfold is_pulse_function.
+                   intros q X l_neq_q.
+                   rewrite <- p.
+                   destruct (stn_eq_or_neq l q) as [l_eq_q' | l_neq_q'].
+                   --- rewrite l_eq_q' in l_neq_q.
+                       apply isirrefl_natneq in l_neq_q.
+                       apply fromempty. assumption.
+                   --- rewrite coprod_rect_compute_2.
+                       apply rigmult0x.
+             ++ remember h as h'. clear Heqh'.
+                apply isirrefl_natneq in h.
+                apply fromempty. assumption.
+          -- remember h as h'. clear Heqh'.
+                apply isirrefl_natneq in h.
+                apply fromempty. assumption.
+        * rewrite <- T' in h.
+          destruct (stn_eq_or_neq k i).
+          -- rewrite coprod_rect_compute_1.
+             destruct (stn_eq_or_neq k l).
+             ++ rewrite coprod_rect_compute_1.
+                rewrite(@pulse_function_sums_to_point_rig' F n k).
+                ** destruct (stn_eq_or_neq k l).
+                   --- rewrite coprod_rect_compute_1.
+                       destruct (stn_eq_or_neq k k).
+                       +++ rewrite coprod_rect_compute_1.
+                           destruct (stn_eq_or_neq k i).
+                           *** rewrite coprod_rect_compute_1.
+                               apply hqisrinvmultinv.
+                               assumption.
+                           *** rewrite coprod_rect_compute_2.
+                               rewrite p in h0.
+                               apply isirrefl_natneq in h0.
+                               apply fromempty. assumption.
+                       +++ remember h0 as h0'. clear Heqh0'.
+                           apply isirrefl_natneq in h0.
+                           apply fromempty. assumption.
+                   --- rewrite  coprod_rect_compute_2.
+                       rewrite <- p0 in h0.
+                       apply isirrefl_natneq in h0.
+                       apply fromempty. assumption.
+                ** rewrite p in h.
+                   apply isirrefl_natneq in h.
+                   apply fromempty. assumption.
+             ++ remember h0 as h0'. clear Heqh0'.
+                rewrite T' in h0.
+                apply isirrefl_natneq in h0.
+                apply fromempty. assumption.
+          --
+            rewrite coprod_rect_compute_2.
+            destruct (stn_eq_or_neq k l) as [k_eq_l | k_neq_l] .
+            2 : { remember k_neq_l as k_neq_l'.
+                  clear Heqk_neq_l'.
+                  rewrite T' in k_neq_l.
+                  apply isirrefl_natneq in k_neq_l.
+                  apply fromempty. assumption. }
+            rewrite coprod_rect_compute_1.
+            rewrite (@pulse_function_sums_to_point_rig' F n k).
+            ++ destruct (stn_eq_or_neq k k) as [k_eq_k | k_neq_k].
+               2 : { rewrite coprod_rect_compute_2.
+                     apply isirrefl_natneq in k_neq_k.
+                     apply fromempty. assumption.
+               }
+               destruct (stn_eq_or_neq k l) as [ ? | cntr].
+               2 : { rewrite coprod_rect_compute_2.
+                     rewrite k_eq_l in cntr.
+                     apply isirrefl_natneq in cntr.
+                     apply fromempty. assumption.
+               }
+               do 2rewrite coprod_rect_compute_1.
+               destruct (stn_eq_or_neq k i) as [cntr | k_neq_i].
+               { rewrite cntr in h. apply isirrefl_natneq in h.
+                 apply fromempty. assumption.
+               }
+               rewrite coprod_rect_compute_2.
+               apply riglunax2.
+            ++ unfold is_pulse_function.
+               intros q f l_neq_q.
+               rewrite <- k_eq_l.
+               destruct (stn_eq_or_neq l q) as [l_eq_q' | l_neq_q'].
+               --- rewrite k_eq_l in l_neq_q.
+                   rewrite l_eq_q' in l_neq_q.
+                   apply isirrefl_natneq in l_neq_q.
+                   apply fromempty. assumption.
+               --- destruct (stn_eq_or_neq q k) as [ ? | ? ].
+                 +++
+                   rewrite coprod_rect_compute_1.
+                   rewrite p in l_neq_q.
+                   apply isirrefl_natneq in l_neq_q.
+                   apply fromempty. assumption.
+                 +++ rewrite coprod_rect_compute_2.
+                     destruct (stn_eq_or_neq k q).
+                     *** rewrite coprod_rect_compute_1.
+                         apply rigmultx0.
+                     *** rewrite coprod_rect_compute_2.
+                         apply rigmultx0.
+      + unfold make_scalar_mult_row_matrix.
+        unfold Matrix.identity_matrix.
+        destruct (stn_eq_or_neq k l) as [cntr | dup ].
+        { rewrite cntr in F'. (* really should have a one_liner *)
+          apply isirrefl_natneq in F'.
+          apply fromempty. assumption.
+        }
+        rewrite coprod_rect_compute_2.
+        unfold Matrix.matrix_mult.
+        unfold col. unfold row. unfold "^".
+        unfold transpose. unfold flip.
+        destruct (stn_eq_or_neq k i) as [k_eq_i | k_neq_i] .
+        * rewrite coprod_rect_compute_1.
+          rewrite (@pulse_function_sums_to_point_rig' F n i).
+          -- destruct (stn_eq_or_neq k i) as [ ? | cntr ].
+             rewrite coprod_rect_compute_1.
+             destruct (stn_eq_or_neq i i) as [? | cntr ].
+             ++ destruct (stn_eq_or_neq i l) as [i_eq_l | i_neq_l].
+                **
+                  do 2 rewrite coprod_rect_compute_1.
+                  rewrite <- k_eq_i in i_eq_l.
+                  rewrite i_eq_l in F'.
+                  apply isirrefl_natneq in F'.
+                  apply fromempty. assumption.
+                ** rewrite coprod_rect_compute_2.
+                   apply rigmultx0.
+             ++ rewrite coprod_rect_compute_2.
+                apply isirrefl_natneq in cntr.
+                apply fromempty. assumption.
+             ++ rewrite coprod_rect_compute_2.
+                rewrite k_eq_i in cntr.
+                apply isirrefl_natneq in cntr.
+                apply fromempty. assumption.
+          -- unfold is_pulse_function.
+             intros q f i_neq_q.
+             rewrite k_eq_i.
+             destruct (stn_eq_or_neq q i ) as [q_eq_i | q_neq_i] .
+             ++ rewrite q_eq_i in i_neq_q.
+                apply isirrefl_natneq in i_neq_q.
+                apply fromempty. assumption.
+             ++ destruct (stn_eq_or_neq i q) as [i_eq_q | i_neq_q'].
+                { rewrite i_eq_q in i_neq_q.
+                  apply isirrefl_natneq in i_neq_q.
+                  apply fromempty. assumption.
+                }
+                do 2rewrite coprod_rect_compute_2.
+                destruct (stn_eq_or_neq q l) as [q_eq_l | q_neq_l].
+                ** apply rigmult0x.
+                ** apply rigmult0x.
+      * rewrite coprod_rect_compute_2.
+        rewrite (@pulse_function_sums_to_point_rig' F n k).
+        -- destruct (stn_eq_or_neq k k) as [? | cntr].
+           2 : { rewrite coprod_rect_compute_2.
+                 apply isirrefl_natneq in cntr.
+                 apply fromempty. assumption.
+           }
+           destruct (stn_eq_or_neq k l) as [k_eq_l | k_neq_l] .
+           { rewrite k_eq_l in F'.  apply isirrefl_natneq in F'.
+             apply fromempty. assumption.
+           }
+           rewrite coprod_rect_compute_2. rewrite coprod_rect_compute_1.
+           apply rigmultx0.
+
+        -- unfold is_pulse_function.
+           intros j f k_neq_j.
+           destruct (stn_eq_or_neq k j) as [k_eq_j | k_neq_j'].
+           { rewrite k_eq_j in k_neq_j. apply isirrefl_natneq in k_neq_j.
+             apply fromempty. assumption.
+           }
+           destruct (stn_eq_or_neq j l) as [j_eq_l | j_neq_l].
+           ++ rewrite coprod_rect_compute_1.
+             rewrite coprod_rect_compute_2.
+             apply rigmult0x.
+           ++ apply rigmult0x.
+  - simpl.
+  Admitted.
+
 
   (* TODO: make R paramater/local section variable so that this can be stated *)
   (*
