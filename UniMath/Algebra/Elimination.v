@@ -742,16 +742,40 @@ Section Gauss.
     (*unfold Matrix. unfold Vector.*)
   Abort.
 
-  Lemma compute_lambda { n : nat } (f : Vector R n) (i : ⟦ n ⟧%stn) : ((λ i : ( ⟦ n ⟧%stn ), f i ) i) =
-    f i.
-  Proof.
-    reflexivity.
-  Defined.
 
   (*
   Lemma mult_by_ei { n : nat } (v : Vector R n) (i : ⟦ n ⟧%stn) {e : unit_vector i}
     : e_i
-  *)
+   *)
+  (*
+  Lemma coprod_rect_compute_id
+   *)
+
+   (* TODO: naming ? upstream?  Certainly rename p, p0. *)
+   Lemma stn_eq_or_neq_left : ∏ {n : nat} {i j: (⟦ n ⟧)%stn} (p : (i = j)),
+                              stn_eq_or_neq i j = inl p.
+   Proof.
+     intros ? ? ? p. rewrite p. apply stn_neq_or_neq_refl.
+   Defined.
+
+   Lemma stn_eq_or_neq_right : ∏ {n : nat} {i j : (⟦ n ⟧)%stn} (p : (i ≠ j)),
+     stn_eq_or_neq i j = inr p.
+   Proof.
+     intros ? ? ? p. unfold stn_eq_or_neq.
+     destruct (nat_eq_or_neq i j).
+     -  apply fromempty. rewrite p0 in p.
+        apply isirrefl_natneq in p.
+        assumption.
+     -  apply isapropcoprod.
+        + apply stn_ne_iff_neq in p. apply isdecpropfromneg.  assumption.
+        (*apply stn_ne_iff_neq in p.*)
+        + apply negProp_to_isaprop.
+        + intros i_eq_j.
+          rewrite i_eq_j in p.
+          apply isirrefl_natneq in p.
+          apply fromempty. assumption.
+   Defined.
+
   (* TODO : F should also be a general field, not short-hand for rationals specifically.
             This does not mandate any real change in any proofs ?*)
   Lemma scalar_mult_matrix_is_inv { n : nat } ( i : ⟦ n ⟧%stn ) ( s : F ) ( ne : hqneq s 0%hq ) :
@@ -774,11 +798,11 @@ Section Gauss.
         unfold row. unfold col. unfold transpose. unfold "^". unfold flip.
         unfold Matrix.identity_matrix.
         destruct (stn_eq_or_neq l i).
-        *
-          destruct (stn_eq_or_neq l l).
-          -- rewrite T'. rewrite p.
+        * destruct (stn_eq_or_neq l l).
+          --
+             rewrite T'. rewrite p.
              destruct (stn_eq_or_neq i i).
-             ++ do 2rewrite coprod_rect_compute_1.
+             ++ do 2 rewrite coprod_rect_compute_1.
                 rewrite (@pulse_function_sums_to_point_rig' F n l).
                 rewrite p.
                 destruct (stn_eq_or_neq i i).
@@ -927,7 +951,7 @@ Section Gauss.
                   apply isirrefl_natneq in i_neq_q.
                   apply fromempty. assumption.
                 }
-                do 2rewrite coprod_rect_compute_2.
+                do 2 rewrite coprod_rect_compute_2.
                 destruct (stn_eq_or_neq q l) as [q_eq_l | q_neq_l].
                 ** apply rigmult0x.
                 ** apply rigmult0x.
@@ -956,8 +980,51 @@ Section Gauss.
              rewrite coprod_rect_compute_2.
              apply rigmult0x.
            ++ apply rigmult0x.
-  - simpl.
+    - simpl.
+      (* Here in the second half, we try to be slightly more efficient *)
+      unfold make_scalar_mult_row_matrix.
+      unfold Matrix.identity_matrix.
+      unfold matrix_mult.
+      unfold Matrix.matrix_mult.
+      unfold row. unfold col. unfold transpose. unfold flip.
+      unfold "^".
+      apply funextfun. intros k.
+      apply funextfun. intros l.
+      destruct (stn_eq_or_neq k i) as [ k_eq_i | k_neq_i ].
+      + rewrite coprod_rect_compute_1.
+        destruct (stn_eq_or_neq k l) as [k_eq_l | k_eq_l ].
+        * rewrite coprod_rect_compute_1.
+          rewrite <- k_eq_l.
+          rewrite <- k_eq_i.
+          rewrite (pulse_function_sums_to_point_rig' k).
+          -- rewrite stn_neq_or_neq_refl.
+            do 3 rewrite coprod_rect_compute_1.
+            apply (hqislinvmultinv).
+            assumption.
+          -- unfold is_pulse_function.
+             intros q f k_neq_q.
+             rewrite stn_neq_or_neq_refl in f.
+             do 3 rewrite coprod_rect_compute_1 in f.
+             (*
+             replace (stn_eq_or_neq q k) with (inr ((k = k) ⨿ (k ≠ k))).
+             rewrite (stn_eq_or_neq k_neq_q). funextfun.
+        *
+      +
+      rewrite stn_neq_or_neq_refl. *)
   Admitted.
+
+  Lemma switch_row_matrix_is_inv { n : nat } ( i j : ⟦ n ⟧%stn ) ( s : F ) ( ne : hqneq s 0%hq ) :
+    @matrix_is_invertible F n (make_add_row_matrix i j s).
+  Proof.
+    intros.
+  Admitted.
+
+  Lemma add_row_matrix_is_inv { n : nat } ( i j : ⟦ n ⟧%stn ) :
+    @matrix_is_invertible F n ( make_gauss_switch_row_matrix n i j).
+  Proof.
+    intros.
+  Admitted.
+
 
 
   (* TODO: make R paramater/local section variable so that this can be stated *)
@@ -1000,9 +1067,74 @@ Section Gauss.
   Abort.
 
 
+  (*
+  Definition truncate_max_argmax_stnhq { n : nat } (f : ⟦ n ⟧%stn -> F) : ⟦ n ⟧%stn.
+  Proof.
+    induction (natlthorgeh
+   *)
 
-  Definition select_pivot_row {m n : nat} (mat : Matrix F m n) ( k : ⟦ m ⟧%stn ) (pm : m > 0) (pn : n > 0) : ⟦ m ⟧%stn
-    := pr2 (max_argmax_stnhq (truncate_pr1  ( λ i : (⟦ m ⟧%stn),  pr1 (max_argmax_stnhq ( ( mat) i) pn)) k ) pm).
+  (* TODO: do we need pn ? *)
+  Definition max_hq_index_bounded { n : nat } (k : ⟦ n ⟧%stn) (f : ⟦ n ⟧%stn -> F) (ei ei' : hq × (⟦ n ⟧%stn)): hq × (⟦ n ⟧%stn).
+  Proof.
+    set (hq_index := max_hq_index ei ei').
+    induction (natlthorgeh (pr2 ei') k).
+    - induction (natlthorgeh (pr2 ei) k ).
+      + exact (f k,, k).
+      + exact ei. (* This case should not occur in our use *)
+    - induction (natlthorgeh (pr2 ei) k).
+      + exact ei'.
+      + exact (max_hq_index ei ei').
+
+  Defined.
+
+  (* A lemma for max_hq_index is needed *)
+
+  Lemma max_hq_index_bounded_geq_k { n : nat } (k : ⟦ n ⟧%stn) (f : ⟦ n ⟧%stn -> F)
+    (ei ei' : hq × (⟦ n ⟧%stn)): pr2 (max_hq_index_bounded k f ei ei') >= k.
+  Proof.
+    unfold max_hq_index_bounded.
+    destruct (natlthorgeh (pr2 ei') k).
+    - rewrite coprod_rect_compute_1.
+      destruct (natlthorgeh (pr2 ei) k).
+      + rewrite coprod_rect_compute_1. apply isreflnatleh.
+      + rewrite coprod_rect_compute_2. assumption.
+    - rewrite coprod_rect_compute_2.
+      unfold max_hq_index.
+      destruct (natlthorgeh (pr2 ei) k).
+      + rewrite coprod_rect_compute_1.
+        assumption.
+      + rewrite coprod_rect_compute_2.
+        destruct (hqgthorleh (pr1 ei) (pr1 ei')).
+        * rewrite coprod_rect_compute_1.
+          assumption.
+        * rewrite coprod_rect_compute_2.
+          assumption.
+  Defined.
+
+  Definition max_argmax_stnhq_bounded { n : nat } (vec : Vector F n) (pn : n > 0 ) (k : ⟦ n ⟧%stn) :=
+  foldleft (0%hq,, (0,, pn)) (max_hq_index_bounded k vec) (λ i : (⟦ n ⟧)%stn, vec i,, i).
+
+  Definition max_argmax_stnhq_bounded_geq_k  { n : nat } (vec : Vector F n) (pn : n > 0 ) (k : ⟦ n ⟧%stn) : pr2 (max_argmax_stnhq_bounded  vec pn k) ≥ k.
+  Proof.
+  Abort. (* A bit hard reasoning over fold *)
+
+
+  Definition select_pivot_row {m n : nat} (mat : Matrix F m n) ( k : ⟦ m ⟧%stn ) (pm : m > 0)
+    (pn : n > 0) : ⟦ m ⟧%stn.
+   Proof.
+     exact (pr2 (max_argmax_stnhq_bounded  ( ( λ i : (⟦ m ⟧%stn),  pr1 (max_argmax_stnhq ( ( mat) i) pn)) )  pm k ) ).
+   Defined.
+
+   (* Having an index variable k  0 .. n - 1,
+     we want to certify that the selected pivot is >= k. *)
+  Lemma pivot_idx_geq_k {m n : nat} (mat : Matrix F m n) ( k : ⟦ m ⟧%stn ) (pm : m > 0 )
+    (pn : n > 0) : pr1 ( select_pivot_row mat k pm pn ) >= k.
+  Proof.
+    unfold select_pivot_row.
+    unfold max_argmax_stnhq.
+    unfold truncate_pr1.
+    unfold max_argmax_stnhq_bounded. simpl.
+  Abort.
 
   (* Helper Lemma. Possibly unecessary. *)
   Local Definition opt_matrix_op {n : nat} (b : bool) (mat : Matrix F n n) (f : Matrix F n n -> Matrix F n n) : Matrix F n n.
@@ -1011,7 +1143,6 @@ Section Gauss.
     - exact (f mat).
     - exact mat.
   Defined.
-
 
 
   (* Stepwise Gaussian Elimination definitions *)
@@ -1028,10 +1159,41 @@ Section Gauss.
     destruct (natlthorgeh i k) as [LT | GTH]. {exact ((mat i j)). }
     set (mat' := gauss_switch_row mat k ik).
     set (mat'' := gauss_scalar_mult_row mat' ((- 1%hq)%hq * (hqmultinv ( mat' k k )))%hq i%nat).
+    (*
     destruct (natgtb j k).
     - exact (((mat'' i j) + (mat'' i k) * (mat k j))%hq).
+    - exact (mat'' i j).*)
+    destruct (natlthorgeh (S j) k).
     - exact (mat'' i j).
+    - exact (((mat'' i j) + (mat'' i k) * (mat k j))%hq).
   Defined.
+
+  (*
+  Lemma sol_invariant_under_gauss_step { n : nat } (k : (⟦ n ⟧%stn)) (mat : Matrix F n n) :
+  *)
+
+  Lemma gauss_step_clears_diagonal { n : nat } ( k : (⟦ n ⟧%stn)) (mat : Matrix F n n) :
+    ∏ (i j: ⟦ n ⟧%stn), (i > k) -> ((n - k) > j) -> mat i k = 0%hq ->
+    ∏ (i' j' : ⟦ n ⟧%stn), (i' >= k) -> ((n - k) >= j') -> (pr1 (gauss_step k mat)) i' j' = 0%hq.
+  Proof.
+    intros i j i_geq_k nmk_geq_j mat_ik_eq_0 i' j' i'_geq_k nmk_geq_j'.
+    unfold gauss_step. simpl.
+    (*destruct (natgehchoice i' k) as [ ? | ?]. assumption.*)
+    destruct (natlthorgeh i' k) as [i'_le_k | i'_geq_k' ].
+    { apply  natlthtonegnatgeh in i'_le_k. contradiction. }
+    destruct (natlthorgeh (S j') k) as [ sj_le_k | sj_geq_k ].
+    - unfold gauss_scalar_mult_row.
+      unfold select_pivot_row. (* Why does this give i = i u i != i ? *)
+      destruct (stn_eq_or_neq i' i') as [ ? | cntr ].
+      2 : { rewrite coprod_rect_compute_2.
+            apply isirrefl_natneq in cntr.
+            apply fromempty. assumption.
+      }
+      rewrite coprod_rect_compute_1.
+      unfold max_argmax_stnhq.
+      unfold foldleft.
+      unfold gauss_switch_row.
+  Abort. (* We want to show that the pivot selection selects a pivot >= k *)
 
   (* ( i,, i < n) to (i-1,, i-1 < n *)
   Definition decrement_stn { n : nat } ( i : (⟦ n ⟧)%stn ) : ⟦ n ⟧%stn. (* (⟦ n ⟧)%stn.*)
@@ -1103,19 +1265,25 @@ Section Gauss.
     exact (gauss_iterate_IH mat' pivots').
   Defined.
 
-Fixpoint vec_ops_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn) (b : Vector F n) ( pivots : Vector (⟦ n ⟧%stn) n) (mat : Matrix F n n) { struct iter }: Vector F n :=
-  let current_idx := decrement_stn_by_m start_idx (n - iter)  in
-  match iter with
-  | 0 => b
-  | S m => vec_ops_iterate m start_idx (vec_row_ops_step current_idx (pivots current_idx) mat b) pivots mat
-  end.
+  Definition gauss_clears_diagonal : True.
+  Proof.
+  Abort.
 
-Fixpoint back_sub_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn) (b : Vector F n) ( pivots : Vector (⟦ n ⟧%stn) n) (mat : Matrix F n n) { struct iter }: Vector F n :=
-  let current_idx := decrement_stn_by_m start_idx (n - iter)  in
-  match iter with
-  | 0 => b
-  | S m => back_sub_iterate m start_idx ( back_sub_step current_idx mat b) pivots mat
-  end.
+
+
+  Fixpoint vec_ops_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn) (b : Vector F n) ( pivots : Vector (⟦ n ⟧%stn) n) (mat : Matrix F n n) { struct iter }: Vector F n :=
+    let current_idx := decrement_stn_by_m start_idx (n - iter)  in
+    match iter with
+    | 0 => b
+    | S m => vec_ops_iterate m start_idx (vec_row_ops_step current_idx (pivots current_idx) mat b) pivots mat
+    end.
+
+  Fixpoint back_sub_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn) (b : Vector F n) ( pivots : Vector (⟦ n ⟧%stn) n) (mat : Matrix F n n) { struct iter }: Vector F n :=
+    let current_idx := decrement_stn_by_m start_idx (n - iter)  in
+    match iter with
+    | 0 => b
+    | S m => back_sub_iterate m start_idx ( back_sub_step current_idx mat b) pivots mat
+    end.
 
 
   (* The main definition using above Fixpoints, which in turn use stepwise definitions.*)
@@ -1129,12 +1297,19 @@ Fixpoint back_sub_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%st
     exact (A,, b').
   Defined.
 
+  Definition gauss_solution_invar : True.
+  Proof.
+  Abort.
 
 
   (* Some properties on the above procedure which we would like to prove. *)
 
   Definition is_upper_triangular { m n : nat } (mat : Matrix F m n) :=
     ∏ i : ⟦ m ⟧%stn, ∏ j : ⟦ n ⟧%stn, i < j -> mat i j = 0%hq.
+
+  Lemma gauss_upper_trianglar : True.
+  Proof.
+  Abort.
 
   Definition is_upper_triangular_to_k { m n : nat} ( k : nat ) (mat : Matrix F m n) :=
     ∏ i : ⟦ m ⟧%stn, ∏ j : ⟦ n ⟧%stn, i < k -> i < j -> mat i j = 0%hq.
