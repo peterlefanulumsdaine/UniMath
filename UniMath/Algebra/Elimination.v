@@ -341,13 +341,31 @@ Defined.
   Defined.
 
 
-
 (* TODO: possibly write special case [v ∧ (pulse j a) = a * (v j)]. *)
 
   Definition is_pulse_function { n : nat } ( i : ⟦ n ⟧%stn )  (f : ⟦ n ⟧%stn -> R) :=
    ∏ (j: ⟦ n ⟧%stn), (f i != 0%rig) -> (i ≠ j) -> (f j = 0%rig).
     (*(∏ (j : ⟦ n ⟧%stn), ((i ≠ j) -> (f j = 0%rig))) ->  (Σ f = f i).*) (* TODO : use us this one ?) *)
 
+  Lemma pulse_function_sums_to_point_rig' { n : nat } ( i : ⟦ n ⟧%stn ) {f : ⟦ n ⟧%stn -> R}
+    (p : is_pulse_function i f) : (Σ f = f i).
+  Proof.
+    unfold is_pulse_function in p.
+    assert (e : n = S (n - 1)).
+    (* TODO: this is used three times might as well upstream? *)
+    { induction (natlthorgeh n 1) as [n_le_1 | n_geq_1].
+      + apply natlth1tois0 in n_le_1.
+        remember i as i'. clear Heqi'.
+        rewrite n_le_1 in i.
+        apply weqstn0toempty in i. apply fromempty. assumption.
+      + change (S (n - 1)) with (1 + (n - 1)). rewrite natpluscomm.
+        apply pathsinv0. apply minusplusnmm. assumption. }
+    rewrite (transport_rigsum (!e) f).
+    assert (e' : (⟦ n ⟧%stn = ⟦ S (n - 1) ⟧%stn)).
+    { rewrite <- e. apply idpath. }
+  Admitted.
+
+  (* ~ point of interest ~ *)
   Lemma pulse_function_sums_to_point_rig'' { n : nat }  (f : ⟦ n ⟧%stn -> R) (p : n > 0) :
   ∏ (i : ⟦ n ⟧%stn ), (f i != 0%rig) -> (∏ (j : ⟦ n ⟧%stn), ((i ≠ j) -> (f j = 0%rig))) ->  (Σ f = f i).
   Proof.
@@ -368,23 +386,6 @@ Defined.
 
 Abort.
 
-  Lemma pulse_function_sums_to_point_rig' { n : nat } ( i : ⟦ n ⟧%stn ) {f : ⟦ n ⟧%stn -> R}
-    (p : is_pulse_function i f) : (Σ f = f i).
-  Proof.
-    unfold is_pulse_function in p.
-    assert (e : n = S (n - 1)).
-    (* TODO: this is used three times might as well upstream? *)
-    { induction (natlthorgeh n 1) as [n_le_1 | n_geq_1].
-      + apply natlth1tois0 in n_le_1.
-        remember i as i'. clear Heqi'.
-        rewrite n_le_1 in i.
-        apply weqstn0toempty in i. apply fromempty. assumption.
-      + change (S (n - 1)) with (1 + (n - 1)). rewrite natpluscomm.
-        apply pathsinv0. apply minusplusnmm. assumption. }
-    rewrite (transport_rigsum (!e) f).
-    assert (e' : (⟦ n ⟧%stn = ⟦ S (n - 1) ⟧%stn)).
-    { rewrite <- e. apply idpath. }
-  Admitted.
 
   (*
   Lemma rigsum_drop { n : nat } ( f : ⟦ S n ⟧%stn -> R) ( i : ⟦ n ⟧%stn ) :
@@ -535,8 +536,8 @@ Abort.
     rewrite <- (rigcomm1).
     apply maponpaths.
     set (p' := @nlesn_to_nminus1_len n (pr1 j) (pr2 j) p).
-    destruct (natlthorgeh (pr1 j) (pr1 i)) as [j_leq_i | j_geq_i]. (* TODO : this is called something else more commonly *)
-    - (* Next two nested proofs just to bound j. TODO generalize ? *)
+    destruct (natlthorgeh (pr1 j) (pr1 i)) as [j_leq_i | j_geq_i].
+    - (* Next two nested proofs just to bound j. TODO improve ? *)
       assert (e : (pr1 j) ≤ (pr1 i) - 1). {
         apply natltminus1. assumption.
       }
@@ -565,10 +566,9 @@ Abort.
           contradicts h j_leq_i.
       + unfold funcomp. unfold is_pulse_function.
         intros. unfold dni, di.
-        destruct (natlthorgeh j' i) as [j'_le_i | j'_geq_i] .
+        destruct (natlthorgeh j' i) as [j'_le_i | j'_geq_i].
         (** rewrite coprod_rect_compute_1.*)
   Abort.
-
 
 
   Lemma id_math_row_is_pf { n : nat }  : ∏ (r : ⟦ n ⟧%stn), (is_pulse_function r (identity_matrix r) ).
