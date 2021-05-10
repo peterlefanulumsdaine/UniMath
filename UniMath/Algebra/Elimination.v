@@ -24,6 +24,10 @@ Require Import UniMath.Combinatorics.WellOrderedSets.
 Require Import UniMath.Combinatorics.Vectors.
 
 Require Import UniMath.Foundations.NaturalNumbers.
+Require Import UniMath.Tactics.Nat_Tactics.
+Require Import UniMath.Foundations.PartA.
+Require Import UniMath.MoreFoundations.Nat.
+
 
 (*Local Definition R := pr1hSet natcommrig.*)
 Context { R : rig }.
@@ -157,10 +161,10 @@ Section PrelStn.
   Defined.
 
   (* TODO this should just be a matter of rewriting using above ? *)
-  Definition stn_sminusn1_to_stnn { n : nat }  (i : (⟦ S (n - 1) ⟧)%stn) : (⟦ n ⟧%stn).
+  Definition stn_sminusn1_to_stnn { n : nat }  (i : (⟦ S (n - 1) ⟧)%stn) (p : n > 0) : (⟦ n ⟧%stn).
   Proof.
     intros.
-    induction (natgehchoice (S (n - 1)) 0).
+    induction (natgehchoice (S (n - 1)) 0). (*(natgehchoice (S (n - 1)) 0). *)
       3 : { exact (natgehn0 n ). }
       2 : { rewrite b in i.
             apply (stn_implies_ngt0) in i.
@@ -171,11 +175,13 @@ Section PrelStn.
     { change (S (n - 1)) with (1 + (n - 1)). rewrite natpluscomm.
       apply pathsinv0. rewrite minusplusnmm.
       - apply idpath.
-      - apply natlthsntoleh.
-    Abort.
+      - apply p. }
+    rewrite <- e in i.
+    assumption.
+  Defined.
+
 
 End PrelStn.
-
 
 
 Section Matrices.
@@ -318,7 +324,6 @@ Defined.
   ∏ (i : ⟦ S n ⟧%stn ), (f i != 0%rig) -> (∏ (j : ⟦ S n ⟧%stn), ((i ≠ j) -> (f j = 0%rig))) ->  (Σ f = f i).
   Proof.
     intros i. intros f_i_neq_0 j.  (*impj0.*)
-
     rewrite (rigsum_dni f i).
     rewrite zero_function_sums_to_zero.
     { rewrite riglunax1. apply idpath. }
@@ -333,34 +338,238 @@ Defined.
           apply weqtoempty. intros. apply p. assumption.
           exact (dni_neq_i i k). (* Move up *)
         + apply j. exact h.
-   Defined.
+  Defined.
+
+
 
 (* TODO: possibly write special case [v ∧ (pulse j a) = a * (v j)]. *)
 
   Definition is_pulse_function { n : nat } ( i : ⟦ n ⟧%stn )  (f : ⟦ n ⟧%stn -> R) :=
+   ∏ (j: ⟦ n ⟧%stn), (f i != 0%rig) -> (i ≠ j) -> (f j = 0%rig).
+    (*(∏ (j : ⟦ n ⟧%stn), ((i ≠ j) -> (f j = 0%rig))) ->  (Σ f = f i).*) (* TODO : use us this one ?) *)
 
-    ∏ (j: ⟦ n ⟧%stn), (f i != 0%rig) -> (i ≠ j) -> (f j = 0%rig).
+  Lemma pulse_function_sums_to_point_rig'' { n : nat }  (f : ⟦ n ⟧%stn -> R) (p : n > 0) :
+  ∏ (i : ⟦ n ⟧%stn ), (f i != 0%rig) -> (∏ (j : ⟦ n ⟧%stn), ((i ≠ j) -> (f j = 0%rig))) ->  (Σ f = f i).
+  Proof.
+    intros ? ? ?.
+    assert (e : n = S (n - 1)).
+    (* TODO: this is used three times might as well upstream? *)
+    { induction (natlthorgeh n 1) as [n_le_1 | n_geq_1].
+      + apply natlth1tois0 in n_le_1.
+        remember i as i'. clear Heqi'.
+        rewrite n_le_1 in i.
+        apply weqstn0toempty in i. apply fromempty. assumption.
+      + change (S (n - 1)) with (1 + (n - 1)). rewrite natpluscomm.
+        apply pathsinv0. apply minusplusnmm. assumption. }
+
+    rewrite (transport_rigsum (!e) f).
+    assert (e' : (⟦ n ⟧%stn = ⟦ S (n - 1) ⟧%stn)).
+    { rewrite <- e. apply idpath. }
+
+Abort.
 
   Lemma pulse_function_sums_to_point_rig' { n : nat } ( i : ⟦ n ⟧%stn ) {f : ⟦ n ⟧%stn -> R}
     (p : is_pulse_function i f) : (Σ f = f i).
   Proof.
     unfold is_pulse_function in p.
-    revert p.
-    intros.
-  Admitted. (* Tired ... *)
-  (*
-    rewrite (rigsum_dni f i).
-    apply rigsum_dni.
-    refine p.
-    specialize (p ).
-    revert p.
+    assert (e : n = S (n - 1)).
+    (* TODO: this is used three times might as well upstream? *)
+    { induction (natlthorgeh n 1) as [n_le_1 | n_geq_1].
+      + apply natlth1tois0 in n_le_1.
+        remember i as i'. clear Heqi'.
+        rewrite n_le_1 in i.
+        apply weqstn0toempty in i. apply fromempty. assumption.
+      + change (S (n - 1)) with (1 + (n - 1)). rewrite natpluscomm.
+        apply pathsinv0. apply minusplusnmm. assumption. }
+    rewrite (transport_rigsum (!e) f).
+    assert (e' : (⟦ n ⟧%stn = ⟦ S (n - 1) ⟧%stn)).
+    { rewrite <- e. apply idpath. }
+  Admitted.
 
-    apply (pulse_function_sums_to_point_rig).
-    use tpair.
-    apply p.
-    destruct p.
-  Defined.
+  (*
+  Lemma rigsum_drop { n : nat } ( f : ⟦ S n ⟧%stn -> R) ( i : ⟦ n ⟧%stn ) :
+    Σ f = op2 (Σ (drop_el f i)) (f i ).
   *)
+
+  (* TODO: upstream - Vector equivalent of drop_el for "vecs"? *)
+  Definition drop_el_vector { n : nat } (f : ⟦ S n ⟧%stn -> R) (i : ⟦ S n ⟧%stn) :
+    ⟦ n ⟧%stn -> R.
+  Proof.
+    intros X.
+    induction (natlthorgeh X i) as [X_le_i | X_geq_i].
+    - assert (e : X < S n ).
+      { set (p := pr2 X).
+        apply (istransnatgth (S n) n X (natgthsnn n) (pr2 X)).
+      }
+      exact (f ((pr1  X),, e)).
+
+    - assert (e :S ( X ) < S n ).
+      { set (p := pr2 X).
+        apply p. }
+      exact (f (S X,, e)).
+  Defined.
+
+  (* Used to be in PAdics *)
+  Lemma minussn1 ( n : nat ) : ( S n ) - 1 ≥ n.
+  Proof.
+    intros. destruct n. apply idpath.
+    assert (e : (S (S n)) > (S n)).
+    { apply natgthsnn. }
+    apply natgthtogehm1 in e. assumption.
+  Defined.
+
+
+  (* TODO : This proof is a shambles !*)
+  Definition drop_idx_vector { n : nat } ( i : ⟦ S n ⟧%stn ) ( drop : ⟦ S n ⟧%stn ) (p : n > 0) :
+    ⟦ n ⟧%stn.
+  Proof.
+    intros.
+    induction (natlthorgeh i drop) as [i_le_drop | i_geq_drop].
+    - assert (e: drop ≤ n).
+      { apply (pr2 drop). }
+      assert (e': i < n). {
+        apply (natlthlehtrans i drop (n) ).
+        + assumption.
+        + assumption. }
+      exact (pr1 i,, e').
+    -
+      assert (e: (pr1 i) < S n). {exact (pr2 i). }
+      assert ((pr1 i) - 1 < n). {
+      apply natltminus1 in e.
+      change (S n) with (1 + n) in e.
+      replace (1 + n - 1) with (n + 1 - 1) in e.
+      2: { rewrite plusminusnmm. rewrite natpluscomm.
+           rewrite plusminusnmm. reflexivity.
+      }
+      rewrite plusminusnmm in e.
+      assert ( e': (pr1 i < n + 1)).
+      { intros.
+        apply natlehtolthsn  in e.
+        rewrite natpluscomm.
+        change (1 + n) with (S n).
+        assumption.
+      }
+
+      induction (natlthorgeh (pr1 i) n) as [i_le_n | i_geq_n].
+      + apply natlthtolthm1 in i_le_n. assumption.
+      +
+      - apply natlthp1toleh  in e'.
+        apply (isantisymmnatgeh) in e'.
+        2 : {assumption. }
+        symmetry in e'.
+        rewrite e'.
+        rewrite <- e'.
+        apply natminuslthn.
+        { assumption. }
+        reflexivity.
+      }
+      exact (i - 1,, X).
+  Defined.
+
+
+  (* TODO: standardize name according to conventions *)
+  (* And clean up the shambles proof ...*)
+  Lemma nlesn_to_nminus1_len { n m : nat} (e : m < S n) (p : n > 0) : m - 1 < n.
+  Proof.
+    intros.
+      apply natltminus1 in e.
+      change (S n) with (1 + n) in e.
+      replace (1 + n - 1) with (n + 1 - 1) in e.
+      2: { rewrite plusminusnmm. rewrite natpluscomm.
+           rewrite plusminusnmm. reflexivity.
+      }
+      rewrite plusminusnmm in e.
+      assert ( e': (m < n + 1)).
+      { intros.
+        apply natlehtolthsn  in e.
+        rewrite natpluscomm.
+        change (1 + n) with (S n).
+        assumption.
+      }
+
+      induction (natlthorgeh (m) n) as [i_le_n | i_geq_n].
+      + apply natlthtolthm1 in i_le_n. assumption.
+      +
+      - apply natlthp1toleh  in e'.
+        apply (isantisymmnatgeh) in e'.
+        2 : {assumption. }
+        symmetry in e'.
+        rewrite e'.
+        rewrite <- e'.
+        apply natminuslthn.
+        { assumption. }
+        reflexivity.
+  Defined.
+
+  Lemma dnisum_dropsum : ∏ (n : nat) (f : (⟦ S n ⟧)%stn → R) (j : (⟦ S n ⟧)%stn),
+                         Σ ((drop_el_vector f j)) = Σ ((f ∘ (dni j) )).
+  Proof.
+    intros.
+    apply maponpaths.
+    unfold funcomp, dni, di.  unfold drop_el_vector.
+    apply funextfun. intros k.
+    destruct (natlthorgeh k j).
+    - do 2 rewrite coprod_rect_compute_1.
+      unfold natgthtogths.
+      apply maponpaths.
+      reflexivity.
+    - do 2 rewrite coprod_rect_compute_2.
+      apply idpath.
+  Defined.
+
+  Lemma rigsum_drop_el : ∏ (n : nat) (f : (⟦ S n ⟧)%stn → R) (j : (⟦ S n ⟧)%stn),
+    Σ f = (Σ ((drop_el_vector f j)) + f j)%ring.
+  Proof.
+    intros.
+    rewrite (rigsum_dni f j).
+    rewrite dnisum_dropsum.
+    apply idpath.
+  Defined.
+
+  (*  ~ point of interest ~ *)
+  Lemma two_pulse_function_sums_to_point_rig { n : nat }  (f : ⟦ S n ⟧%stn -> R) (p : n > 0) :
+  ∏ (i : ⟦ S n ⟧%stn ), (f i != 0%rig) -> ∏ (j : ⟦ S n ⟧%stn), (f j  != 0%rig) -> (∏ (k: ⟦ S n ⟧%stn), ((k ≠ i) -> (k ≠ j) -> (f k = 0%rig))) ->  (Σ f = op1 (f i) (f j)).
+  Proof.
+    intros i f_i_neq_0 j f_j_neq_0 X.
+    rewrite (rigsum_dni f i).
+    rewrite <- (rigcomm1).
+    apply maponpaths.
+    set (p' := @nlesn_to_nminus1_len n (pr1 j) (pr2 j) p).
+    destruct (natlthorgeh (pr1 j) (pr1 i)) as [j_leq_i | j_geq_i]. (* TODO : this is called something else more commonly *)
+    - (* Next two nested proofs just to bound j. TODO generalize ? *)
+      assert (e : (pr1 j) ≤ (pr1 i) - 1). {
+        apply natltminus1. assumption.
+      }
+      assert (e' : (pr1 j) < n). {
+        set (p'' := pr2 i).
+        (apply nlesn_to_nminus1_len in p'').
+        2 : { exact p. }
+
+        apply (natlthlehtrans (pr1 j) (pr1 i) n). {assumption. }
+        set (p''' := nlesn_to_nminus1_len (pr2 i) p ).
+        apply natltminus1 in p'''.
+        apply (natlthsntoleh (pr1 i) n (pr2 i)).
+      }
+      set (j' := @make_stn n (pr1 j) e').
+      rewrite  (pulse_function_sums_to_point_rig' j' ).
+      + unfold drop_el_vector.
+        unfold funcomp, dni, di.
+        destruct (natlthorgeh j' i).
+        * rewrite coprod_rect_compute_1.
+          assert (natgthtogths n j' (pr2 j') = (natlthtolths j' n (pr2 j'))).
+          { apply idpath. }
+          apply maponpaths. apply subtypePath_prop.
+          reflexivity.
+        * rewrite coprod_rect_compute_2.
+          apply natlthtonegnatgeh in j_leq_i.
+          contradicts h j_leq_i.
+      + unfold funcomp. unfold is_pulse_function.
+        intros. unfold dni, di.
+        destruct (natlthorgeh j' i) as [j'_le_i | j'_geq_i] .
+        (** rewrite coprod_rect_compute_1.*)
+  Abort.
+
+
 
   Lemma id_math_row_is_pf { n : nat }  : ∏ (r : ⟦ n ⟧%stn), (is_pulse_function r (identity_matrix r) ).
   Proof.
@@ -633,9 +842,17 @@ Section Gauss.
 
   Local Notation "A ** B" := (matrix_mult A B) (at level 80).
 
-  (* Can be defined inductively, directly, too.*)
-  Definition make_add_row_matrix { n : nat } (r1 r2 : ⟦ n ⟧%stn) (s : F)  :=
-    gauss_add_row (identity_matrix) s r1 r2.
+  (* Which by left multiplication corresponds to adding r1 to r2 *)
+  (* TODO verify this is right *)
+  Definition make_add_row_matrix { n : nat } (r1 r2 : ⟦ n ⟧%stn) (s : F)  : Matrix F n n.
+  Proof.
+    intros i j.
+    induction (stn_eq_or_neq i r1).
+    - induction (stn_eq_or_neq j r2).
+      + exact s.
+      + exact (identity_matrix i j).
+    - exact (identity_matrix i j).
+  Defined.
 
   Definition add_row_by_matmul { n m : nat } ( r1 r2 : ⟦ m ⟧%stn ) (mat : Matrix F m n) (s : F) : Matrix F m n :=
     (make_add_row_matrix r1 r2 s ) **  mat.
@@ -659,8 +876,6 @@ Section Gauss.
         + exact s.
         + exact 1%hq.
       - exact 0%hq.
-(*    + exact ((gauss_scalar_mult_row identity_matrix s r) r).
-    + exact (identity_matrix r). *)
   Defined.
 
   Definition gauss_switch_row {m n : nat} (mat : Matrix F m n)
@@ -786,7 +1001,6 @@ Section Gauss.
     use tpair.
     { exact (make_scalar_mult_row_matrix (hqmultinv s ) i). }
     use tpair.
-
     - apply funextfun. intros k.
       apply funextfun. intros l.
       destruct (stn_eq_or_neq k l) as [T' | F'].
@@ -799,8 +1013,9 @@ Section Gauss.
         unfold Matrix.identity_matrix.
         destruct (stn_eq_or_neq l i).
         * destruct (stn_eq_or_neq l l).
-          --
-             rewrite T'. rewrite p.
+          2 : { apply isirrefl_natneq in h.
+                apply fromempty. assumption. }
+          -- rewrite T'. rewrite p.
              destruct (stn_eq_or_neq i i).
              ++ do 2 rewrite coprod_rect_compute_1.
                 rewrite (@pulse_function_sums_to_point_rig' F n l).
@@ -821,9 +1036,6 @@ Section Gauss.
                    --- rewrite coprod_rect_compute_2.
                        apply rigmult0x.
              ++ remember h as h'. clear Heqh'.
-                apply isirrefl_natneq in h.
-                apply fromempty. assumption.
-          -- remember h as h'. clear Heqh'.
                 apply isirrefl_natneq in h.
                 apply fromempty. assumption.
         * rewrite <- T' in h.
@@ -991,8 +1203,8 @@ Section Gauss.
       apply funextfun. intros k.
       apply funextfun. intros l.
       destruct (stn_eq_or_neq k i) as [ k_eq_i | k_neq_i ].
-      + rewrite coprod_rect_compute_1.
-        destruct (stn_eq_or_neq k l) as [k_eq_l | k_eq_l ].
+      +
+        destruct (stn_eq_or_neq k l) as [k_eq_l | k_neq_l ].
         * rewrite coprod_rect_compute_1.
           rewrite <- k_eq_l.
           rewrite <- k_eq_i.
@@ -1005,13 +1217,79 @@ Section Gauss.
              intros q f k_neq_q.
              rewrite stn_neq_or_neq_refl in f.
              do 3 rewrite coprod_rect_compute_1 in f.
-             (*
-             replace (stn_eq_or_neq q k) with (inr ((k = k) ⨿ (k ≠ k))).
-             rewrite (stn_eq_or_neq k_neq_q). funextfun.
-        *
-      +
-      rewrite stn_neq_or_neq_refl. *)
-  Admitted.
+             rewrite (stn_eq_or_neq_right k_neq_q).
+             rewrite coprod_rect_compute_2.
+             apply rigmult0x.
+        * rewrite coprod_rect_compute_2.
+          rewrite (pulse_function_sums_to_point_rig' k). (* Didn't we just do this ? *)
+          -- rewrite (stn_eq_or_neq_right k_neq_l).
+             rewrite coprod_rect_compute_2.
+             rewrite (stn_neq_or_neq_refl).
+             rewrite coprod_rect_compute_1.
+             rewrite rigmultx0. apply idpath.
+          -- unfold is_pulse_function.
+             intros q f k_neq_q.
+             rewrite stn_neq_or_neq_refl in f.
+             do 1 rewrite coprod_rect_compute_1 in f.
+             rewrite (stn_eq_or_neq_left k_eq_i) in f.
+             rewrite coprod_rect_compute_1 in f.
+             rewrite (stn_eq_or_neq_right k_neq_l) in f.
+             rewrite coprod_rect_compute_2 in f.
+             rewrite (rigmultx0) in f. (* Why do we arrive at this strange place ? *)
+             assert (irrefl : ∏ X , ∏ (x : X),  (x != x) -> ∅).
+             { intros ? ? H. apply H, idpath. }
+             apply irrefl in f. apply fromempty. assumption.
+      + rewrite (pulse_function_sums_to_point_rig' k).
+        * rewrite (stn_neq_or_neq_refl).
+          rewrite (stn_eq_or_neq_right k_neq_i).
+          rewrite coprod_rect_compute_1.
+          do 2 rewrite coprod_rect_compute_2.
+          destruct (stn_eq_or_neq k l).
+          -- do 2 rewrite coprod_rect_compute_1.
+             rewrite rigrunax2. apply idpath.
+          -- do 2 rewrite coprod_rect_compute_2.
+             rewrite rigmultx0. apply idpath.
+        * unfold is_pulse_function.
+          intros q f k_neq_q .
+          clear f.
+          rewrite (stn_eq_or_neq_right k_neq_q). rewrite coprod_rect_compute_2.
+          destruct (stn_eq_or_neq q l) as [q_eq_l | q_neq_l].
+          -- apply rigmult0x.
+          -- apply rigmult0x.
+  Defined.
+
+  (*
+  Lemma test { n : nat } (n : ⟦ n ⟧%stn ) (f : ⟦ n ⟧%stn -> R) is_pulse_function (dni
+  *)
+
+  (*
+  Lemma sum_over_coprod_rect : ∏ (A B : UU) (P : A ⨿ B → UU) (f : ∏ a : A, P (inl a))
+(g : ∏ b : B, P (inr b)) (a : A), (iterop_fun 0%rig op1) (coprod_rect P f g (inl a)) = (iterop_fun 0%rig op1) f a.
+   *)
+
+  (* ~ point of interest ~ *)
+  Lemma add_row_matrix_is_inv { n : nat } ( r1 r2 : ⟦ n ⟧%stn ) ( s : F ) (p : (s != 0)%hq) :
+    @matrix_is_invertible F n (make_add_row_matrix r1 r2 s ).
+  Proof.
+    unfold matrix_is_invertible.
+    unfold make_add_row_matrix.
+    use tpair.
+    { exact (make_add_row_matrix r1 r2 (- s)%hq). }
+    use tpair.
+    - unfold make_add_row_matrix.
+      unfold identity_matrix.
+      unfold gauss_add_row.
+      unfold Matrix.matrix_mult.
+      unfold "^". unfold row. unfold col. unfold transpose.
+      unfold flip.
+      unfold identity_matrix.
+      unfold Matrix.identity_matrix.
+      apply funextfun. intros i.
+      apply funextfun. intros j.
+      destruct (stn_eq_or_neq i j) as [i_eq_j | i_neq_j].
+      + rewrite <- i_eq_j.
+        rewrite coprod_rect_compute_1.
+  Abort.
 
   Lemma switch_row_matrix_is_inv { n : nat } ( i j : ⟦ n ⟧%stn ) ( s : F ) ( ne : hqneq s 0%hq ) :
     @matrix_is_invertible F n (make_add_row_matrix i j s).
@@ -1114,6 +1392,7 @@ Section Gauss.
   Definition max_argmax_stnhq_bounded { n : nat } (vec : Vector F n) (pn : n > 0 ) (k : ⟦ n ⟧%stn) :=
   foldleft (0%hq,, (0,, pn)) (max_hq_index_bounded k vec) (λ i : (⟦ n ⟧)%stn, vec i,, i).
 
+
   Definition max_argmax_stnhq_bounded_geq_k  { n : nat } (vec : Vector F n) (pn : n > 0 ) (k : ⟦ n ⟧%stn) : pr2 (max_argmax_stnhq_bounded  vec pn k) ≥ k.
   Proof.
   Abort. (* A bit hard reasoning over fold *)
@@ -1204,7 +1483,6 @@ Section Gauss.
       exact ((pr1 i) - 1,, p).
     - exact i.
   Defined.
-
 
 
   Definition switch_vector_els { n : nat } (vec : Vector F n) (e1 e2 : ⟦ n ⟧%stn) : Vector F n.
