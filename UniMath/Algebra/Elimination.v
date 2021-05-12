@@ -325,7 +325,7 @@ Defined.
   Proof.
     intros i. intros f_i_neq_0 j.  (*impj0.*)
     rewrite (rigsum_dni f i).
-    rewrite zero_function_sums_to_zero.
+    rewrite zero_function_sums_to_zero. (* TODO rephrase in terms of stnsum_const *)
     { rewrite riglunax1. apply idpath. }
     apply funextfun.
     intros k.
@@ -1861,25 +1861,12 @@ Section Gauss.
                             apply rigmultx0.
   Admitted.
 
-  Lemma add_row_matrix_is_inv { n : nat } ( i j : ⟦ n ⟧%stn ) :
-    @matrix_is_invertible F n ( make_gauss_switch_row_matrix n i j).
-  Proof.
-    intros.
-  Admitted.
-
-
 
   (* TODO: make R paramater/local section variable so that this can be stated *)
   (*
   Lemma matrix_scalar_multt_is_invertible { n : nat } (Mat : Matrix F n n) (s : F) (r : ⟦ n ⟧%stn) : matrix_is_invertible (make_scalar_mult_row_matrix s r).
   *)
 
-  (* Order of arguments should be standardized... *)
-  Lemma matrix_row_mult_is_elementary_row_op {n : nat} (r1 r2 : ⟦ n ⟧%stn) (mat : Matrix F n n) (s : F) :
-    ((make_add_row_matrix r1 r2 s) ** mat) = gauss_add_row mat s r1 r2.
-  Proof.
-    intros.
-  Abort.
 
   Lemma matrix_switch_row_is_elementary_row_op {n : nat} (mat : Matrix F n n) (r1 r2 : ⟦ n ⟧%stn) :
     gauss_switch_row mat r1 r2 = ((make_gauss_switch_row_matrix n r1 r2) ** mat).
@@ -1916,6 +1903,30 @@ Section Gauss.
    *)
 
   (* TODO: do we need pn ? *)
+  (*
+  Definition max_vector_hq { n : nat } (p : n > 0) (f : ⟦ n ⟧%stn -> F) : F.
+  Proof.
+    induction n as [| n max_vector_hq].
+    - exact 0%hq.
+    - exact (max_hq ((max_vector_hq (@drop_el_vector F n f (0,, natgthsn0 n)))) (firstValue f)).
+  Defined. *)
+
+  Definition abs_hq (e: F) : F.
+  Proof.
+    destruct (hqgthorleh e 0%hq) as [? | ?].
+    - exact e.
+    - exact (- e)%hq.
+  Defined.
+
+  Lemma abs_ge_0_hq : ∏ (e : F), (hqgeh (abs_hq e) 0)%hq.
+  Proof.
+    intros e.
+    unfold abs_hq.
+    destruct (hqgthorleh e 0%hq).
+    - apply hqgthtogeh in h. assumption.
+    - apply hqleh0andminus in h. assumption.
+  Defined.
+
   Definition max_hq_index_bounded { n : nat } (k : ⟦ n ⟧%stn) (f : ⟦ n ⟧%stn -> F) (ei ei' : hq × (⟦ n ⟧%stn)): hq × (⟦ n ⟧%stn).
   Proof.
     set (hq_index := max_hq_index ei ei').
@@ -1953,31 +1964,46 @@ Section Gauss.
           assumption.
   Defined.
 
+  (* TODO: indicate absolute value in naming *)
   Definition max_argmax_stnhq_bounded { n : nat } (vec : Vector F n) (pn : n > 0 ) (k : ⟦ n ⟧%stn) :=
-  foldleft (0%hq,, (0,, pn)) (max_hq_index_bounded k vec) (λ i : (⟦ n ⟧)%stn, vec i,, i).
+  foldleft (0%hq,, (0,, pn)) (max_hq_index_bounded k vec) (λ i : (⟦ n ⟧)%stn, abs_hq (vec i),, i).
 
 
+  (* Is it sufficient to prove this point, we might not need to verify the index corresponds to
+     the maximum value ? *)
+  (* ~ point of interest ~. How do we prove properties over folds ? *)
   Definition max_argmax_stnhq_bounded_geq_k  { n : nat } (vec : Vector F n) (pn : n > 0 ) (k : ⟦ n ⟧%stn) : pr2 (max_argmax_stnhq_bounded  vec pn k) ≥ k.
   Proof.
-  Abort. (* A bit hard reasoning over fold *)
+    intros.
+    set (n' := 1).
+    unfold max_argmax_stnhq_bounded.
+    unfold max_hq_index_bounded.
+    induction n.
+    - remember pn as pn'. clear Heqpn'.
+      apply isirreflnatgth in pn.
+      contradiction.
+    -
+  Admitted. (* A bit hard reasoning over fold *)
 
 
-  Definition select_pivot_row {m n : nat} (mat : Matrix F m n) ( k : ⟦ m ⟧%stn ) (pm : m > 0)
-    (pn : n > 0) : ⟦ m ⟧%stn.
+  (* TODO : bound twice ? *)
+  Definition select_pivot_row {n : nat} (mat : Matrix F n n) ( k : ⟦ n ⟧%stn )
+    (pn : n > 0) : ⟦ n ⟧%stn.
    Proof.
-     exact (pr2 (max_argmax_stnhq_bounded  ( ( λ i : (⟦ m ⟧%stn),  pr1 (max_argmax_stnhq ( ( mat) i) pn)) )  pm k ) ).
+     (*exact (pr2 (max_argmax_stnhq_bounded  ( ( λ i : (⟦ m ⟧%stn),  pr1 (max_argmax_stnhq ( ( mat) i) pn)) )  pm k ) ).*)
+     exact (pr2 (max_argmax_stnhq_bounded ((transpose mat) k ) pn k)).
    Defined.
 
    (* Having an index variable k  0 .. n - 1,
      we want to certify that the selected pivot is >= k. *)
-  Lemma pivot_idx_geq_k {m n : nat} (mat : Matrix F m n) ( k : ⟦ m ⟧%stn ) (pm : m > 0 )
-    (pn : n > 0) : pr1 ( select_pivot_row mat k pm pn ) >= k.
+  Lemma pivot_idx_geq_k {n : nat} (mat : Matrix F n n) ( k : ⟦ n ⟧%stn )
+    (pn : n > 0) : pr1 ( select_pivot_row mat k pn ) >= k.
   Proof.
     unfold select_pivot_row.
     unfold max_argmax_stnhq.
     unfold truncate_pr1.
-    unfold max_argmax_stnhq_bounded. simpl.
-  Abort.
+    apply (max_argmax_stnhq_bounded_geq_k).
+  Defined.
 
   (* Helper Lemma. Possibly unecessary. *)
   Local Definition opt_matrix_op {n : nat} (b : bool) (mat : Matrix F n n) (f : Matrix F n n -> Matrix F n n) : Matrix F n n.
@@ -1996,46 +2022,46 @@ Section Gauss.
   Definition gauss_step  { n : nat } (k : (⟦ n ⟧%stn)) (mat : Matrix F n n) : Matrix F n n × ⟦ n ⟧%stn.
   Proof.
     assert (pn : (n > 0)). { exact (stn_implies_ngt0 k). }
-    set (ik := (select_pivot_row mat k pn pn)).
+    set (ik := (select_pivot_row mat k pn)). (* ≥ k *)
     use tpair. 2: {exact ik. }
     intros i j.
-    destruct (natlthorgeh i k) as [LT | GTH]. {exact ((mat i j)). }
+    destruct (natlthorgeh (S i) k) as [LT | GTH]. {exact ((mat i j)). }
     set (mat' := gauss_switch_row mat k ik).
-    set (mat'' := gauss_scalar_mult_row mat' ((- 1%hq)%hq * (hqmultinv ( mat' k k )))%hq i%nat).
+    set (mat'' := gauss_scalar_mult_row mat' ((- 1%hq)%hq * (hqmultinv ( mat' k k )))%hq i).
     (*
     destruct (natgtb j k).
     - exact (((mat'' i j) + (mat'' i k) * (mat k j))%hq).
     - exact (mat'' i j).*)
     destruct (natlthorgeh (S j) k).
     - exact (mat'' i j).
-    - exact (((mat'' i j) + (mat'' i k) * (mat k j))%hq).
+    - exact (((mat'' i j) + (mat'' i k) * (mat k j))%hq).  (* mat'' or mat ?
+                                                             This should be elementary row op ! *)
   Defined.
 
-  (*
-  Lemma sol_invariant_under_gauss_step { n : nat } (k : (⟦ n ⟧%stn)) (mat : Matrix F n n) :
-  *)
 
   Lemma gauss_step_clears_diagonal { n : nat } ( k : (⟦ n ⟧%stn)) (mat : Matrix F n n) :
-    ∏ (i j: ⟦ n ⟧%stn), (i > k) -> ((n - k) > j) -> mat i k = 0%hq ->
+    ∏ (i j: ⟦ n ⟧%stn), (i > k) -> ((n - k) > j) -> mat i j = 0%hq ->
     ∏ (i' j' : ⟦ n ⟧%stn), (i' >= k) -> ((n - k) >= j') -> (pr1 (gauss_step k mat)) i' j' = 0%hq.
   Proof.
     intros i j i_geq_k nmk_geq_j mat_ik_eq_0 i' j' i'_geq_k nmk_geq_j'.
     unfold gauss_step. simpl.
     (*destruct (natgehchoice i' k) as [ ? | ?]. assumption.*)
-    destruct (natlthorgeh i' k) as [i'_le_k | i'_geq_k' ].
-    { apply  natlthtonegnatgeh in i'_le_k. contradiction. }
+    destruct (natlthorgeh (S i') k) as [i'_le_k | i'_geq_k' ].
+    { apply natgthtogeh in i'_le_k.
+      apply  natlthtonegnatgeh in i'_le_k. contradiction. }
     destruct (natlthorgeh (S j') k) as [ sj_le_k | sj_geq_k ].
     - unfold gauss_scalar_mult_row.
-      unfold select_pivot_row. (* Why does this give i = i u i != i ? *)
+      (*unfold select_pivot_row.*) (* Why does this give i = i u i != i ? *)
       destruct (stn_eq_or_neq i' i') as [ ? | cntr ].
       2 : { rewrite coprod_rect_compute_2.
             apply isirrefl_natneq in cntr.
             apply fromempty. assumption.
       }
       rewrite coprod_rect_compute_1.
-      unfold max_argmax_stnhq.
-      unfold foldleft.
-      unfold gauss_switch_row.
+      clear p. clear i'_geq_k'.
+
+      set (piv := select_pivot_row mat k _ ).
+      set (mat' := gauss_switch_row mat k _).
   Abort. (* We want to show that the pivot selection selects a pivot >= k *)
 
   (* ( i,, i < n) to (i-1,, i-1 < n *)
