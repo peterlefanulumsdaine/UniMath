@@ -321,9 +321,9 @@ Defined.
 
 (* Should be n not S n *)
   Lemma pulse_function_sums_to_point_rig { n : nat }  (f : ⟦ S n ⟧%stn -> R) :
-  ∏ (i : ⟦ S n ⟧%stn ), (f i != 0%rig) -> (∏ (j : ⟦ S n ⟧%stn), ((i ≠ j) -> (f j = 0%rig))) ->  (Σ f = f i).
+  ∏ (i : ⟦ S n ⟧%stn ), (∏ (j : ⟦ S n ⟧%stn), ((i ≠ j) -> (f j = 0%rig))) ->  (Σ f = f i).
   Proof.
-    intros i. intros f_i_neq_0 j.  (*impj0.*)
+    intros i. intros j.  (*impj0.*)
     rewrite (rigsum_dni f i).
     rewrite zero_function_sums_to_zero. (* TODO rephrase in terms of stnsum_const *)
     { rewrite riglunax1. apply idpath. }
@@ -344,26 +344,25 @@ Defined.
 (* TODO: possibly write special case [v ∧ (pulse j a) = a * (v j)]. *)
 
   Definition is_pulse_function { n : nat } ( i : ⟦ n ⟧%stn )  (f : ⟦ n ⟧%stn -> R) :=
-   ∏ (j: ⟦ n ⟧%stn), (f i != 0%rig) -> (i ≠ j) -> (f j = 0%rig).
-    (*(∏ (j : ⟦ n ⟧%stn), ((i ≠ j) -> (f j = 0%rig))) ->  (Σ f = f i).*) (* TODO : use us this one ?) *)
+   ∏ (j: ⟦ n ⟧%stn), (i ≠ j) -> (f j = 0%rig).
+
+  Lemma stn_inhabited_implies_succ {n:nat} (i : ⟦ n ⟧%stn)
+    : ∑ m, n = S m.
+  Proof.
+    destruct n as [ | m].
+    - destruct i as [i le_i_0].
+      destruct (nopathsfalsetotrue le_i_0).
+    - exists m. apply idpath.
+  Defined.
 
   Lemma pulse_function_sums_to_point_rig' { n : nat } ( i : ⟦ n ⟧%stn ) {f : ⟦ n ⟧%stn -> R}
     (p : is_pulse_function i f) : (Σ f = f i).
   Proof.
-    unfold is_pulse_function in p.
-    assert (e : n = S (n - 1)).
-    (* TODO: this is used three times might as well upstream? *)
-    { induction (natlthorgeh n 1) as [n_le_1 | n_geq_1].
-      + apply natlth1tois0 in n_le_1.
-        remember i as i'. clear Heqi'.
-        rewrite n_le_1 in i.
-        apply weqstn0toempty in i. apply fromempty. assumption.
-      + change (S (n - 1)) with (1 + (n - 1)). rewrite natpluscomm.
-        apply pathsinv0. apply minusplusnmm. assumption. }
-    rewrite (transport_rigsum (!e) f).
-    assert (e' : (⟦ n ⟧%stn = ⟦ S (n - 1) ⟧%stn)).
-    { rewrite <- e. apply idpath. }
-  Admitted.
+    destruct (stn_inhabited_implies_succ i) as [n' e_n_Sn'].
+    destruct (!e_n_Sn').
+    apply pulse_function_sums_to_point_rig.
+    assumption.
+  Defined.
 
   (* ~ point of interest ~ *)
   Lemma pulse_function_sums_to_point_rig'' { n : nat }  (f : ⟦ n ⟧%stn -> R) (p : n > 0) :
@@ -528,10 +527,22 @@ Abort.
   Defined.
 
   (*  ~ point of interest ~ *)
-  Lemma two_pulse_function_sums_to_point_rig { n : nat }  (f : ⟦ S n ⟧%stn -> R) (p : n > 0) :
-  ∏ (i : ⟦ S n ⟧%stn ), (f i != 0%rig) -> ∏ (j : ⟦ S n ⟧%stn), (f j  != 0%rig) -> (∏ (k: ⟦ S n ⟧%stn), ((k ≠ i) -> (k ≠ j) -> (f k = 0%rig))) ->  (Σ f = op1 (f i) (f j)).
+  Lemma two_pulse_function_sums_to_point_rig { n : nat }
+        (* TODO: can we use “n” not “S n” *)
+      (f : ⟦ S n ⟧%stn -> R) (p : n > 0)
+      (i : ⟦ S n ⟧%stn) (j : ⟦ S n ⟧%stn) (ne_i_j : i ≠ j)
+      (X : forall (k: ⟦ S n ⟧%stn), (k ≠ i) -> (k ≠ j) -> (f k = 0%rig))
+    : (Σ f = f i + f j)%rig.
   Proof.
-    intros i f_i_neq_0 j f_j_neq_0 X.
+    assert (H : f = (scalar_lmult_vec (f i) (identity_matrix i))
+                    ^ (scalar_lmult_vec (f j) (identity_matrix j))).
+    { admit. }
+    (* factored approach:
+       lemma that ∑ (v1 ^ v2) = ∑ v1 + ∑ v2
+       lemma for ∑ (a ^ v) = a * ∑ v
+       lemma that ∑ (standard_basis_vector n i) = 1
+     (where (standard_basis_vector n i) = (identity_matrix i)) *)
+    (* direct approach: *)
     rewrite (rigsum_dni f i).
     rewrite <- (rigcomm1).
     apply maponpaths.
@@ -581,7 +592,7 @@ Abort.
   Lemma id_math_row_is_pf { n : nat }  : ∏ (r : ⟦ n ⟧%stn), (is_pulse_function r (identity_matrix r) ).
   Proof.
     unfold is_pulse_function.
-    intros r i rr_neq_0 r_neq_j.
+    intros r i r_neq_j.
     unfold identity_matrix.
     destruct (stn_eq_or_neq r i) as [T | F].
     - rewrite T in r_neq_j.
@@ -620,7 +631,7 @@ Abort.
       assert (X: is_pulse_function i (λ i0 : (⟦ n ⟧)%stn, op2 (identity_matrix i i0) (col mat j i0))).
       { unfold is_pulse_function.
 
-        intros k id_ii_m_neq_0 i_neq_k.
+        intros k i_neq_k.
         unfold identity_matrix.
         destruct (stn_eq_or_neq i k) as [i_eq_k | i_neq_k'].
         - rewrite i_eq_k in i_neq_k.
@@ -1028,7 +1039,7 @@ Section Gauss.
                    apply isirrefl_natneq in h.
                    apply fromempty. assumption.
                 ** unfold is_pulse_function.
-                   intros q X l_neq_q.
+                   intros q l_neq_q.
                    rewrite <- p.
                    destruct (stn_eq_or_neq l q) as [l_eq_q' | l_neq_q'].
                    --- rewrite l_eq_q' in l_neq_q.
@@ -1100,7 +1111,7 @@ Section Gauss.
                rewrite coprod_rect_compute_2.
                apply riglunax2.
             ++ unfold is_pulse_function.
-               intros q f l_neq_q.
+               intros q l_neq_q.
                rewrite <- k_eq_l.
                destruct (stn_eq_or_neq l q) as [l_eq_q' | l_neq_q'].
                --- rewrite k_eq_l in l_neq_q.
@@ -1153,7 +1164,7 @@ Section Gauss.
                 apply isirrefl_natneq in cntr.
                 apply fromempty. assumption.
           -- unfold is_pulse_function.
-             intros q f i_neq_q.
+             intros q i_neq_q.
              rewrite k_eq_i.
              destruct (stn_eq_or_neq q i ) as [q_eq_i | q_neq_i] .
              ++ rewrite q_eq_i in i_neq_q.
@@ -1183,7 +1194,7 @@ Section Gauss.
            apply rigmultx0.
 
         -- unfold is_pulse_function.
-           intros j f k_neq_j.
+           intros j k_neq_j.
            destruct (stn_eq_or_neq k j) as [k_eq_j | k_neq_j'].
            { rewrite k_eq_j in k_neq_j. apply isirrefl_natneq in k_neq_j.
              apply fromempty. assumption.
@@ -1215,9 +1226,7 @@ Section Gauss.
             apply (hqislinvmultinv).
             assumption.
           -- unfold is_pulse_function.
-             intros q f k_neq_q.
-             rewrite stn_neq_or_neq_refl in f.
-             do 3 rewrite coprod_rect_compute_1 in f.
+             intros q k_neq_q.
              rewrite (stn_eq_or_neq_right k_neq_q).
              rewrite coprod_rect_compute_2.
              apply rigmult0x.
@@ -1229,17 +1238,9 @@ Section Gauss.
              rewrite coprod_rect_compute_1.
              rewrite rigmultx0. apply idpath.
           -- unfold is_pulse_function.
-             intros q f k_neq_q.
-             rewrite stn_neq_or_neq_refl in f.
-             do 1 rewrite coprod_rect_compute_1 in f.
-             rewrite (stn_eq_or_neq_left k_eq_i) in f.
-             rewrite coprod_rect_compute_1 in f.
-             rewrite (stn_eq_or_neq_right k_neq_l) in f.
-             rewrite coprod_rect_compute_2 in f.
-             rewrite (rigmultx0) in f. (* Why do we arrive at this strange place ? *)
-             assert (irrefl : ∏ X , ∏ (x : X),  (x != x) -> ∅).
-             { intros ? ? H. apply H, idpath. }
-             apply irrefl in f. apply fromempty. assumption.
+             intros q k_neq_q.
+             (* TODO: do this another way *)
+             admit.
       + rewrite (pulse_function_sums_to_point_rig' k).
         * rewrite (stn_neq_or_neq_refl).
           rewrite (stn_eq_or_neq_right k_neq_i).
@@ -1251,13 +1252,12 @@ Section Gauss.
           -- do 2 rewrite coprod_rect_compute_2.
              rewrite rigmultx0. apply idpath.
         * unfold is_pulse_function.
-          intros q f k_neq_q .
-          clear f.
+          intros q k_neq_q .
           rewrite (stn_eq_or_neq_right k_neq_q). rewrite coprod_rect_compute_2.
           destruct (stn_eq_or_neq q l) as [q_eq_l | q_neq_l].
           -- apply rigmult0x.
           -- apply rigmult0x.
-  Defined.
+  Admitted.
 
   (*
   Lemma test { n : nat } (n : ⟦ n ⟧%stn ) (f : ⟦ n ⟧%stn -> R) is_pulse_function (dni
@@ -1304,7 +1304,7 @@ Section Gauss.
                 apply riglunax2.
           -- rewrite k_eq_l.
              rewrite <- r1_eq_r2.
-             unfold is_pulse_function. intros ? ? l_neq_j.
+             unfold is_pulse_function. intros ? l_neq_j.
              rewrite (stn_eq_or_neq_right l_neq_j).
              rewrite coprod_rect_compute_2.
              destruct (stn_eq_or_neq j l) as [abs | ? ]. (* this should not be the best way.
@@ -1403,8 +1403,7 @@ Section Gauss.
                 rewrite coprod_rect_compute_1.
                 apply riglunax2.
           -- unfold is_pulse_function.
-             intros ? ? k_neq_j.
-             clear X.
+             intros ? k_neq_j.
              destruct (stn_eq_or_neq j r1) as [j_eq_r1 | j_neq_r1].
              ++ rewrite coprod_rect_compute_1.
                 destruct (stn_eq_or_neq l r2) as [l_eq_r2 | l_neq_r2].
@@ -1455,7 +1454,203 @@ Section Gauss.
     set (cpr := coprod_rect_compute_2).
     unfold make_gauss_switch_row_matrix, identity_matrix, Matrix.identity_matrix.
     unfold matrix_mult, Matrix.matrix_mult, row, col, "^", transpose, flip.
-    use tpair.
+    use make_dirprod.
+    - apply funextfun. intros i.
+      apply funextfun. intros j.
+      destruct (stn_eq_or_neq i r1) as [i_eq_r1 | i_neq_r1];
+        destruct (stn_eq_or_neq i r2) as [i_eq_r2 | i_neq_r2];
+        destruct (stn_eq_or_neq i j) as [i_eq_j | i_neq_j].
+      (* some cases should be impossible, so shouldn’t need algebra? *)
+      + rewrite i_eq_r1, i_eq_r2, i_eq_j.
+        do 2 rewrite cpl.
+        -- rewrite (pulse_function_sums_to_point_rig' i).
+           ++ rewrite (lft _ _ i_eq_r1), cpl. (* TODO these 2 are unnecessarily long *)
+              rewrite i_eq_j in i_eq_r2.
+              symmetry in i_eq_r2. (*TODO *)
+              rewrite (lft _ _ i_eq_r2), cpl.
+              rewrite <- i_eq_j in i_eq_r2.
+              rewrite (lft _ _  i_eq_r2), cpl.
+              apply rigrunax2.
+           ++ unfold is_pulse_function.
+              intros q i_neq_q.
+              rewrite i_eq_r1 in i_neq_q.
+              apply issymm_natneq in i_neq_q.
+              rewrite (rht _ _ i_neq_q), cpr.
+              rewrite <- i_eq_r1 in i_neq_q.
+              rewrite i_eq_r2 in i_neq_q.
+              rewrite (rht _ _ i_neq_q), cpr.
+              rewrite <- i_eq_j.
+              rewrite i_eq_r2.
+              rewrite (rht _ _ i_neq_q), cpr.
+              apply issymm_natneq in i_neq_q.
+              rewrite (rht _ _ i_neq_q), cpr.
+              apply rigmult0x.
+      + rewrite (pulse_function_sums_to_point_rig' i).
+        ++
+          rewrite cpr.
+          rewrite (lft _ _ i_eq_r1), cpl.
+          rewrite cpl.
+          rewrite <- i_eq_r2, (rht _ _ i_neq_j).
+          rewrite coprod_rect_compute_2, stn_neq_or_neq_refl, cpl.
+          apply rigmultx0.
+        ++ unfold is_pulse_function.
+           intros q i_neq_q.
+           rewrite <- i_eq_r1.
+           apply issymm_natneq in i_neq_q.
+           rewrite (rht _ _ i_neq_q), cpr.
+           rewrite <- i_eq_r2.
+           rewrite (rht _ _ i_neq_q), cpr.
+           destruct (stn_eq_or_neq q j) as [q_eq_j | q_neq_j].
+           ** do 2 rewrite cpl.
+              apply issymm_natneq in i_neq_q.
+              rewrite (rht _ _ i_neq_q), cpr.
+              apply rigmult0x.
+           ** rewrite cpr, cpl.
+              apply issymm_natneq in i_neq_q.
+              rewrite (rht _ _ i_neq_q), cpr.
+              apply rigmult0x.
+      + (* Shouldn't this be zero function ? *)
+        do 2 rewrite cpl.
+
+        rewrite (pulse_function_sums_to_point_rig' r2).
+        ** rewrite (stn_neq_or_neq_refl), cpl.
+           rewrite <- i_eq_j.
+           apply issymm_natneq in i_neq_r2.
+           rewrite <- i_eq_r1.
+           rewrite (rht _ _ i_neq_r2), cpr, cpl.
+           rewrite stn_neq_or_neq_refl, cpl.
+           apply riglunax2.
+        ** unfold is_pulse_function.
+           intros q r2_neq_q.
+           destruct (stn_eq_or_neq q r1) as [q_eq_r1 | q_neq_r1].
+           --- rewrite cpl.
+               rewrite (rht _ _ r2_neq_q), cpr.
+               apply rigmult0x.
+           --- rewrite cpr.
+               apply issymm_natneq in r2_neq_q.
+               rewrite (rht _ _ r2_neq_q), cpr.
+               rewrite <- i_eq_j, i_eq_r1.
+               rewrite (rht _ _ q_neq_r1), cpr.
+               apply rigmultx0.
+      + do 2 rewrite cpr.
+        rewrite cpl.
+        apply zero_function_sums_to_zero.
+        apply funextfun. intros q.
+        destruct (stn_eq_or_neq q r1) as [q_eq_r1 | q_neq_r1].
+        --- rewrite cpl.
+            apply issymm_natneq in i_neq_r2.
+            destruct (stn_eq_or_neq r2 j) as [r2_eq_j | r2_neq_j].
+            +++ rewrite cpl.
+                rewrite r2_eq_j, q_eq_r1, <- i_eq_r1.
+                apply issymm_natneq in i_neq_j.
+                rewrite (rht _ _ i_neq_j), cpr.
+                apply rigmult0x.
+            +++ rewrite cpr.
+                rewrite q_eq_r1, <- i_eq_r1.
+                rewrite (rht _ _ i_neq_r2), cpr.
+                apply rigmult0x.
+        --- rewrite cpr.
+            destruct (stn_eq_or_neq q r2) as [q_eq_r2 | q_neq_r2].
+            +++ rewrite cpl.
+                rewrite <- i_eq_r1.
+                rewrite (rht _ _ i_neq_j), cpr.
+                rewrite q_eq_r2.
+                rewrite  stn_neq_or_neq_refl, cpl.
+                apply rigmultx0.
+            +++ rewrite cpr.
+                apply issymm_natneq in q_neq_r2.
+                rewrite (rht _ _ q_neq_r2), cpr.
+                apply rigmult0x.
+      + rewrite  i_eq_r2, i_eq_j.
+        do 2 rewrite cpl.
+        rewrite (pulse_function_sums_to_point_rig' r1).
+        ++ rewrite <- i_eq_j, <- i_eq_r2.
+           do 2 rewrite (stn_neq_or_neq_refl), cpl.
+           rewrite cpr.
+           rewrite (stn_neq_or_neq_refl), cpl.
+           apply riglunax2.
+        ++ unfold is_pulse_function.
+           intros q i_neq_q.
+           apply issymm_natneq in i_neq_q.
+           rewrite (rht _ _ i_neq_q), cpr, cpr.
+           apply issymm_natneq in i_neq_q.
+           rewrite (rht _ _ i_neq_q), cpr.
+           apply rigmult0x.
+      + rewrite (pulse_function_sums_to_point_rig' i).
+        ++ do 2 rewrite cpr.
+           rewrite (rht _ _ i_neq_r1), cpr.
+           rewrite cpl.
+           apply issymm_natneq in i_neq_r1.
+           rewrite (rht _ _ i_neq_r1), cpr.
+           apply rigmult0x.
+        ++ unfold is_pulse_function.
+           intros q i_neq_q.
+           rewrite cpr, cpl.
+           apply issymm_natneq in i_neq_r1.
+           destruct (stn_eq_or_neq q r1) as [q_eq_r1 | q_neq_r1].
+           ** rewrite cpl.
+              rewrite <- i_eq_r2.
+              rewrite (rht _ _ i_neq_j), cpr.
+              apply rigmultx0.
+           ** rewrite cpr.
+              rewrite <- i_eq_r2.
+              apply issymm_natneq in i_neq_q.
+              rewrite (rht _ _ i_neq_q), cpr.
+              apply issymm_natneq in q_neq_r1.
+              rewrite (rht _ _ q_neq_r1), cpr.
+              apply rigmult0x.
+      + (* Shouldn't this be zero function ? *)
+        rewrite cpl.
+        rewrite (pulse_function_sums_to_point_rig' i).
+        ** rewrite (rht _ _ i_neq_r1).
+           do 3 rewrite cpr.
+           rewrite (stn_neq_or_neq_refl), cpl.
+           rewrite (rht _ _ i_neq_r2), cpr.
+           rewrite (lft _ _ i_eq_j), cpl.
+           apply riglunax2.
+        ** unfold is_pulse_function.
+           intros q r2_neq_q.
+           destruct (stn_eq_or_neq q r1) as [q_eq_r1 | q_neq_r1].
+           --- rewrite cpl.
+               rewrite <- i_eq_j, cpr, cpr.
+               apply issymm_natneq in i_neq_r2.
+               rewrite (rht _ _ i_neq_r2), cpr.
+               apply rigmultx0.
+           --- rewrite cpr.
+               apply issymm_natneq in r2_neq_q.
+               do 2 rewrite cpr.
+               apply issymm_natneq in r2_neq_q.
+               rewrite (rht _ _ r2_neq_q), cpr.
+               apply rigmult0x.
+      + do 2 rewrite cpr.
+        rewrite cpr.
+        apply zero_function_sums_to_zero.
+        apply funextfun. intros q.
+        destruct (stn_eq_or_neq q r1) as [q_eq_r1 | q_neq_r1].
+        --- rewrite cpl.
+            apply issymm_natneq in i_neq_r2.
+            destruct (stn_eq_or_neq r2 j) as [r2_eq_j | r2_neq_j].
+            +++ rewrite cpl.
+                rewrite q_eq_r1.
+                rewrite (rht _ _ i_neq_r1), cpr.
+                apply rigmult0x.
+            +++ rewrite cpr.
+                apply rigmultx0.
+        --- rewrite cpr.
+            destruct (stn_eq_or_neq q r2) as [q_eq_r2 | q_neq_r2].
+            +++ rewrite cpl.
+                rewrite q_eq_r2.
+                rewrite (rht _ _ i_neq_r2), cpr.
+                apply rigmult0x.
+            +++ rewrite cpr.
+                apply issymm_natneq in q_neq_r2.
+                destruct (stn_eq_or_neq q j) as [q_eq_j | q_neq_j].
+                ---- rewrite cpl.
+                     rewrite q_eq_j.
+                     rewrite (rht _ _ i_neq_j), cpr.
+                     apply rigmult0x.
+                ---- rewrite cpr.
+                     apply rigmultx0.
     - apply funextfun. intros i.
       apply funextfun. intros j.
       destruct (stn_eq_or_neq i r1) as [i_eq_r1 | i_neq_r1].
@@ -1472,8 +1667,7 @@ Section Gauss.
                 rewrite (lft _ _  i_eq_r2), cpl.
                 apply rigrunax2.
              ++ unfold is_pulse_function.
-                intros q X i_neq_q.
-                clear X.
+                intros q i_neq_q.
                 rewrite i_eq_r1 in i_neq_q.
                 apply issymm_natneq in i_neq_q.
                 rewrite (rht _ _ i_neq_q), cpr.
@@ -1495,7 +1689,7 @@ Section Gauss.
                 rewrite coprod_rect_compute_2, stn_neq_or_neq_refl, cpl.
                 apply rigmultx0.
              ++ unfold is_pulse_function.
-                intros q X i_neq_q. clear X.
+                intros q i_neq_q.
                 rewrite <- i_eq_r1.
                 apply issymm_natneq in i_neq_q.
                 rewrite (rht _ _ i_neq_q), cpr.
@@ -1523,7 +1717,7 @@ Section Gauss.
                 rewrite stn_neq_or_neq_refl, cpl.
                 apply riglunax2.
              ** unfold is_pulse_function.
-                intros q X r2_neq_q. clear X.
+                intros q r2_neq_q.
                 destruct (stn_eq_or_neq q r1) as [q_eq_r1 | q_neq_r1].
                 --- rewrite cpl.
                     rewrite (rht _ _ r2_neq_q), cpr.
@@ -1574,8 +1768,7 @@ Section Gauss.
                 rewrite (stn_neq_or_neq_refl), cpl.
                 apply riglunax2.
               ++ unfold is_pulse_function.
-                intros q X i_neq_q.
-                clear X.
+                intros q i_neq_q.
                 apply issymm_natneq in i_neq_q.
                 rewrite (rht _ _ i_neq_q), cpr, cpr.
                 apply issymm_natneq in i_neq_q.
@@ -1589,7 +1782,7 @@ Section Gauss.
                 rewrite (rht _ _ i_neq_r1), cpr.
                 apply rigmult0x.
              ++ unfold is_pulse_function.
-                intros q X i_neq_q. clear X.
+                intros q i_neq_q.
                 rewrite cpr, cpl.
                 apply issymm_natneq in i_neq_r1.
                 destruct (stn_eq_or_neq q r1) as [q_eq_r1 | q_neq_r1].
@@ -1605,7 +1798,6 @@ Section Gauss.
                    rewrite (rht _ _ q_neq_r1), cpr.
                    apply rigmult0x.
         * (* Shouldn't this be zero function ? *)
-
           destruct (stn_eq_or_neq i j) as [i_eq_j | i_neq_j].
           ++ rewrite cpl.
              rewrite (pulse_function_sums_to_point_rig' i).
@@ -1616,7 +1808,7 @@ Section Gauss.
                 rewrite (lft _ _ i_eq_j), cpl.
                 apply riglunax2.
              ** unfold is_pulse_function.
-                intros q X r2_neq_q. clear X.
+                intros q r2_neq_q.
                 destruct (stn_eq_or_neq q r1) as [q_eq_r1 | q_neq_r1].
                 --- rewrite cpl.
                     rewrite <- i_eq_j, cpr, cpr.
@@ -1658,208 +1850,7 @@ Section Gauss.
                             apply rigmult0x.
                        ---- rewrite cpr.
                             apply rigmultx0.
-    - apply funextfun. intros i.
-      apply funextfun. intros j.
-      destruct (stn_eq_or_neq i r1) as [i_eq_r1 | i_neq_r1].
-      + destruct (stn_eq_or_neq i r2) as [i_eq_r2 | i_neq_r2].
-        * destruct (stn_eq_or_neq i j) as [i_eq_j | i_neq_j].
-          rewrite i_eq_r1, i_eq_r2, i_eq_j.
-          do 2 rewrite cpl.
-          -- rewrite (pulse_function_sums_to_point_rig' i).
-             ++ rewrite (lft _ _ i_eq_r1), cpl. (* TODO these 2 are unnecessarily long *)
-                rewrite i_eq_j in i_eq_r2.
-                symmetry in i_eq_r2. (*TODO *)
-                rewrite (lft _ _ i_eq_r2), cpl.
-                rewrite <- i_eq_j in i_eq_r2.
-                rewrite (lft _ _  i_eq_r2), cpl.
-                apply rigrunax2.
-             ++ unfold is_pulse_function.
-                intros q X i_neq_q.
-                clear X.
-                rewrite i_eq_r1 in i_neq_q.
-                apply issymm_natneq in i_neq_q.
-                rewrite (rht _ _ i_neq_q), cpr.
-                rewrite <- i_eq_r1 in i_neq_q.
-                rewrite i_eq_r2 in i_neq_q.
-                rewrite (rht _ _ i_neq_q), cpr.
-                rewrite <- i_eq_j.
-                rewrite i_eq_r2.
-                rewrite (rht _ _ i_neq_q), cpr.
-                apply issymm_natneq in i_neq_q.
-                rewrite (rht _ _ i_neq_q), cpr.
-                apply rigmult0x.
-          -- rewrite (pulse_function_sums_to_point_rig' i).
-             ++
-                rewrite cpr.
-                rewrite (lft _ _ i_eq_r1), cpl.
-                rewrite cpl.
-                rewrite <- i_eq_r2, (rht _ _ i_neq_j).
-                rewrite coprod_rect_compute_2, stn_neq_or_neq_refl, cpl.
-                apply rigmultx0.
-             ++ unfold is_pulse_function.
-                intros q X i_neq_q. clear X.
-                rewrite <- i_eq_r1.
-                apply issymm_natneq in i_neq_q.
-                rewrite (rht _ _ i_neq_q), cpr.
-                rewrite <- i_eq_r2.
-                rewrite (rht _ _ i_neq_q), cpr.
-                destruct (stn_eq_or_neq q j) as [q_eq_j | q_neq_j].
-                ** do 2 rewrite cpl.
-                   apply issymm_natneq in i_neq_q.
-                   rewrite (rht _ _ i_neq_q), cpr.
-                   apply rigmult0x.
-                ** rewrite cpr, cpl.
-                   apply issymm_natneq in i_neq_q.
-                   rewrite (rht _ _ i_neq_q), cpr.
-                   apply rigmult0x.
-        * (* Shouldn't this be zero function ? *)
-          destruct (stn_eq_or_neq i j) as [i_eq_j | i_neq_j].
-          ++ do 2 rewrite cpl.
-
-             rewrite (pulse_function_sums_to_point_rig' r2).
-             ** rewrite (stn_neq_or_neq_refl), cpl.
-                rewrite <- i_eq_j.
-                apply issymm_natneq in i_neq_r2.
-                rewrite <- i_eq_r1.
-                rewrite (rht _ _ i_neq_r2), cpr, cpl.
-                rewrite stn_neq_or_neq_refl, cpl.
-                apply riglunax2.
-             ** unfold is_pulse_function.
-                intros q X r2_neq_q. clear X.
-                destruct (stn_eq_or_neq q r1) as [q_eq_r1 | q_neq_r1].
-                --- rewrite cpl.
-                    rewrite (rht _ _ r2_neq_q), cpr.
-                    apply rigmult0x.
-                --- rewrite cpr.
-                    apply issymm_natneq in r2_neq_q.
-                    rewrite (rht _ _ r2_neq_q), cpr.
-                    rewrite <- i_eq_j, i_eq_r1.
-                    rewrite (rht _ _ q_neq_r1), cpr.
-                    apply rigmultx0.
-          ++ do 2 rewrite cpr.
-             rewrite cpl.
-             apply zero_function_sums_to_zero.
-             apply funextfun. intros q.
-             destruct (stn_eq_or_neq q r1) as [q_eq_r1 | q_neq_r1].
-               --- rewrite cpl.
-                   apply issymm_natneq in i_neq_r2.
-                   destruct (stn_eq_or_neq r2 j) as [r2_eq_j | r2_neq_j].
-                   +++ rewrite cpl.
-                       rewrite r2_eq_j, q_eq_r1, <- i_eq_r1.
-                       apply issymm_natneq in i_neq_j.
-                       rewrite (rht _ _ i_neq_j), cpr.
-                       apply rigmult0x.
-                   +++ rewrite cpr.
-                       rewrite q_eq_r1, <- i_eq_r1.
-                       rewrite (rht _ _ i_neq_r2), cpr.
-                       apply rigmult0x.
-               --- rewrite cpr.
-                   destruct (stn_eq_or_neq q r2) as [q_eq_r2 | q_neq_r2].
-                   +++ rewrite cpl.
-                       rewrite <- i_eq_r1.
-                       rewrite (rht _ _ i_neq_j), cpr.
-                       rewrite q_eq_r2.
-                       rewrite  stn_neq_or_neq_refl, cpl.
-                       apply rigmultx0.
-                   +++ rewrite cpr.
-                       apply issymm_natneq in q_neq_r2.
-                       rewrite (rht _ _ q_neq_r2), cpr.
-                       apply rigmult0x.
-      + destruct (stn_eq_or_neq i r2) as [i_eq_r2 | i_neq_r2].
-        * destruct (stn_eq_or_neq i j) as [i_eq_j | i_neq_j].
-          -- rewrite  i_eq_r2, i_eq_j.
-             do 2 rewrite cpl.
-             rewrite (pulse_function_sums_to_point_rig' r1).
-             ++ rewrite <- i_eq_j, <- i_eq_r2.
-                do 2 rewrite (stn_neq_or_neq_refl), cpl.
-                rewrite cpr.
-                rewrite (stn_neq_or_neq_refl), cpl.
-                apply riglunax2.
-              ++ unfold is_pulse_function.
-                intros q X i_neq_q.
-                clear X.
-                apply issymm_natneq in i_neq_q.
-                rewrite (rht _ _ i_neq_q), cpr, cpr.
-                apply issymm_natneq in i_neq_q.
-                rewrite (rht _ _ i_neq_q), cpr.
-                apply rigmult0x.
-          -- rewrite (pulse_function_sums_to_point_rig' i).
-             ++ do 2 rewrite cpr.
-                rewrite (rht _ _ i_neq_r1), cpr.
-                rewrite cpl.
-                apply issymm_natneq in i_neq_r1.
-                rewrite (rht _ _ i_neq_r1), cpr.
-                apply rigmult0x.
-             ++ unfold is_pulse_function.
-                intros q X i_neq_q. clear X.
-                rewrite cpr, cpl.
-                apply issymm_natneq in i_neq_r1.
-                destruct (stn_eq_or_neq q r1) as [q_eq_r1 | q_neq_r1].
-                ** rewrite cpl.
-                   rewrite <- i_eq_r2.
-                   rewrite (rht _ _ i_neq_j), cpr.
-                   apply rigmultx0.
-                ** rewrite cpr.
-                   rewrite <- i_eq_r2.
-                   apply issymm_natneq in i_neq_q.
-                   rewrite (rht _ _ i_neq_q), cpr.
-                   apply issymm_natneq in q_neq_r1.
-                   rewrite (rht _ _ q_neq_r1), cpr.
-                   apply rigmult0x.
-        * (* Shouldn't this be zero function ? *)
-          destruct (stn_eq_or_neq i j) as [i_eq_j | i_neq_j].
-          ++ rewrite cpl.
-             rewrite (pulse_function_sums_to_point_rig' i).
-             ** rewrite (rht _ _ i_neq_r1).
-                do 3 rewrite cpr.
-                rewrite (stn_neq_or_neq_refl), cpl.
-                rewrite (rht _ _ i_neq_r2), cpr.
-                rewrite (lft _ _ i_eq_j), cpl.
-                apply riglunax2.
-             ** unfold is_pulse_function.
-                intros q X r2_neq_q. clear X.
-                destruct (stn_eq_or_neq q r1) as [q_eq_r1 | q_neq_r1].
-                --- rewrite cpl.
-                    rewrite <- i_eq_j, cpr, cpr.
-                    apply issymm_natneq in i_neq_r2.
-                    rewrite (rht _ _ i_neq_r2), cpr.
-                    apply rigmultx0.
-                --- rewrite cpr.
-                    apply issymm_natneq in r2_neq_q.
-                    do 2 rewrite cpr.
-                    apply issymm_natneq in r2_neq_q.
-                    rewrite (rht _ _ r2_neq_q), cpr.
-                    apply rigmult0x.
-          ++ do 2 rewrite cpr.
-             rewrite cpr.
-             apply zero_function_sums_to_zero.
-             apply funextfun. intros q.
-             destruct (stn_eq_or_neq q r1) as [q_eq_r1 | q_neq_r1].
-               --- rewrite cpl.
-                   apply issymm_natneq in i_neq_r2.
-                   destruct (stn_eq_or_neq r2 j) as [r2_eq_j | r2_neq_j].
-                   +++ rewrite cpl.
-                       rewrite q_eq_r1.
-                       rewrite (rht _ _ i_neq_r1), cpr.
-                       apply rigmult0x.
-                   +++ rewrite cpr.
-                       apply rigmultx0.
-               --- rewrite cpr.
-                   destruct (stn_eq_or_neq q r2) as [q_eq_r2 | q_neq_r2].
-                   +++ rewrite cpl.
-                       rewrite q_eq_r2.
-                       rewrite (rht _ _ i_neq_r2), cpr.
-                       apply rigmult0x.
-                   +++ rewrite cpr.
-                       apply issymm_natneq in q_neq_r2.
-                       destruct (stn_eq_or_neq q j) as [q_eq_j | q_neq_j].
-                       ---- rewrite cpl.
-                            rewrite q_eq_j.
-                            rewrite (rht _ _ i_neq_j), cpr.
-                            apply rigmult0x.
-                       ---- rewrite cpr.
-                            apply rigmultx0.
-  Admitted.
+  Defined.
 
 
   (* TODO: make R paramater/local section variable so that this can be stated *)
