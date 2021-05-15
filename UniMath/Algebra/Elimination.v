@@ -1859,7 +1859,7 @@ Section Gauss.
                             apply rigmult0x.
                        ---- rewrite cpr.
                             apply rigmultx0.
-  Admitted.
+  Defined.
 
 
   (* TODO: make R paramater/local section variable so that this can be stated *)
@@ -2024,15 +2024,15 @@ Section Gauss.
     assert (pn : (n > 0)). { exact (stn_implies_ngt0 k). }
     set (ik := (select_pivot_row mat k pn)). (* ≥ k *)
     use tpair. 2: {exact ik. }
-    intros i j.
-    destruct (natlthorgeh (S i) k) as [LT | GTH]. {exact ((mat i j)). }
+    intros i j. (* lth S i ? *)
+    destruct (natlthorgeh i (S k)) as [LT | GTH]. {exact ((mat i j)). }
     set (mat' := gauss_switch_row mat k ik).
     set (mat'' := gauss_scalar_mult_row mat' ((- 1%hq)%hq * (hqmultinv ( mat' k k )))%hq i).
     (*
     destruct (natgtb j k).
     - exact (((mat'' i j) + (mat'' i k) * (mat k j))%hq).
     - exact (mat'' i j).*)
-    destruct (natlthorgeh (S j) k).
+    destruct (natlthorgeh j (S k)).
     - exact (mat'' i j).
     - exact (((mat'' i j) + (mat'' i k) * (mat'' k j))%hq).  (* mat'' or mat ?
                                                              This should be elementary row op ! *)
@@ -2052,42 +2052,26 @@ Section Gauss.
     unfold gauss_step.
     apply pathsinv0.
     set (mat' := λ i j : (⟦ n ⟧%stn), _).
-    assert (mat k' = mat' k').
+    assert (p : mat k' = mat' k').
     { unfold mat'.
       apply funextfun. intros q.
-      destruct (natlthorgeh (S k') k) as [sk_lt_k | sk_ge_k].
+      destruct (natlthorgeh k' (S k)) as [k_lt_sk | k_ge_sk].
       - reflexivity.
-      - apply pathsinv0. destruct (natlthorgeh (S q) k) as [si_lt_q | si_ge_q].
-        clear mat'.
-        apply natgthtogehsn  in k'_lt_k.
-        apply (isantisymmnatgeh) in sk_ge_k. 2: {exact k'_lt_k. }
-        unfold gauss_scalar_mult_row.
-        rewrite (stn_neq_or_neq_refl), coprod_rect_compute_1.
-        unfold gauss_switch_row.
-        rewrite stn_neq_or_neq_refl, coprod_rect_compute_1.
-        destruct (stn_eq_or_neq k' k) as [k'_eq_k | k'_neq_k].
-        + assert (sk'_gt_k: k' < S k'). { apply natgthsnn. }
-          rewrite coprod_rect_compute_1.
-          rewrite <- k'_eq_k in sk_ge_k.
-          rewrite <- sk_ge_k in sk'_gt_k.
-          apply isirreflnatgth in sk'_gt_k.
+      - apply pathsinv0.
+        destruct (natlthorgeh q (S k)) as [sq_lt_sk | q_ge_sk].
+        + clear mat'.
+          apply natgehsntogth  in k_ge_sk.
+          apply isasymmnatgth in k'_lt_k. 2 : {assumption. }
           contradiction.
-
-        + rewrite coprod_rect_compute_2.
-          set (piv := select_pivot_row mat k (stn_implies_ngt0 k)).
-          assert (piv_ge_k : piv ≥ k).
-          {apply pivot_idx_geq_k. }
-          assert (k'_neq_piv : k' ≠ piv).
-          { rewrite sk_ge_k in piv_ge_k.
-            apply natgehsntogth in piv_ge_k.
-            apply natgthtoneq in piv_ge_k.
-            apply issymm_natneq in piv_ge_k.
-            assumption.
-          }
-          rewrite (stn_eq_or_neq_right k'_neq_piv), coprod_rect_compute_2.
-
-          assert (piv_gt_k' : piv > k').
-  Abort.
+        + clear mat'.
+          apply natgehsntogth in k_ge_sk.
+          apply isasymmnatgth in k'_lt_k. 2 : {assumption. }
+          contradiction.
+    }
+    rewrite p.
+    apply funextfun. intros q.
+    reflexivity.
+  Defined.
 
   Lemma gauss_step_clears_diagonal { n : nat } (k : (⟦ n ⟧%stn)) (mat : Matrix F n n) :
     ∏ (i j: ⟦ n ⟧%stn), (i > k) -> ((n - k) > j) -> mat i j = 0%hq ->
@@ -2102,6 +2086,7 @@ Section Gauss.
     destruct (natlthorgeh (S j') k) as [ sj_le_k | sj_geq_k ].
     - unfold gauss_scalar_mult_row.
       (*unfold select_pivot_row.*) (* Why does this give i = i u i != i ? *)
+      (*
       destruct (stn_eq_or_neq i' i') as [ ? | cntr ].
       2 : { rewrite coprod_rect_compute_2.
             apply isirrefl_natneq in cntr.
@@ -2111,8 +2096,7 @@ Section Gauss.
       clear p. clear i'_geq_k'.
 
       set (piv := select_pivot_row mat k _ ).
-      set (mat' := gauss_switch_row mat k _).
-
+      set (mat' := gauss_switch_row mat k _).*)
   Abort. (* We want to show that the pivot selection selects a pivot >= k *)
 
   (* ( i,, i < n) to (i-1,, i-1 < n *)
