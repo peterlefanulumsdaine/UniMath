@@ -28,6 +28,7 @@ Require Import UniMath.Tactics.Nat_Tactics.
 Require Import UniMath.Foundations.PartA.
 Require Import UniMath.MoreFoundations.Nat.
 
+Require Import UniMath.PAdics.z_mod_p.
 
 (*Local Definition R := pr1hSet natcommrig.*)
 Context { R : rig }.
@@ -572,8 +573,7 @@ Defined.
 
   (*  ~ point of interest ~ *)
   Lemma two_pulse_function_sums_to_points_rig' { n : nat }  (f : ⟦ n ⟧%stn -> R) (p : n > 0) :
-    ∏ (i j: ⟦ n ⟧%stn ), (f i != 0%rig) -> (f j  != 0%rig) ->
-   (∏ (k: ⟦ n ⟧%stn), ((k ≠ i) -> (k ≠ j) ->
+    ∏ (i j: ⟦ n ⟧%stn ), (∏ (k: ⟦ n ⟧%stn), ((k ≠ i) -> (k ≠ j) ->
    (f k = 0%rig))) ->  (Σ f = op1 (f i) (f j)).
   Proof.
     intros.
@@ -851,15 +851,16 @@ Section Gauss.
   Local Notation "A ** B" := (matrix_mult A B) (at level 80).
 
   (* Which by left multiplication corresponds to adding r1 to r2 *)
-  (* TODO might want to induct on r1 = r2, that case is off-by-one by this formulation. *)
+  (* TODO might want to induct on r1 = r2, that case is off-by-one by this formulation.
+     (However is not used in any of the eliminations) *)
   Definition make_add_row_matrix { n : nat } (r1 r2 : ⟦ n ⟧%stn) (s : F)  : Matrix F n n.
   Proof.
-    intros i j.
-    induction (stn_eq_or_neq i r1).
-    - induction (stn_eq_or_neq j r2).
-      + exact s.
-      + exact (identity_matrix i j).
-    - exact (identity_matrix i j).
+    intros i.
+    induction (stn_eq_or_neq i r2).
+    - exact (pointwise n op1 (identity_matrix i) (const_vec s ^ identity_matrix r1)). (*induction (stn_eq_or_neq j r2).
+      + exact (identity_matrix i j + identity_matrix ) .
+      + exact (identity_matrix i j).*)
+    - exact (identity_matrix i).
   Defined.
 
   Definition add_row_by_matmul { n m : nat } ( r1 r2 : ⟦ m ⟧%stn ) (mat : Matrix F m n) (s : F) : Matrix F m n :=
@@ -1288,7 +1289,7 @@ Section Gauss.
           rewrite k_eq_l.
           rewrite (pulse_function_sums_to_point_rig' k).
           -- rewrite k_eq_l.
-             rewrite <- r1_eq_r2.
+             rewrite <- r1_eq_r2. (*
              rewrite stn_neq_or_neq_refl.
              rewrite coprod_rect_compute_1.
              destruct (stn_eq_or_neq l r1) as [l_eq_r1 | l_neq_r1].
@@ -1431,7 +1432,7 @@ Section Gauss.
             (*rewrite (pulse_function_sums_to_point_rig' r2).*)
             destruct (stn_eq_or_neq l r2) as [l_eq_r2 | l_neq_r2].
 
-              (*rewrite (pulse_function_sums_to_point_rig' l). *)
+              (*rewrite (pulse_function_sums_to_point_rig' l). *) *)
 
   Abort.
 
@@ -1968,12 +1969,11 @@ Section Gauss.
     set (n' := 1).
     unfold max_argmax_stnhq_bounded.
     unfold max_hq_index_bounded.
-    induction n.
-    - remember pn as pn'. clear Heqpn'.
-      apply isirreflnatgth in pn.
-      contradiction.
-    -
-  Admitted. (* A bit hard reasoning over fold *)
+    unfold foldleft.
+    unfold nat_rect at 1.
+
+    simpl.
+  Admitted. (* A bit hard reasoning over fold - *)
 
 
   (* TODO : bound twice ? *)
@@ -1983,6 +1983,38 @@ Section Gauss.
      (*exact (pr2 (max_argmax_stnhq_bounded  ( ( λ i : (⟦ m ⟧%stn),  pr1 (max_argmax_stnhq ( ( mat) i) pn)) )  pm k ) ).*)
      exact (pr2 (max_argmax_stnhq_bounded ((transpose mat) k ) pn k)).
    Defined.
+
+   Definition max_el' { n : nat } (v : Vector F n) (max' : F) : F.
+   Proof.
+     induction n as [ | m IH]. (* TODO naming *)
+     {exact max'. }
+     exact (max_hq max' (IH (@drop_el_vector F m v lastelement))). (* todo this or DNI ? *)
+   Defined.
+
+   Definition max_el { n : nat } (vec: Vector F n) := max_el' vec 0%hq.
+   (*
+   (* iter starts at lastelement (n - 1) and goes to 0*)
+   Definition argmax' { n : nat } (iter : nat) (v : Vector F n) (max' : F) (argmax' : ⟦ n ⟧%stn) : ⟦ n ⟧%stn.
+   Proof.
+     revert v max' argmax'.
+     induction iter as [ | iter' IH]. (* TODO naming *)
+     - intros v ? ?.
+       induction (hqgehchoice max'(v firstelement)) as [g | l].
+     intros v ? ?.
+     set (argmax'' := decrement_stnn argmax').
+     induction (hqgehchoice max' (v lastelement)) as [g | l].
+     - IH
+     -
+     exact (max_hq max' (IH (@drop_el_vector F m v lastelement))). (* todo this or DNI ? *)
+   Defined.
+
+  Definition argmax { n : nat } (v : Vector F n) := argmax'
+    *)
+   (*
+   Definition select_pivot_row' { n : nat } (mat: Matrix F n n) (k : ⟦ n ⟧%stn) : ⟦ n ⟧%stn.
+   Proof.
+     set (c := col mat k).
+  *)
 
    (* Having an index variable k  0 .. n - 1,
      we want to certify that the selected pivot is >= k. *)
@@ -2028,7 +2060,8 @@ Section Gauss.
                                                              This should be elementary row op ! *)
   Defined.
 
-  (* TODO at least rename *)
+  (* TODO at least rename
+     it's in general not true if n = 0 (that's why we have k )*)
   Lemma some_lemma (m n : nat) (k : ⟦ n ⟧%stn) : n - 1 - m < n.
   Proof.
     { assert (p' : n - 1 < n).
@@ -2049,58 +2082,97 @@ Section Gauss.
   Definition gauss_clear_column_step (n : nat) (iter : nat) (k : (⟦ n ⟧%stn))
              (j : (⟦ n ⟧%stn)) (mat : Matrix F n n) : Matrix F n n.
   Proof.
-    exact ((make_add_row_matrix k j (- (hqdiv (mat j k) (mat k k)))%hq
+    (*exact ((make_add_row_matrix k j (- (hqdiv (mat j k) (mat k k)))%hq
+     ** mat)).*)
+    exact ((make_add_row_matrix k j (- ( (mat j k) * hqmultinv (mat k k)))%hq
            ** mat)).
   Defined.
 
+  (* The clear column step operation does clear the target row*)
   Lemma gauss_clear_column_step_inv1 (n : nat) (iter : nat) (k : (⟦ n ⟧%stn))
-        (j : (⟦ n ⟧%stn)) (mat : Matrix F n n) :
-    (gauss_clear_column_step n iter k j mat) k j = 0%hq.
+        (j : (⟦ n ⟧%stn)) (k_neq_j : k ≠ j)  (mat : Matrix F n n) :
+    (gauss_clear_column_step n iter k j mat) j k = 0%hq.
   Proof.
     intros.
     set (b := 2).
     unfold gauss_clear_column_step.
     unfold make_add_row_matrix, "**". (* TODO unfold matrix mult *)
     unfold row, col, transpose, flip, "^".
-    (*apply (@two_pulse_function_sums_to_point_rig' F j k).
-    apply funextfun. intros i.
-    rewrite (stn_neq_or_neq_refl), coprod_rect_compute_1.
-    destruct (stn_eq_or_neq i j) as [i_eq_j | i_neq_j].
-    - rewrite coprod_rect_compute_1, i_eq_j.
+    assert (p : n > 0). { admit. }
+    set (f := λ i, _).
+    rewrite (@two_pulse_function_sums_to_points_rig' F n _ p k j).
+    - unfold f.
+      apply issymm_natneq in k_neq_j.
+      rewrite (stn_neq_or_neq_refl), coprod_rect_compute_1.
+      unfold identity_matrix, Matrix.identity_matrix. (*TODO*)
+      rewrite (stn_eq_or_neq_right k_neq_j), coprod_rect_compute_2.
+      do 2 rewrite stn_neq_or_neq_refl, coprod_rect_compute_1.
+      apply issymm_natneq in k_neq_j.
+      rewrite (stn_eq_or_neq_right k_neq_j), coprod_rect_compute_2.
+      rewrite (@rigrunax2 F), (@riglunax1 F), (@rigmultx0 F), (@rigrunax1 F).
+      unfold const_vec.
+      Check mat j k.
+      assert (p': mat k k != 0%hq). { admit. }
+      admit. (*very annoying but looks ok? *)
+  Admitted.
 
-      rewrite i_eq_j.
-    -
-
-    apply funextfun.
-
-  Defined.*)
-  Abort.
-
+  (* TODOs: several. This proof is terrible ? *)
+  (* The clear column step operation only changes the target row*)
   Lemma gauss_clear_column_step_inv2 (n : nat) (iter : nat) (k: (⟦ n ⟧%stn))
-        (j : (⟦ n ⟧%stn)) (mat : Matrix F n n) (r : (⟦ n ⟧%stn)) :
-        (r ≠ k) -> (gauss_clear_column_step n iter k j mat) k j = mat k j.
-  Abort.
+        (mat : Matrix F n n) (r : (⟦ n ⟧%stn)) : ∏ (j : ⟦ n ⟧%stn),
+        (r ≠ j) -> (gauss_clear_column_step n iter k j mat) r j = mat r j.
+  Proof.
+    intros.
+    unfold gauss_clear_column_step.
+    unfold make_add_row_matrix, "**".
+    unfold "^", col, row, transpose, flip.
+    assert (p : n > 0). { admit. }
+    set (f := λ i : (⟦ n ⟧%stn), _).
+    assert (b : Σ f = f r ). {
+      apply (@pulse_function_sums_to_point_rig' F n r _).
+      unfold is_pulse_function.
+      intros q r_neq_k.
+      unfold f.
+      destruct (stn_eq_or_neq r j) as [r_eq_q | r_neq_q].
+      - rewrite r_eq_q in X. (*TODO*)
+        apply (isirrefl_natneq) in X.
+        contradiction.
+      - unfold identity_matrix, Matrix.identity_matrix. (* TODO *)
+        rewrite coprod_rect_compute_2.
+        rewrite (stn_eq_or_neq_right r_neq_k), coprod_rect_compute_2.
+        apply rigmult0x.
+    }
+    rewrite b.
+    unfold f.
+    rewrite (stn_eq_or_neq_right X), coprod_rect_compute_2.
+    unfold identity_matrix, Matrix.identity_matrix.
+    rewrite (stn_neq_or_neq_refl), coprod_rect_compute_1.
+    apply (@riglunax2 F).
+  Admitted.
 
   (* iter from n -> 1, 0 return as we start with n - k (might = n)*)
   (* assumes we have the largest (non-zero) column-wise element at mat k k *)
   (* Probably also assumes k < n *)
   Definition gauss_clear_column ( n : nat ) (iter : nat) (k : (⟦ n ⟧%stn))
-           (mat : Matrix F n n) : Matrix F n n.
+             (mat : Matrix F n n) : Matrix F n n.
   Proof.
     revert mat.
-    induction iter as [ | m gauss_clear_column_IH ]; intros mat.
+    induction iter as [ | m gauss_clear_column_IH ]; intros mat. (*inv1 inv2.*)
     {exact mat. }
     set (piv := mat k k).
+    (*set (pr1j := n - 1 - m). *)
     set (pr1j := n - 1 - m).
-    assert (p: n - 1 - m < n).  (* TODO should be moved and probably superfluous anyway *)
+    assert (p: n - 1 - m < n).  (* TODO inline / refactor *)
     { apply (some_lemma m n k).  }
     set (j := make_stn n (pr1j) p).
     exact (gauss_clear_column_IH
+               (gauss_clear_column_step n m k j mat)).
+    (*exact (gauss_clear_column_IH
            (make_add_row_matrix k j (- (hqdiv (mat k k) (mat j k)))%hq
-           ** mat)).
+           ** mat)).*)
   Defined.
 
-
+  (* Now proving that the whole column is empty *)
   Lemma gauss_clear_column_invar { n : nat } (k j: (⟦ n ⟧%stn))
     (p : j > k) (mat : Matrix F n n) :
     (gauss_clear_column n (n - k)  j mat) k j = 0%hq.
@@ -2108,10 +2180,23 @@ Section Gauss.
     intros.
     unfold gauss_clear_column, nat_rect.
     unfold "**", "^", row, col, transpose, flip.
-    set (f_nk := _ (n - k) mat).
-    destruct (n - k).
-    - unfold f_nk. admit.
-    -
+    - unfold gauss_clear_column_step.
+      unfold make_add_row_matrix.
+      destruct (natgthorleh (n - k) 0 ) as [nmk_gt_0 | nmk_le_0].
+      +  admit.
+      + (* contradiction *)
+  Abort.
+
+  (* And proving no row < [ k ] is changed *)
+
+
+  Lemma gauss_unchanged_invar { n : nat } (k r: ⟦ n ⟧%stn)
+        (p : r < k) (mat : Matrix F n n) :
+    (gauss_clear_column  n (n - k) k  mat)  r = mat r.
+  Proof.
+    intros.
+    unfold gauss_clear_column.
+    unfold nat_rect.
   Abort.
 
   Fixpoint gauss_step_loop { n iter : nat } (k : (⟦ n ⟧%stn))
@@ -2164,7 +2249,18 @@ Section Gauss.
       contradicts j_gt_k j_lt_sk.
     - destruct (natlthorgeh k (S k)) as [k_lt_sk | k_geh_sk].
       + clear j_geh_sk. clear k_lt_sk.
+        unfold gauss_scalar_mult_row, gauss_switch_row.
+        do 2 rewrite (stn_neq_or_neq_refl), coprod_rect_compute_1.
+        assert (p: j ≠ k). {admit. } (*trivial *)
+        rewrite (stn_eq_or_neq_right p), coprod_rect_compute_2.
+        destruct (stn_eq_or_neq j (select_pivot_row mat k _)).
+        * rewrite coprod_rect_compute_1.
+          set (piv := select_pivot_row _ _ _).
+          (* Not true ! *)
+
+        simpl.
         admit.
+        * admit.
       + admit.
   Abort. (* We want to show that the pivot selection selects a pivot >= k *)
 
@@ -2415,15 +2511,54 @@ Section SmithNF.
 
   Local Definition I := hz.
 
+  Local Notation Σ := (iterop_fun 0%hz op1).
+
+  (* Does feel wasteful having to redefine this constantly - TODO coercions *)
+  (* TODO standardize use of the following unfolded definition or use
+     rows / cols here too *)
+  Local Definition matrix_mult_hz {m n : nat} (mat1 : Matrix I m n)
+    {p : nat} (mat2 : Matrix I n p) : (Matrix I m p) :=
+    λ i j, Σ (λ k, (mat1 i k * mat2 k j))%hz.
+
+  Local Notation "A ** B" := (matrix_mult_hz A B) (at level 80).
+
+  Lemma minab_le_b (a b : nat) : min a b ≤ a.
+  Proof.
+  Admitted.
+  Lemma minab_le_a (a b : nat) : min a b ≤ b.
+  Proof.
+  Admitted.
+
+  Lemma minabstn_to_astn { a b : nat } (i : ⟦ min a b ⟧%stn) : ⟦ a ⟧%stn.
+  Proof.
+  Admitted.
+
+  Lemma minabstn_to_bstn { a b : nat } (i : ⟦ min a b ⟧%stn) : ⟦ b ⟧%stn.
+  Proof.
+  Admitted.
+
+  Definition mat_to_square_mat { m n : nat } (mat : Matrix I m n) : Matrix I (min m n) (min m n).
+  Proof.
+    intros.
+    exact (λ i j : ⟦min m n⟧%stn, mat (minabstn_to_astn i) (minabstn_to_bstn j)).
+  Defined.
+
   (* Such code might go intro Matrix.v *)
-  Definition is_diagonal { m n : nat } (mat : Matrix R m n) :=
-    ∏ (i : ⟦ m ⟧%stn ) (j : ⟦ n ⟧%stn ),  (stntonat _ i != (stntonat _ j)) -> (mat i j) = 0%rig.
+  Definition is_diagonal { m n : nat } (mat : Matrix I m n) :=
+    ∏ (i : ⟦ m ⟧%stn ) (j : ⟦ n ⟧%stn ),  (stntonat _ i != (stntonat _ j)) -> (mat i j) = 0%hz.
 
-
+  Definition is_smithnf { m n : nat } (A : Matrix I m n) :
+    ∑ (S : Matrix I m m), ∑ (T : Matrix I n n),
+    is_diagonal  (S ** A ** T) ×
+    ∏ (i j : ⟦ min n m ⟧%stn), i < j ->
+    hzdiv (A (minabstn_to_bstn i) (minabstn_to_astn i))
+    (A (minabstn_to_bstn j) (minabstn_to_astn i)).
+  Abort.
 
   Definition MinAij {m n : nat} (A : Matrix I m n) (s : nat) (p : s < min m n) : I.
   Proof.
   Abort.
+
 
 
 End SmithNF.
