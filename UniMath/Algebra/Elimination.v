@@ -58,6 +58,49 @@ End Misc.
 
 Section PrelStn.
 
+ (* TODO: look for other places this can simplify proofs! and upstream? *)
+  Lemma stn_neq_or_neq_refl {n} {i : ⟦ n ⟧%stn} : stn_eq_or_neq i i = inl (idpath i).
+  Proof.
+    intros.
+    unfold stn_eq_or_neq.
+
+    destruct (nat_eq_or_neq i i).
+    2 : {admit. } (* i ≠ i, i in stn*)
+    rewrite coprod_rect_compute_1.
+    apply maponpaths.
+    (* Why can't we use e.g. unitl3 ? *)
+    remember p as p'. clear Heqp'.
+    apply subtypePath_prop in p.
+    set (fst := pr1 i).
+    assert (X : fst = fst). { apply idpath. }
+    assert (X = p').
+  Admitted.
+
+   (* TODO: naming ? upstream?  Certainly rename p, p0. *)
+  Lemma stn_eq_or_neq_left : ∏ {n : nat} {i j: (⟦ n ⟧)%stn} (p : (i = j)),
+                              stn_eq_or_neq i j = inl p.
+  Proof.
+    intros ? ? ? p. rewrite p. apply stn_neq_or_neq_refl.
+  Defined.
+
+  Lemma stn_eq_or_neq_right : ∏ {n : nat} {i j : (⟦ n ⟧)%stn} (p : (i ≠ j)),
+    stn_eq_or_neq i j = inr p.
+  Proof.
+    intros ? ? ? p. unfold stn_eq_or_neq.
+    destruct (nat_eq_or_neq i j).
+    - apply fromempty. rewrite p0 in p.
+       apply isirrefl_natneq in p.
+       assumption.
+    -  apply isapropcoprod.
+       + apply stn_ne_iff_neq in p. apply isdecpropfromneg.  assumption.
+       (*apply stn_ne_iff_neq in p.*)
+       + apply negProp_to_isaprop.
+       + intros i_eq_j.
+         rewrite i_eq_j in p.
+         apply isirrefl_natneq in p.
+         apply fromempty. assumption.
+  Defined.
+
   Local Definition truncate_pr1 { n : nat } ( f : ⟦ n ⟧%stn → hq) ( k : ⟦ n ⟧%stn ) : ( ⟦ n ⟧%stn → hq).
   Proof.
     intros.
@@ -511,72 +554,147 @@ Defined.
     apply idpath.
   Defined.
 
-  (*  ~ point of interest ~ *)
-  Lemma two_pulse_function_sums_to_point_rig { n : nat }
-        (* TODO: can we use “n” not “S n” *)
-      (f : ⟦ S n ⟧%stn -> R) (p : n > 0)
-      (i : ⟦ S n ⟧%stn) (j : ⟦ S n ⟧%stn) (ne_i_j : i ≠ j)
-      (X : forall (k: ⟦ S n ⟧%stn), (k ≠ i) -> (k ≠ j) -> (f k = 0%rig))
-    : (Σ f = f i + f j)%rig.
+  (* TODO Is that eq or weq? *)
+  Lemma empty_sum_eq_0  (v1 : Vector R 0) : Σ v1 = 0%rig.
   Proof.
+    apply zero_function_sums_to_zero.
+    apply funextfun. intros i.
+    apply fromempty. apply weqstn0toempty.
+    assumption.
+  Defined.
 
-    assert (H : f = (scalar_lmult_vec (f i) (identity_matrix i))
-                    ^ (scalar_lmult_vec (f j) (identity_matrix j))).
-    { admit. }
+  Lemma sum_pointwise_op1 { n : nat } (v1 v2 : Vector R n) : Σ (pointwise n op1 v1 v2) = (Σ v1 + Σ v2)%rig.
+  Proof.
+    unfold "^".
+    induction n.
+    - rewrite zero_function_sums_to_zero.
+      + assert (p1: Σ v1 = 0%rig). { apply (empty_sum_eq_0 v1). }
+        assert (p2: Σ v2 = 0%rig). { apply (empty_sum_eq_0 v2). }
+        rewrite p1, p2.
+        rewrite riglunax1. apply idpath.
+      + unfold const_vec.
+        apply funextfun. intros i.
+        apply fromempty. apply weqstn0toempty in i.
+        assumption.
+    - rewrite iterop_fun_step. 2: {apply riglunax1. }
+      unfold funcomp. rewrite replace_dni_last.
+      rewrite <- rigassoc1.
+      rewrite eqlen_vec_sums_mergeable. (* todo not the best name*)
+      rewrite (rigassoc1 R _ _  (v1 _) ).
+      rewrite <- (rigcomm1 _ (v1 _)).
+      rewrite (rigassoc1 R _ _ (v2 _)).
+      rewrite  (rigassoc1 R (v1 _ ) _ _).
+      rewrite <- (rigassoc1 R _ (v1 _) _).
+      rewrite iterop_fun_step. 2: {apply riglunax1. }
+      rewrite iterop_fun_step. 2: {apply riglunax1. }
+      unfold funcomp.
+      rewrite replace_dni_last.
+      reflexivity.
+  Defined.
+
+  Lemma idrow_sums_to_1 { n : nat } (i : ⟦ n ⟧%stn) :
+    Σ (@identity_matrix R n i) = 1%rig.
+  Proof.
+    assert (p : n > 0). {destruct n.       (* TODO once not everywhere *)
+                         - apply weqstn0toempty in i.
+                           contradiction.
+                         - apply natgthsn0. }
+
+    rewrite (pulse_function_sums_to_point_rig'' _ p i). (*TODO less versions of this, remove rig in name *)
+                                                        (* and p should be obtained inside pf sums... *)
+    - unfold identity_matrix.
+      rewrite stn_neq_or_neq_refl, coprod_rect_compute_1.
+      apply idpath.
+    - unfold identity_matrix.
+      intros ? i_neq_j.
+      rewrite (stn_eq_or_neq_right i_neq_j), coprod_rect_compute_2.
+      apply idpath.
+  Defined.
+
     (* factored approach:
        lemma that ∑ (v1 ^ v2) = ∑ v1 + ∑ v2
        lemma for ∑ (a ^ v) = a * ∑ v
        lemma that ∑ (standard_basis_vector n i) = 1
      (where (standard_basis_vector n i) = (identity_matrix i)) *)
-    (* direct approach: *)
-    rewrite (rigsum_dni f i).
-    rewrite <- (rigcomm1).
-    apply maponpaths.
-    set (p' := @nlesn_to_nminus1_len n (pr1 j) (pr2 j) p).
-    destruct (natlthorgeh (pr1 j) (pr1 i)) as [j_leq_i | j_geq_i].
-    - (* Next two nested proofs just to bound j. TODO improve ? *)
-      assert (e : (pr1 j) ≤ (pr1 i) - 1). {
-        apply natltminus1. assumption.
-      }
-      assert (e' : (pr1 j) < n). {
-        set (p'' := pr2 i).
-        (apply nlesn_to_nminus1_len in p'').
-        2 : { exact p. }
+  Lemma two_pulse_function_sums_to_point_rig { n : nat }
+        (* TODO: can we use “n” not “S n” *)
+      (f : ⟦ n ⟧%stn -> R) (p : n > 0)
+      (i : ⟦ n ⟧%stn) (j : ⟦ n ⟧%stn) (ne_i_j : i ≠ j)
+      (X : forall (k: ⟦ n ⟧%stn), (k ≠ i) -> (k ≠ j) -> (f k = 0%rig))
+    : (Σ f = f i + f j)%rig.
+  Proof.
 
-        apply (natlthlehtrans (pr1 j) (pr1 i) n). {assumption. }
-        set (p''' := nlesn_to_nminus1_len (pr2 i) p ).
-        apply natltminus1 in p'''.
-        apply (natlthsntoleh (pr1 i) n (pr2 i)).
-      }
-      set (j' := @make_stn n (pr1 j) e').
-      rewrite  (pulse_function_sums_to_point_rig' j' ).
-      + unfold drop_el_vector.
-        unfold funcomp, dni, di.
-        destruct (natlthorgeh j' i).
-        * rewrite coprod_rect_compute_1.
-          assert (natgthtogths n j' (pr2 j') = (natlthtolths j' n (pr2 j'))). (* TODO : remove *)
-          { apply idpath. }
-          apply maponpaths. apply subtypePath_prop.
+    assert (H : f = pointwise n op1  (scalar_lmult_vec (f i) (identity_matrix i))
+                    (scalar_lmult_vec (f j) (identity_matrix j))).
+    { unfold "^".
+      apply funextfun. intros k.
+      unfold identity_matrix, scalar_lmult_vec, "^", const_vec.
+      destruct (stn_eq_or_neq i k) as [i_eq_k | i_neq_k].
+      - rewrite coprod_rect_compute_1.
+        destruct (stn_eq_or_neq j k) as [j_eq_k | j_neq_k].
+        + (* contradiction i ≠ j *)
+          rewrite i_eq_k in ne_i_j.
+          rewrite j_eq_k in ne_i_j.
+          apply isirrefl_natneq in ne_i_j. contradiction.
+        + rewrite coprod_rect_compute_2.
+          rewrite rigmultx0.
+          rewrite rigrunax1.
+          rewrite rigrunax2.
+          rewrite i_eq_k.
           reflexivity.
-        * rewrite coprod_rect_compute_2.
-          apply natlthtonegnatgeh in j_leq_i.
-          contradicts h j_leq_i.
-      + unfold funcomp. unfold is_pulse_function.
-        intros. unfold dni, di.
-        destruct (natlthorgeh (j0) (i)).
-        * rewrite coprod_rect_compute_1.
+      - rewrite coprod_rect_compute_2.
+        rewrite rigmultx0.
+        rewrite riglunax1.
+        destruct (stn_eq_or_neq j k) as [j_eq_k | j_neq_k].
+        + rewrite coprod_rect_compute_1.
+          rewrite rigrunax2.
+          rewrite j_eq_k.
+          apply idpath.
+        + rewrite coprod_rect_compute_2.
+          rewrite rigmultx0.
           apply X.
-          assert (subtypePath_prop_neg:
-                    ∏ (A : UU) (B : A → hProp) (s s' : ∑ x : A, B x), pr1 s != pr1 s' → s != s').
+          * apply issymm_natneq. assumption.
+          * apply issymm_natneq. assumption.
+    }
 
-  Admitted.
+    rewrite H.
+    rewrite sum_pointwise_op1.  (*TODO rename to something sensible*)
+    unfold scalar_lmult_vec, const_vec.
 
+    rewrite <- (sum_is_ldistr _ (identity_matrix i)).
+    rewrite <- (sum_is_ldistr _ (identity_matrix j)).
+    rewrite idrow_sums_to_1, rigrunax2.
+    rewrite idrow_sums_to_1, rigrunax2.
+
+
+    unfold pointwise. (* TODO: this is just a result of excessive unfolds and
+                               some lemma(s) should be stated using
+                               const_vec etc *)
+    replace (@identity_matrix R n i j) with (@rigunel1 R).  (* TODO: used so often should be generalized *)
+    2 : { unfold identity_matrix.
+          rewrite (stn_eq_or_neq_right ne_i_j), coprod_rect_compute_2.
+          reflexivity.
+    }
+    replace (@identity_matrix R n j i) with (@rigunel1 R).
+    2 : { unfold identity_matrix.
+          apply issymm_natneq in ne_i_j.
+          rewrite (stn_eq_or_neq_right ne_i_j), coprod_rect_compute_2.
+          reflexivity.
+    }
+    do 2 rewrite rigmultx0.
+    rewrite riglunax1, rigrunax1.
+    unfold identity_matrix.
+    do 2 rewrite stn_neq_or_neq_refl, coprod_rect_compute_1.
+    do 2 rewrite rigrunax2.
+    apply idpath.
+
+  Defined.
   (*  ~ point of interest ~ *)
+  (* TODO remove and change mentions to the non apostrophesized version *)
   Lemma two_pulse_function_sums_to_points_rig' { n : nat }  (f : ⟦ n ⟧%stn -> R) (p : n > 0) :
     ∏ (i j: ⟦ n ⟧%stn ), (∏ (k: ⟦ n ⟧%stn), ((k ≠ i) -> (k ≠ j) ->
    (f k = 0%rig))) ->  (Σ f = op1 (f i) (f j)).
   Proof.
-    intros.
   Admitted.
 
   Lemma id_math_row_is_pf { n : nat }  : ∏ (r : ⟦ n ⟧%stn), (is_pulse_function r (identity_matrix r) ).
@@ -644,8 +762,11 @@ Defined.
 
   Defined.
 
+
   Lemma matrunel2 : ∏ (n : nat) (mat : Matrix R n n),
     (mat ** identity_matrix) = mat.
+  Proof.
+
   Admitted.
 
   Definition matrix_is_invertible {n : nat} (A : Matrix R n n) :=
@@ -719,7 +840,8 @@ Section MatricesF.
 
   Context { R : rig }.
 
-  (* Not really a clamp but setting every element at low indices to zero.  *)
+  (* Not really a clamp but setting every element at low indices to zero.
+     TODO Also should not be necessary with sensible selection of pivots *)
   Local Definition clamp_f {n : nat} (f : ⟦ n ⟧%stn -> hq) (cutoff : ⟦ n ⟧%stn) : (⟦ n ⟧%stn -> hq).
     intros i.
     induction (natlthorgeh i cutoff) as [LT | GTH].
@@ -734,7 +856,8 @@ Section MatricesF.
   Definition zero_vector_nat (n : nat) : ⟦ n ⟧%stn -> nat :=
     λ i : ⟦ n ⟧%stn, 0%nat.
 
-  (* This is not really a zero vector, it might be [0 1 2 3] ... Serves the purpose of a placeholder however. *)
+  (* This is not really a zero vector ... Serves the purpose of a placeholder however.
+     TODO rename or change definition *)
   Definition zero_vector_stn (n : nat) : ⟦ n ⟧%stn -> ⟦ n ⟧%stn.
   Proof.
     intros i.
@@ -759,7 +882,6 @@ Section MatricesF.
     + exact (λ i : (⟦ n - 1 ⟧%stn), vec (stnmtostnn (n - 1) n b i)).
     + exact (λ i : (⟦ n - 1 ⟧%stn), 0%hq). (* ? *)
   Defined.
-
 
 
 
@@ -808,6 +930,117 @@ Section MatricesF.
 
 End MatricesF.
 
+
+Section Unsorted.
+
+  Definition abs_hq (e: F) : F.
+  Proof.
+    destruct (hqgthorleh e 0%hq) as [? | ?].
+    - exact e.
+    - exact (- e)%hq.
+  Defined.
+
+  Lemma abs_ge_0_hq : ∏ (e : F), (hqgeh (abs_hq e) 0)%hq.
+  Proof.
+    intros e.
+    unfold abs_hq.
+    destruct (hqgthorleh e 0%hq).
+    - apply hqgthtogeh in h. assumption.
+    - apply hqleh0andminus in h. assumption.
+  Defined.
+
+  Definition max_hq_index_bounded { n : nat } (k : ⟦ n ⟧%stn) (f : ⟦ n ⟧%stn -> F) (ei ei' : hq × (⟦ n ⟧%stn)): hq × (⟦ n ⟧%stn).
+  Proof.
+    set (hq_index := max_hq_index ei ei').
+    induction (natlthorgeh (pr2 ei') k).
+    - induction (natlthorgeh (pr2 ei) k ).
+      + exact (f k,, k).
+      + exact ei. (* This case should not occur in our use *)
+    - induction (natlthorgeh (pr2 ei) k).
+      + exact ei'.
+      + exact (max_hq_index ei ei').
+
+  Defined.
+
+
+
+  Lemma max_hq_index_bounded_geq_k { n : nat } (k : ⟦ n ⟧%stn) (f : ⟦ n ⟧%stn -> F)
+    (ei ei' : hq × (⟦ n ⟧%stn)): pr2 (max_hq_index_bounded k f ei ei') >= k.
+  Proof.
+    unfold max_hq_index_bounded.
+    destruct (natlthorgeh (pr2 ei') k).
+    - rewrite coprod_rect_compute_1.
+      destruct (natlthorgeh (pr2 ei) k).
+      + rewrite coprod_rect_compute_1. apply isreflnatleh.
+      + rewrite coprod_rect_compute_2. assumption.
+    - rewrite coprod_rect_compute_2.
+      unfold max_hq_index.
+      destruct (natlthorgeh (pr2 ei) k).
+      + rewrite coprod_rect_compute_1.
+        assumption.
+      + rewrite coprod_rect_compute_2.
+        destruct (hqgthorleh (pr1 ei) (pr1 ei')).
+        * rewrite coprod_rect_compute_1.
+          assumption.
+        * rewrite coprod_rect_compute_2.
+          assumption.
+  Defined.
+
+  (* TODO: indicate absolute value in naming *)
+  Definition max_argmax_stnhq_bounded { n : nat } (vec : Vector F n) (pn : n > 0 ) (k : ⟦ n ⟧%stn) :=
+  foldleft (0%hq,, (0,, pn)) (max_hq_index_bounded k vec) (λ i : (⟦ n ⟧)%stn, abs_hq (vec i),, i).
+
+
+
+   Definition max_el' { n : nat } (v : Vector F n) (max' : F) : F.
+   Proof.
+     induction n as [ | m IH]. (* TODO naming *)
+     {exact max'. }
+     exact (max_hq max' (IH (@drop_el_vector F m v lastelement))). (* todo this or DNI ? *)
+   Defined.
+
+   Definition max_el { n : nat } (vec: Vector F n) := max_el' vec 0%hq.
+
+  (* TODO at least rename
+     it's in general not true if n = 0 (that's why we have k )*)
+  Lemma some_lemma (m n : nat) (k : ⟦ n ⟧%stn) : n - 1 - m < n.
+  Proof.
+    { assert (p' : n - 1 < n).
+      { apply natminuslthn.
+        - destruct n.
+          + destruct (weqstn0toempty k).
+          + apply natgthsn0.
+        - reflexivity.
+      }
+      destruct m.
+      - rewrite minus0r. assumption.
+      - apply (natlehlthtrans (n - 1 - S m) (n - 1) n ).
+        + apply natminuslehn.
+        + assumption.
+    }
+  Defined.
+
+  (* ( i,, i < n) to (i-1,, i-1 < n *)
+  Definition decrement_stn { n : nat } ( i : (⟦ n ⟧)%stn ) : ⟦ n ⟧%stn. (* (⟦ n ⟧)%stn.*)
+  Proof.
+    induction (natgtb (pr1 i) 0).
+    (*- assert ( p : ((pr1 i) - 1) < n). {  unfold stn in i. apply natlthtolthm1. apply i.  }*)
+    - assert ( p :  ((pr1 i) - 1) < n). {  unfold stn in i. apply natlthtolthm1. apply i.  }
+      exact ((pr1 i) - 1,, p).
+    - exact i.
+  Defined.
+
+
+  Definition switch_vector_els { n : nat } (vec : Vector F n) (e1 e2 : ⟦ n ⟧%stn) : Vector F n.
+  Proof.
+    intros i.
+    induction (stn_eq_or_neq i e1).
+    - exact (vec e2).
+    - induction (stn_eq_or_neq i e2).
+      + exact (vec e1).
+      + exact (vec i).
+  Defined.
+End Unsorted.
 
 
 Section Gauss.
@@ -932,11 +1165,6 @@ Section Gauss.
   Defined.
 
 
-  (* TODO: look for other places this can simplify proofs! and upstream? *)
-  Lemma stn_neq_or_neq_refl {n} {i : ⟦ n ⟧%stn} : stn_eq_or_neq i i = inl (idpath i).
-  Proof.
-  Admitted.
-
   (* The following three lemmata test the equivalence of multiplication by elementary matrices
      to swaps of indices. *)
   Lemma matrix_scalar_mult_is_elementary_row_op {n : nat} (mat : Matrix F n n) (s : F) (r : ⟦ n ⟧%stn) :
@@ -968,31 +1196,6 @@ Section Gauss.
 
 
 
-
-   (* TODO: naming ? upstream?  Certainly rename p, p0. *)
-  Lemma stn_eq_or_neq_left : ∏ {n : nat} {i j: (⟦ n ⟧)%stn} (p : (i = j)),
-                              stn_eq_or_neq i j = inl p.
-  Proof.
-    intros ? ? ? p. rewrite p. apply stn_neq_or_neq_refl.
-  Defined.
-
-  Lemma stn_eq_or_neq_right : ∏ {n : nat} {i j : (⟦ n ⟧)%stn} (p : (i ≠ j)),
-    stn_eq_or_neq i j = inr p.
-  Proof.
-    intros ? ? ? p. unfold stn_eq_or_neq.
-    destruct (nat_eq_or_neq i j).
-    - apply fromempty. rewrite p0 in p.
-       apply isirrefl_natneq in p.
-       assumption.
-    -  apply isapropcoprod.
-       + apply stn_ne_iff_neq in p. apply isdecpropfromneg.  assumption.
-       (*apply stn_ne_iff_neq in p.*)
-       + apply negProp_to_isaprop.
-       + intros i_eq_j.
-         rewrite i_eq_j in p.
-         apply isirrefl_natneq in p.
-         apply fromempty. assumption.
-  Defined.
 
   (* TODO : F should also be a general field, not short-hand for rationals specifically.
             This does not mandate any real change in any proofs ?*)
@@ -1887,77 +2090,8 @@ Section Gauss.
   Abort.
 
 
-  (*
-  Definition truncate_max_argmax_stnhq { n : nat } (f : ⟦ n ⟧%stn -> F) : ⟦ n ⟧%stn.
-  Proof.
-    induction (natlthorgeh
-   *)
 
-  (* TODO: do we need pn ? *)
-  (*
-  Definition max_vector_hq { n : nat } (p : n > 0) (f : ⟦ n ⟧%stn -> F) : F.
-  Proof.
-    induction n as [| n max_vector_hq].
-    - exact 0%hq.
-    - exact (max_hq ((max_vector_hq (@drop_el_vector F n f (0,, natgthsn0 n)))) (firstValue f)).
-  Defined. *)
 
-  Definition abs_hq (e: F) : F.
-  Proof.
-    destruct (hqgthorleh e 0%hq) as [? | ?].
-    - exact e.
-    - exact (- e)%hq.
-  Defined.
-
-  Lemma abs_ge_0_hq : ∏ (e : F), (hqgeh (abs_hq e) 0)%hq.
-  Proof.
-    intros e.
-    unfold abs_hq.
-    destruct (hqgthorleh e 0%hq).
-    - apply hqgthtogeh in h. assumption.
-    - apply hqleh0andminus in h. assumption.
-  Defined.
-
-  Definition max_hq_index_bounded { n : nat } (k : ⟦ n ⟧%stn) (f : ⟦ n ⟧%stn -> F) (ei ei' : hq × (⟦ n ⟧%stn)): hq × (⟦ n ⟧%stn).
-  Proof.
-    set (hq_index := max_hq_index ei ei').
-    induction (natlthorgeh (pr2 ei') k).
-    - induction (natlthorgeh (pr2 ei) k ).
-      + exact (f k,, k).
-      + exact ei. (* This case should not occur in our use *)
-    - induction (natlthorgeh (pr2 ei) k).
-      + exact ei'.
-      + exact (max_hq_index ei ei').
-
-  Defined.
-
-  (* A lemma for max_hq_index is needed *)
-
-  Lemma max_hq_index_bounded_geq_k { n : nat } (k : ⟦ n ⟧%stn) (f : ⟦ n ⟧%stn -> F)
-    (ei ei' : hq × (⟦ n ⟧%stn)): pr2 (max_hq_index_bounded k f ei ei') >= k.
-  Proof.
-    unfold max_hq_index_bounded.
-    destruct (natlthorgeh (pr2 ei') k).
-    - rewrite coprod_rect_compute_1.
-      destruct (natlthorgeh (pr2 ei) k).
-      + rewrite coprod_rect_compute_1. apply isreflnatleh.
-      + rewrite coprod_rect_compute_2. assumption.
-    - rewrite coprod_rect_compute_2.
-      unfold max_hq_index.
-      destruct (natlthorgeh (pr2 ei) k).
-      + rewrite coprod_rect_compute_1.
-        assumption.
-      + rewrite coprod_rect_compute_2.
-        destruct (hqgthorleh (pr1 ei) (pr1 ei')).
-        * rewrite coprod_rect_compute_1.
-          assumption.
-        * rewrite coprod_rect_compute_2.
-          assumption.
-  Defined.
-
-  (* TODO: indicate absolute value in naming *)
-  Definition max_argmax_stnhq_bounded { n : nat } (vec : Vector F n) (pn : n > 0 ) (k : ⟦ n ⟧%stn) :=
-  foldleft (0%hq,, (0,, pn)) (max_hq_index_bounded k vec) (λ i : (⟦ n ⟧)%stn, abs_hq (vec i),, i).
 
 
   (* Is it sufficient to prove this point, we might not need to verify the index corresponds to
@@ -1984,14 +2118,8 @@ Section Gauss.
      exact (pr2 (max_argmax_stnhq_bounded ((transpose mat) k ) pn k)).
    Defined.
 
-   Definition max_el' { n : nat } (v : Vector F n) (max' : F) : F.
-   Proof.
-     induction n as [ | m IH]. (* TODO naming *)
-     {exact max'. }
-     exact (max_hq max' (IH (@drop_el_vector F m v lastelement))). (* todo this or DNI ? *)
-   Defined.
 
-   Definition max_el { n : nat } (vec: Vector F n) := max_el' vec 0%hq.
+
    (*
    (* iter starts at lastelement (n - 1) and goes to 0*)
    Definition argmax' { n : nat } (iter : nat) (v : Vector F n) (max' : F) (argmax' : ⟦ n ⟧%stn) : ⟦ n ⟧%stn.
@@ -2060,24 +2188,6 @@ Section Gauss.
                                                              This should be elementary row op ! *)
   Defined.
 
-  (* TODO at least rename
-     it's in general not true if n = 0 (that's why we have k )*)
-  Lemma some_lemma (m n : nat) (k : ⟦ n ⟧%stn) : n - 1 - m < n.
-  Proof.
-    { assert (p' : n - 1 < n).
-      { apply natminuslthn.
-        - destruct n.
-          + destruct (weqstn0toempty k).
-          + apply natgthsn0.
-        - reflexivity.
-      }
-      destruct m.
-      - rewrite minus0r. assumption.
-      - apply (natlehlthtrans (n - 1 - S m) (n - 1) n ).
-        + apply natminuslehn.
-        + assumption.
-    }
-  Defined.
 
   Definition gauss_clear_column_step (n : nat) (iter : nat) (k : (⟦ n ⟧%stn))
              (j : (⟦ n ⟧%stn)) (mat : Matrix F n n) : Matrix F n n.
@@ -2111,7 +2221,6 @@ Section Gauss.
       rewrite (stn_eq_or_neq_right k_neq_j), coprod_rect_compute_2.
       rewrite (@rigrunax2 F), (@riglunax1 F), (@rigmultx0 F), (@rigrunax1 F).
       unfold const_vec.
-      Check mat j k.
       assert (p': mat k k != 0%hq). { admit. }
       admit. (*very annoying but looks ok? *)
   Admitted.
@@ -2126,7 +2235,10 @@ Section Gauss.
     unfold gauss_clear_column_step.
     unfold make_add_row_matrix, "**".
     unfold "^", col, row, transpose, flip.
-    assert (p : n > 0). { admit. }
+    assert (p : n > 0). { destruct n.
+                          - apply weqstn0toempty in k.
+                            contradiction.
+                          - apply natgthsn0. }
     set (f := λ i : (⟦ n ⟧%stn), _).
     assert (b : Σ f = f r ). {
       apply (@pulse_function_sums_to_point_rig' F n r _).
@@ -2148,7 +2260,7 @@ Section Gauss.
     unfold identity_matrix, Matrix.identity_matrix.
     rewrite (stn_neq_or_neq_refl), coprod_rect_compute_1.
     apply (@riglunax2 F).
-  Admitted.
+  Defined.
 
   (* iter from n -> 1, 0 return as we start with n - k (might = n)*)
   (* assumes we have the largest (non-zero) column-wise element at mat k k *)
@@ -2167,9 +2279,7 @@ Section Gauss.
     set (j := make_stn n (pr1j) p).
     exact (gauss_clear_column_IH
                (gauss_clear_column_step n m k j mat)).
-    (*exact (gauss_clear_column_IH
-           (make_add_row_matrix k j (- (hqdiv (mat k k) (mat j k)))%hq
-           ** mat)).*)
+
   Defined.
 
   (* Now proving that the whole column is empty *)
@@ -2183,7 +2293,9 @@ Section Gauss.
     - unfold gauss_clear_column_step.
       unfold make_add_row_matrix.
       destruct (natgthorleh (n - k) 0 ) as [nmk_gt_0 | nmk_le_0].
-      +  admit.
+      + destruct ((n - k)).
+        * admit.
+        * admit.
       + (* contradiction *)
   Abort.
 
@@ -2258,32 +2370,11 @@ Section Gauss.
           set (piv := select_pivot_row _ _ _).
           (* Not true ! *)
 
-        simpl.
-        admit.
+        simpl. admit.
         * admit.
       + admit.
   Abort. (* We want to show that the pivot selection selects a pivot >= k *)
 
-  (* ( i,, i < n) to (i-1,, i-1 < n *)
-  Definition decrement_stn { n : nat } ( i : (⟦ n ⟧)%stn ) : ⟦ n ⟧%stn. (* (⟦ n ⟧)%stn.*)
-  Proof.
-    induction (natgtb (pr1 i) 0).
-    (*- assert ( p : ((pr1 i) - 1) < n). {  unfold stn in i. apply natlthtolthm1. apply i.  }*)
-    - assert ( p :  ((pr1 i) - 1) < n). {  unfold stn in i. apply natlthtolthm1. apply i.  }
-      exact ((pr1 i) - 1,, p).
-    - exact i.
-  Defined.
-
-
-  Definition switch_vector_els { n : nat } (vec : Vector F n) (e1 e2 : ⟦ n ⟧%stn) : Vector F n.
-  Proof.
-    intros i.
-    induction (stn_eq_or_neq i e1).
-    - exact (vec e2).
-    - induction (stn_eq_or_neq i e2).
-      + exact (vec e1).
-      + exact (vec i).
-  Defined.
 
   (* k  : 1 -> n - 1 *)
   Definition vec_row_ops_step { n : nat } (k pivot_ik: ⟦ n ⟧%stn)  (mat : Matrix F n n) (vec : Vector F n) : Vector F n.
@@ -2295,6 +2386,7 @@ Section Gauss.
     set ( j := make_stn 1 0 pr2stn1).
     exact (  ((((vec' i)) + ((vec' k)) * (mat i k))%hq)).  (* Would like to verify this construction works*)
   Defined.
+
 
 
   (* This one especially needs to be checked for correctness (use of indices) *)
@@ -2334,7 +2426,7 @@ Section Gauss.
   Defined.
 
   Definition gauss_clears_diagonal : True.
-  Proof.
+    Proof.
   Abort.
 
 
