@@ -2189,7 +2189,7 @@ Section Gauss.
   Defined.
 
 
-  Definition gauss_clear_column_step (n : nat) (iter : nat) (k : (⟦ n ⟧%stn))
+  Definition gauss_clear_column_step (n : nat) (k : (⟦ n ⟧%stn))
              (j : (⟦ n ⟧%stn)) (mat : Matrix F n n) : Matrix F n n.
   Proof.
     (*exact ((make_add_row_matrix k j (- (hqdiv (mat j k) (mat k k)))%hq
@@ -2198,19 +2198,42 @@ Section Gauss.
            ** mat)).
   Defined.
 
-  (* The clear column step operation does clear the target row*)
-  Lemma gauss_clear_column_step_inv1 (n : nat) (iter : nat) (k : (⟦ n ⟧%stn))
-        (j : (⟦ n ⟧%stn)) (k_neq_j : k ≠ j)  (mat : Matrix F n n) :
-    (gauss_clear_column_step n iter k j mat) j k = 0%hq.
+  Require Import UniMath.NumberSystems.Integers.
+
+  Lemma hqldistr (x y z : hq) : paths (z * (x + y))%hq (z * x + z * y)%hq.
   Proof.
     intros.
-    set (b := 2).
+    apply (rigldistr F x y z).
+  Defined.
+
+  Lemma hqrdistr (x y z : hq) : paths((x + y) * z)%hq (x * z + y * z)%hq.
+  Proof.
+    intros.
+    apply (rigrdistr F x y z).
+  Defined.
+
+
+  Lemma hqminuscomm (x y : hq) : (x * - y)%hq = (- x * y)%hq.
+    Proof.
+  Admitted.
+
+
+  Lemma hqmultcommminus (x y : hq) : paths (- x * y)%hq (- y * x)%hq.
+    Proof.
+  Admitted.
+
+  (* The clear column step operation does clear the target row*)
+  Lemma gauss_clear_column_step_inv1 (n : nat) (k : (⟦ n ⟧%stn))
+        (j : (⟦ n ⟧%stn)) (k_neq_j : k ≠ j)  (mat : Matrix F n n) :
+    (gauss_clear_column_step n k j mat) j k = 0%hq.
+  Proof.
+    intros.
     unfold gauss_clear_column_step.
     unfold make_add_row_matrix, "**". (* TODO unfold matrix mult *)
     unfold row, col, transpose, flip, "^".
     assert (p : n > 0). { admit. }
     set (f := λ i, _).
-    rewrite (@two_pulse_function_sums_to_points_rig' F n _ p k j).
+    rewrite (@two_pulse_function_sums_to_points_rig' F n _ p k j). (*TODO fix ugly signature *)
     - unfold f.
       apply issymm_natneq in k_neq_j.
       rewrite (stn_neq_or_neq_refl), coprod_rect_compute_1.
@@ -2222,14 +2245,36 @@ Section Gauss.
       rewrite (@rigrunax2 F), (@riglunax1 F), (@rigmultx0 F), (@rigrunax1 F).
       unfold const_vec.
       assert (p': mat k k != 0%hq). { admit. }
-      admit. (*very annoying but looks ok? *)
-  Admitted.
+      etrans. { apply maponpaths. apply riglunax2. }
+      rewrite <- hqmultcomm.
+      set (c := 3).
+      rewrite ( hqminuscomm (mat k k) _).
+      rewrite <- hqmultassoc.
+      rewrite hqmultcommminus.
+      rewrite hqmultassoc.
+      rewrite hqisrinvmultinv.
+      2 : {exact p'. }
+      rewrite hqmultr1.
+      apply hqlminus.
+    - intros i i_neq_k i_neq_j.
+      unfold f.
+      rewrite (stn_neq_or_neq_refl), coprod_rect_compute_1.
+      unfold identity_matrix, Matrix.identity_matrix. (*TODO *)
+      apply issymm_natneq in i_neq_k.
+      apply issymm_natneq in i_neq_j.
+      rewrite (stn_eq_or_neq_right i_neq_k), coprod_rect_compute_2.
+      rewrite (stn_eq_or_neq_right i_neq_j), coprod_rect_compute_2.
+      rewrite hqplusl0.
+      unfold const_vec.
+      rewrite (rigmultx0 F (_)%hq).
+      apply rigmult0x.
+  Admitted. (*   remaining : n > 0     mat k k != 0%hq *)
 
   (* TODOs: several. This proof is terrible ? *)
   (* The clear column step operation only changes the target row*)
-  Lemma gauss_clear_column_step_inv2 (n : nat) (iter : nat) (k: (⟦ n ⟧%stn))
+  Lemma gauss_clear_column_step_inv2 (n : nat) (k: (⟦ n ⟧%stn))
         (mat : Matrix F n n) (r : (⟦ n ⟧%stn)) : ∏ (j : ⟦ n ⟧%stn),
-        (r ≠ j) -> (gauss_clear_column_step n iter k j mat) r j = mat r j.
+        (r ≠ j) -> (gauss_clear_column_step n k j mat) r j = mat r j.
   Proof.
     intros.
     unfold gauss_clear_column_step.
@@ -2264,12 +2309,11 @@ Section Gauss.
 
   (* iter from n -> 1, 0 return as we start with n - k (might = n)*)
   (* assumes we have the largest (non-zero) column-wise element at mat k k *)
-  (* Probably also assumes k < n *)
-  Definition gauss_clear_column ( n : nat ) (iter : nat) (k : (⟦ n ⟧%stn))
+  Definition gauss_clear_column ( n : nat ) (k : (⟦ n ⟧%stn))
              (mat : Matrix F n n) : Matrix F n n.
   Proof.
     revert mat.
-    induction iter as [ | m gauss_clear_column_IH ]; intros mat. (*inv1 inv2.*)
+    induction (n - k) as [ | m gauss_clear_column_IH ]; intros mat. (*inv1 inv2.*)
     {exact mat. }
     set (piv := mat k k).
     (*set (pr1j := n - 1 - m). *)
@@ -2278,25 +2322,24 @@ Section Gauss.
     { apply (some_lemma m n k).  }
     set (j := make_stn n (pr1j) p).
     exact (gauss_clear_column_IH
-               (gauss_clear_column_step n m k j mat)).
+               (gauss_clear_column_step n k j mat)).
 
   Defined.
 
   (* Now proving that the whole column is empty *)
   Lemma gauss_clear_column_invar { n : nat } (k j: (⟦ n ⟧%stn))
     (p : j > k) (mat : Matrix F n n) :
-    (gauss_clear_column n (n - k)  j mat) k j = 0%hq.
+    (gauss_clear_column n j mat) k j = 0%hq.
   Proof.
     intros.
     unfold gauss_clear_column, nat_rect.
     unfold "**", "^", row, col, transpose, flip.
     - unfold gauss_clear_column_step.
       unfold make_add_row_matrix.
-      destruct (natgthorleh (n - k) 0 ) as [nmk_gt_0 | nmk_le_0].
-      + destruct ((n - k)).
-        * admit.
-        * admit.
-      + (* contradiction *)
+      (*destruct (natgthorleh (n - j) 0 ) as [nmj_gt_0 | nmj_le_0].
+      2: { admit. } (*contradiction*)*)
+      induction (natchoice0 (n - j)).
+      +
   Abort.
 
   (* And proving no row < [ k ] is changed *)
@@ -2304,7 +2347,7 @@ Section Gauss.
 
   Lemma gauss_unchanged_invar { n : nat } (k r: ⟦ n ⟧%stn)
         (p : r < k) (mat : Matrix F n n) :
-    (gauss_clear_column  n (n - k) k  mat)  r = mat r.
+    (gauss_clear_column  n k  mat)  r = mat r.
   Proof.
     intros.
     unfold gauss_clear_column.
@@ -2368,7 +2411,7 @@ Section Gauss.
         destruct (stn_eq_or_neq j (select_pivot_row mat k _)).
         * rewrite coprod_rect_compute_1.
           set (piv := select_pivot_row _ _ _).
-          (* Not true ! *)
+          (* Not true ! Where did we go wrong ? *)
 
         simpl. admit.
         * admit.
