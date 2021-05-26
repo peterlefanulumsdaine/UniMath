@@ -33,6 +33,7 @@ Require Import UniMath.PAdics.z_mod_p.
 (*Local Definition R := pr1hSet natcommrig.*)
 Context { R : rig }.
 Local Definition F := hq.
+Opaque F.
 
 (* The first few sections contain Definitions and Lemmas that
    should be moved further up the project tree *)
@@ -2222,9 +2223,9 @@ Section Gauss.
     Proof.
   Admitted.
 
-  (* The clear column step operation does clear the target row*)
+  (* The clear column step operation does clear the target entry (mat (k j)) *)
   Lemma gauss_clear_column_step_inv1 (n : nat) (k : (⟦ n ⟧%stn))
-        (j : (⟦ n ⟧%stn)) (k_neq_j : k ≠ j)  (mat : Matrix F n n) :
+        (j : (⟦ n ⟧%stn)) (mat : Matrix F n n) (k_neq_j : k ≠ j) :
     (gauss_clear_column_step n k j mat) j k = 0%hq.
   Proof.
     intros.
@@ -2273,7 +2274,7 @@ Section Gauss.
   (* TODOs: several. This proof is terrible ? *)
   (* The clear column step operation only changes the target row*)
   Lemma gauss_clear_column_step_inv2 (n : nat) (k: (⟦ n ⟧%stn))
-        (mat : Matrix F n n) (r : (⟦ n ⟧%stn)) : ∏ (j : ⟦ n ⟧%stn),
+         (r : (⟦ n ⟧%stn)) (mat : Matrix F n n) : ∏ (j : ⟦ n ⟧%stn),
         (r ≠ j) -> (gauss_clear_column_step n k j mat) r j = mat r j.
   Proof.
     intros.
@@ -2309,40 +2310,79 @@ Section Gauss.
 
   (* iter from n -> 1, 0 return as we start with n - k (might = n)*)
   (* assumes we have the largest (non-zero) column-wise element at mat k k *)
-  Definition gauss_clear_column ( n : nat ) (k : (⟦ n ⟧%stn))
+  Definition gauss_clear_column ( iter : nat ) { n : nat } (k : (⟦ n ⟧%stn))
              (mat : Matrix F n n) : Matrix F n n.
   Proof.
     revert mat.
-    induction (n - k) as [ | m gauss_clear_column_IH ]; intros mat. (*inv1 inv2.*)
+    induction iter as [ | m gauss_clear_column_IH ]; intros mat. (*inv1 inv2.*)
     {exact mat. }
+    induction (natgthorleh (m) k).
+    2 : { exact mat. }
     set (piv := mat k k).
-    (*set (pr1j := n - 1 - m). *)
     set (pr1j := n - 1 - m).
-    assert (p: n - 1 - m < n).  (* TODO inline / refactor *)
-    { apply (some_lemma m n k).  }
+    assert (p: n - 1 - m < n). { apply (some_lemma m n k).  }
     set (j := make_stn n (pr1j) p).
     exact (gauss_clear_column_IH
                (gauss_clear_column_step n k j mat)).
 
   Defined.
 
-  (* Now proving that the whole column is empty *)
+
+  Lemma snchoice0 (n : nat) : (0 = n) ⨿ (0 < S n).
+  Proof.
+    induction n as [ | n].
+    use ii1. apply idpath.
+    use ii2. apply natgthsn0.
+  Qed.
+
+  Lemma gauss_clear_column_IHn { n : nat } (k j: (⟦ n ⟧%stn))
+    (n' : nat) (p' : n' = n)
+    (p : j > k)  (mat : Matrix F n n) :
+    (gauss_clear_column (n') k mat) k j = 0%hq
+    -> (gauss_clear_column (S n') k mat) k j = 0%hq.
+  Proof.
+    intros IHn.
+    (*rewrite <- X.*)
+    (*rewrite nat_rect_step.*)
+    simpl.
+    destruct n'.
+    - simpl.
+      apply IHn.
+    - destruct (natgthorleh (S n') k) as [? | ?].
+      + 
+        destruct (natgthorleh n' k) as [? | ?].
+        * rewrite coprod_rect_compute_1.
+          admit. (* here we probably want to rewrite gauss_clear_column_step
+                    so that rows /els j < k are left unchanged
+                    or if this is the case prve invariant. *)
+        * rewrite coprod_rect_compute_1.
+          rewrite <- IHn.
+          assert (contr:  n' = k). {admit. }
+          rewrite contr.
+          unfold gauss_clear_column_step.
+          admit. (* here we have n' = k and should have a contradiction
+                    as we don't add a multiple of a row to itself (unsound) *)
+      + rewrite coprod_rect_compute_2.
+        (* S n' ≤ k   should mean we finished iterating ? *)
+        rewrite p' in IHn.
+        rewrite p' in h.
+        admit. (* contr *)
+  Admitted.
+
+  (* Now proving that all entries (k, j)  (j > k) are empty *)
   Lemma gauss_clear_column_invar { n : nat } (k j: (⟦ n ⟧%stn))
-    (p : j > k) (mat : Matrix F n n) :
-    (gauss_clear_column n j mat) k j = 0%hq.
+    (n' : nat) (p' : S n = n')
+    (p : j > k)  (mat : Matrix F n n) :
+    (gauss_clear_column n' k mat) k j = 0%hq.
   Proof.
     intros.
-    unfold gauss_clear_column, nat_rect.
     unfold "**", "^", row, col, transpose, flip.
-    - unfold gauss_clear_column_step.
-      unfold make_add_row_matrix.
-      (*destruct (natgthorleh (n - j) 0 ) as [nmj_gt_0 | nmj_le_0].
-      2: { admit. } (*contradiction*)*)
-      induction (natchoice0 (n - j)).
-      +
-  Abort.
-
-  (* And proving no row < [ k ] is changed *)
+    unfold nat_rect.
+    induction n' as [| a b].
+    - admit.
+    -  apply gauss_clear_column_IHn.
+       +
+   Abort.
 
 
   Lemma gauss_unchanged_invar { n : nat } (k r: ⟦ n ⟧%stn)
