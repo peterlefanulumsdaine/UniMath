@@ -2344,6 +2344,7 @@ Section Gauss.
   Defined.*)
 
   (* Refactored to include induction on natgthorleh j k*)
+  (* Given nxn matrix, and a chosen diagonal pivot entry k (?maybe assumed non-zero), and a row index j, clear the [j,k] entry by subtracting suitable multiple of row k. *)
   Definition gauss_clear_column_step (n : nat) (k : (⟦ n ⟧%stn))
              (j : (⟦ n ⟧%stn)) (mat : Matrix F n n) : Matrix F n n.
   Proof.
@@ -2583,13 +2584,13 @@ Section Gauss.
 
   (* iter from n -> 1, 0 return as we start with n - k (might = n)*)
   (* assumes we have the largest (non-zero) column-wise element at mat k k *)
-  Definition gauss_clear_column  { n : nat } (iter : nat) (p : iter < n)
+  Definition gauss_clear_column_segment { n : nat } (iter : nat) (p : iter < n)
              (k : (⟦ n ⟧%stn))
              (mat : Matrix F n n) : Matrix F n n.
   Proof.
     revert mat.
     induction iter as [ | m gauss_clear_column_IH ]; intros mat. (*inv1 inv2.*)
-    {exact mat. }
+    { exact mat. }
     (*induction (natgthorleh (S m) k). (* Is this expression causing some issues ? *)
     2 : { exact mat. }*)
     set (piv := mat k k).
@@ -2618,7 +2619,7 @@ Section Gauss.
 
   Lemma gauss_clear_column_inv0 { m n : nat} (p : n = S m) (p' : m < n) (k : (⟦ n ⟧%stn))
         (mat : Matrix F n n) :
-    gauss_clear_column m p' k mat = gauss_clear_column_rowwise k mat.
+    gauss_clear_column_segment m p' k mat = gauss_clear_column_rowwise k mat.
   Proof.
     unfold gauss_clear_column_rowwise.
     apply funextfun. intros i.
@@ -2637,8 +2638,8 @@ Section Gauss.
   Lemma gauss_clear_column_IHn { n : nat } (k j: (⟦ n ⟧%stn))
     (n' : nat) (p : n' < n)
     (p' : j > k)  (mat : Matrix F n n) :
-    ((gauss_clear_column n' p k mat) k j = 0%hq)
-    -> ((gauss_clear_column (S n') p k mat) k j = 0%hq).
+    ((gauss_clear_column_segment n' p k mat) k j = 0%hq)
+    -> ((gauss_clear_column_segment (S n') p k mat) k j = 0%hq).
   Proof.
     intros IHn.
     (*rewrite <- X.*)
@@ -2664,7 +2665,7 @@ Section Gauss.
                     as we don't add a multiple of a row to itself (unsound) *)
       + rewrite coprod_rect_compute_2.
         (* S n' ≤ k   should mean we finished iterating ? *)
-        assert (gauss_clear_column n' k mat k j = 0%hq). {admit. }
+        assert (gauss_clear_column_segment n' k mat k j = 0%hq). {admit. }
         set (Y := IHn' X).
 
         admit. (* contr *)
@@ -2698,24 +2699,35 @@ Section Gauss.
       apply idpath.
   Defined.
 
+  (* [gauss_clear_column_segment n' p k mat] leaves all rows below [n'] unchanged *)
+  Lemma gauss_clear_column_segment_below_segment
+        { n : nat } (k : (⟦ n ⟧%stn))
+        (n' : nat) (p : n' < n) (mat : Matrix F n n)
+    : ∏ r : (⟦ n ⟧%stn),
+        r > n'
+        -> ((gauss_clear_column_segment n' p k mat) r = mat r).
+  Proof.
+  Admitted.
 
-  (* Proving the column clearing procedure works on one row at a time *)
+  (* [gauss_clear_column_segment n' p k mat] on rows above [n']
+   gives the same as clearing each of those rows individually with [gauss_clear_column_step'] *)
   Lemma gauss_clear_column_inv0
         { n : nat } (k : (⟦ n ⟧%stn))
-        (n' : nat) (p : n' < n)  (mat : Matrix F n n) : ∏ r : (⟦ n ⟧%stn),
-    r <= k -> ((gauss_clear_column n' p k mat) r = (gauss_clear_column_step' n k r mat) r).
+        (n' : nat) (p : n' < n) (mat : Matrix F n n)
+    : ∏ r : (⟦ n ⟧%stn),
+        r <= n' -> ((gauss_clear_column_segment n' p k mat) r = (gauss_clear_column_step' n k r mat) r).
   Proof.
     revert mat k.
     induction n'.
-    - unfold gauss_clear_column, gauss_clear_column_step'.
+    - unfold gauss_clear_column_segment, gauss_clear_column_step'.
       simpl.
       admit. (*true *)
     - assert (q : n' < n). admit.
       Check 1.
       intros mat k r.
       set (sn' := make_stn n (S n') p).
-      replace (gauss_clear_column (S n') p k mat)
-        with (gauss_clear_column n' q k (gauss_clear_column_step' n k sn' mat)). (* By definition *)
+      replace (gauss_clear_column_segment (S n') p k mat)
+        with (gauss_clear_column_segment n' q k (gauss_clear_column_step' n k sn' mat)). (* By definition *)
       +
         set (IHnp := IHn' q mat k r).
         set (IHnp' := IHn' q (gauss_clear_column_step' n k sn' mat) k r).
@@ -2739,17 +2751,15 @@ Section Gauss.
         { n : nat } (k : (⟦ n ⟧%stn))
         (n' : nat) (p : n' < n) (p': n' < k)
         (mat : Matrix F n n) :
-    ((gauss_clear_column n' p k mat) = mat ).
+    ((gauss_clear_column_segment n' p k mat) = mat ).
   Proof.
     intros.
     apply funextfun. intros i.
-    unfold gauss_clear_column.
+    unfold gauss_clear_column_segment.
     intros.
     destruct n'.
     - simpl. reflexivity.
   Abort. (* Why did this one break? *)
-
-
 
 
   Lemma gauss_step_upper_rows_invariant { n : nat } (k : (⟦ n ⟧%stn)) (mat : Matrix F n n):
