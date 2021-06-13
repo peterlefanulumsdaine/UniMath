@@ -857,13 +857,17 @@ Section MatricesF.
   Definition zero_vector_nat (n : nat) : ⟦ n ⟧%stn -> nat :=
     λ i : ⟦ n ⟧%stn, 0%nat.
 
-  (* This is not really a zero vector ... Serves the purpose of a placeholder however.
-     TODO rename or change definition *)
+  (* TODO is this a 0-vector? *)
   Definition zero_vector_stn (n : nat) : ⟦ n ⟧%stn -> ⟦ n ⟧%stn.
   Proof.
     intros i.
     assumption.
   Defined.
+
+  (* Defining permutations as stn -> stn . TODO What are the existing
+     definitions for permutations ? *)
+  Definition id_permutation (n : nat) : ⟦ n ⟧%stn -> ⟦ n ⟧%stn :=
+    λ i : ⟦ n ⟧%stn, i.
 
 
   (* The following definitions set up helper functions on finite sets which are then used in formalizing Gaussian Elimination*)
@@ -2383,6 +2387,7 @@ Section Gauss.
 
   Require Import UniMath.NumberSystems.Integers.
 
+  (* TODO question is if we want these or just use @rigldistr F directly?*)
   Lemma hqldistr (x y z : hq) : paths (z * (x + y))%hq (z * x + z * y)%hq.
   Proof.
     intros.
@@ -2491,10 +2496,9 @@ Section Gauss.
 
 
     (* The clear column step operation only changes the target row*)
-  (* TODO why are we checking mat r j'? Is this useful ?*)
   Lemma gauss_clear_column_step_inv2 (n : nat) (k: (⟦ n ⟧%stn))
          (r : (⟦ n ⟧%stn)) (mat : Matrix F n n) (j : ⟦ n ⟧%stn)
-        (p : r ≠ j)  : (gauss_clear_column_step n k j mat) r = mat r. (* TODO p' unecessary ? *)
+        (p : r ≠ j)  : (gauss_clear_column_step n k j mat) r = mat r.
   Proof.
     intros.
     unfold gauss_clear_column_step.
@@ -2557,6 +2561,27 @@ Section Gauss.
     rewrite (stn_neq_or_neq_refl), coprod_rect_compute_1.
     apply (@riglunax2 F).
   Defined.
+
+  Lemma gauss_clear_column_step_inv3
+     (n : nat) (k: (⟦ n ⟧%stn))
+         (r : (⟦ n ⟧%stn)) (mat : Matrix F n n) (j j' : ⟦ n ⟧%stn)
+         (p : r < j) : (gauss_clear_column_step n k j mat) r j' = mat r j'.
+  Proof.
+    assert (p': r ≠ j). admit. (* r < k -> r ≠ k *)
+    rewrite (gauss_clear_column_step_inv2 n k r mat j  p').
+    apply idpath.
+  Admitted.
+
+  Lemma gauss_clear_column_step_inv4
+     (n : nat) (k: (⟦ n ⟧%stn))
+         (j : (⟦ n ⟧%stn)) (mat : Matrix F n n)
+         (p : j ≤ k) : (gauss_clear_column_step n k j mat) = mat.
+  Proof.
+    unfold gauss_clear_column_step.
+    destruct (natgthorleh j k).
+    2: {apply idpath. }
+    admit. (* j ≤ k -> j > k -> ∅ *)
+  Admitted.
 
   (* This one broke in rewriting the gauss_step definition.
 
@@ -2703,54 +2728,176 @@ Section Gauss.
   Lemma gauss_clear_column_inv0
         { n : nat } (k : (⟦ n ⟧%stn))
         (n' : nat) (p : n' < n)  (mat : Matrix F n n) : ∏ r : (⟦ n ⟧%stn),
-    r <= k -> ((gauss_clear_column n' p k mat) r = (gauss_clear_column_step' n k r mat) r).
+    r <= n' -> ((gauss_clear_column n' p k mat) r = (gauss_clear_column_step' n k r mat) r).
   Proof.
     revert mat k.
     induction n'.
-    - unfold gauss_clear_column, gauss_clear_column_step'.
+    - intros mat k r r_le_0.
+      unfold gauss_clear_column, gauss_clear_column_step'.
       simpl.
-      admit. (*true *)
+      destruct (natgthorleh r k).
+      + (* contr r > k   and   r ≤ 0).  *)
+        admit.
+      + apply idpath.
     - assert (q : n' < n). admit.
-      Check 1.
-      intros mat k r.
       set (sn' := make_stn n (S n') p).
+      intros mat k r r_le_sn.
       replace (gauss_clear_column (S n') p k mat)
         with (gauss_clear_column n' q k (gauss_clear_column_step' n k sn' mat)). (* By definition *)
       +
         set (IHnp := IHn' q mat k r).
         set (IHnp' := IHn' q (gauss_clear_column_step' n k sn' mat) k r).
-        rewrite IHnp'.
-        destruct (natgthorleh k r) as [k_eq_r | k_neq_r].
-        * do 3 rewrite <- gauss_clear_column_step_eq.
-          About gauss_clear_column_step_inv2'.
-          (*apply funextfun. intros x.*)
+        rewrite IHnp'. 2 : {admit. }
+        (*do 3 rewrite <- gauss_clear_column_step_eq.*) (* so we can use the invariant lemmas *)
+        destruct (stn_eq_or_neq r sn') as [r_eq_sn' | ?].
+        * rewrite r_eq_sn'.
+          set (step := gauss_clear_column_step n k sn').
+          replace (step (step mat) sn') with (step mat sn').
+          (*{ reflexivity. }*)
+          unfold step.
+          destruct (natgthorleh sn' k) as [? | ?].
+          -- (* This should be true since secondly  we add a multiple  mat j k  /  mat k k  = 0 *)
+            unfold gauss_clear_column_step'.
+            destruct (natgthorleh sn' k).
+            2: {  reflexivity. }
+            unfold gauss_add_row.
+            apply funextfun. intros x.
+            repeat rewrite stn_neq_or_neq_refl.
+            simpl.
+            assert (k ≠ sn'). admit.
+            rewrite (stn_eq_or_neq_right X).
+            do 2 rewrite coprod_rect_compute_2.
+            set (piv := mat k k).
+            set (target := mat sn' k).
+            (* This all feels a bit superflous given the invariants for the
+               step functions *)
+            admit.
+          -- unfold gauss_clear_column_step'.
+             destruct (natgthorleh sn' k) as [? | ?].
+             2: { reflexivity. }
+             admit. (* contr. *)
+          -- (* we already proved this *)
+            admit.
+        * admit.
+      + admit. (* TODO prove replacement *)
   Admitted.
 
-  (* Then  show that all column entries for j > k are cleared *)
-  (* TODO *)
+  (* Proving mat r  is unchanged after column clearance   if r > n'. *)
+  Lemma gauss_clear_column_inv0'
+        { n : nat } (k : (⟦ n ⟧%stn))
+        (n' : nat) (p : n' < n)  (mat : Matrix F n n) (r : ⟦ n ⟧%stn)
+    (r_gt_n' : r > n') : (gauss_clear_column n' p k mat) r = mat r.
+  Proof.
+    induction n'.
+    - simpl.
+      reflexivity.
+    - set (sn' := make_stn n (S n')  p).
+      assert (q: n' < n). admit.
+      replace (gauss_clear_column (S n') p k mat)
+        with (gauss_clear_column n' q k (gauss_clear_column_step' n k sn' mat)). (* By definition *)
+      + admit.
+      + admit. (* Same as inv0 *)
+  Admitted.
 
-  (* Then show no other entries are cleared *)
-  (* TODO *)
 
 
-  (* if n' ≤ k, matrix is not changed.
-      Why are we using S n by the way?  *)
+  (* Invariant stating that the procedure does clear all the target entries (r, k) for r > k. *)
   Lemma gauss_clear_column_inv1
         { n : nat } (k : (⟦ n ⟧%stn))
-        (n' : nat) (p : n' < n) (p': n' < k)
+        (n' : nat) (p : n' < n)  (mat : Matrix F n n) : ∏ r : (⟦ n ⟧%stn),
+    r <= n' -> r > k ->((gauss_clear_column n' p k mat) r k = 0%hq).
+  Proof.
+    intros r r_le_n' r_gt_k.
+    rewrite (gauss_clear_column_inv0  k n' p mat r r_le_n').
+    rewrite <- gauss_clear_column_step_eq.
+    rewrite (gauss_clear_column_step_inv1 n k r mat).
+    - reflexivity.
+    - admit. (* mat k k != 0%hq *)
+    - assumption.
+  Admitted.
+
+
+  (* if n' ≤ k, matrix is not changed. *)
+  Lemma gauss_clear_column_inv2
+        { n : nat } (k : (⟦ n ⟧%stn))
+        (n' : nat) (p : n' < n) (p': n' ≤ k)
         (mat : Matrix F n n) :
     ((gauss_clear_column n' p k mat) = mat ).
   Proof.
     intros.
     apply funextfun. intros i.
-    unfold gauss_clear_column.
     intros.
-    destruct n'.
-    - simpl. reflexivity.
-  Abort. (* Why did this one break? *)
+    induction n' as [| m IHn].
+    - simpl.
+      reflexivity.
+    - assert (p'': m < n). admit.
+      assert (p''' : m ≤ k). admit.
+      set (IHn' := IHn p'' p''').
+      rewrite <- IHn'.
+      unfold gauss_clear_column at 1.
+      rewrite nat_rect_step.
+      replace (gauss_clear_column_step' n k (make_stn n (S m) p) mat) with mat.
+      + unfold gauss_clear_column.
+        admit. (* subtype on stn proof *)
+      + rewrite <- gauss_clear_column_step_eq.
+        rewrite gauss_clear_column_step_inv4.
+        * reflexivity.
+        * assumption.
+  Admitted.
 
+  (* if r ≤ k, mat r is not changed *)
+  Lemma gauss_clear_column_inv3
+        { n : nat } (k r : (⟦ n ⟧%stn))
+        (n' : nat) (p : n' < n) (p' : r ≤ k)
+        (mat : Matrix F n n) :
+    ((gauss_clear_column n' p k mat) r = mat r).
+  Proof.
+  Abort.
 
+  (* Expresses the property that a matrix is partially upper triangular -
+     in the process of being contructed upp triangular, at iteration k.
+     mat =
+     [ 1 0 0 1
+       0 1 1 1
+       0 0 1 1
+       0 0 1 1]  - fulfills  gauss_columns_cleared mat (1,, 1 < 4). *)
+  Definition gauss_columns_cleared { n : nat } (mat : Matrix F n n)
+             (k : ⟦ n ⟧%stn) := ∏ i j : ⟦ n ⟧%stn,
+              i > k -> j < k -> mat i j = 0%hq.
 
+  (* Shows that gauss_clear_column(_segment) retains previously zeroed entries, e.g. fulfills
+     [ 1 0 0 1          [ X 0 X X
+       0 1 1 1            0 X X X
+       0 0 1 1    ->      0 0 X X
+       0 0 1 1]           0 0 X X ]
+
+     for k = 2   *)
+  Lemma gauss_clear_column_inv4
+        { n : nat }  (mat : Matrix F n n) (n' k  : (⟦ n ⟧%stn))
+        (entry_zeroed : gauss_columns_cleared mat k) :
+        ∏ k' : (⟦ n ⟧%stn), k' > k ->
+        gauss_columns_cleared (gauss_clear_column (pr1 n') (pr2 n') k' mat) k.
+  Proof.
+    intros k' k'_gt_k.
+    unfold gauss_columns_cleared in *.
+    intros i j.
+    intros i_gt_k j_lt_k.
+    destruct (natgthorleh i n').
+    - rewrite gauss_clear_column_inv0'.
+      + admit.
+      + admit.
+    - rewrite gauss_clear_column_inv0.
+      2 : {assumption. }
+      + (* This is the actual proof condition where we do arithmetic on entries*)
+        unfold gauss_clear_column_step'.
+        destruct (natgthorleh i k').
+        2 : {admit. } (* inequality contradiction *)
+        unfold gauss_add_row.
+        rewrite stn_neq_or_neq_refl.
+        simpl.
+        (* 0 + 0 * x = 0*)
+        admit.
+  Admitted.
 
   Lemma gauss_step_upper_rows_invariant { n : nat } (k : (⟦ n ⟧%stn)) (mat : Matrix F n n):
     ∏ (k' : (⟦ n ⟧%stn)), k' < k -> (mat k') = (pr1 (gauss_step k mat) k').
