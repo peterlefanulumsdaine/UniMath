@@ -864,13 +864,89 @@ Section MatricesF.
     assumption.
   Defined.
 
+
   (* Defining permutations as stn -> stn . TODO What are the existing
      definitions for permutations ? *)
+  Definition is_permutation {n : nat} (p : ⟦ n ⟧%stn -> ⟦ n ⟧%stn) :=
+    ∏ i j: ⟦ n ⟧%stn, (p i = p j) -> i = j.
+
   Definition id_permutation (n : nat) : ⟦ n ⟧%stn -> ⟦ n ⟧%stn :=
     λ i : ⟦ n ⟧%stn, i.
 
+  Lemma idp_is_permutation {n : nat} : is_permutation (id_permutation n).
+  Proof.
+    unfold is_permutation, id_permutation.
+    intros; assumption.
+  Defined.
 
-  (* The following definitions set up helper functions on finite sets which are then used in formalizing Gaussian Elimination*)
+  Definition transpose_permutation {n : nat} (p :  ⟦ n ⟧%stn -> ⟦ n ⟧%stn ) (i j : ⟦ n ⟧%stn) :  ⟦ n ⟧%stn -> ⟦ n ⟧%stn.
+  Proof.
+    intros k.
+    destruct (stn_eq_or_neq i k).
+    - exact (p j).
+    - destruct (stn_eq_or_neq j k).
+      + exact (p i).
+      + exact (p k).
+  Defined.
+
+  (* TODO clean up *)
+  Definition permutation_closed_under_tranpose {n : nat} (p : ⟦ n ⟧%stn -> ⟦ n ⟧%stn) (isp : is_permutation p) :
+    ∏ i j : ⟦ n ⟧%stn, is_permutation (transpose_permutation p i j).
+  Proof.
+    intros i j.
+    unfold is_permutation, transpose_permutation.
+    intros i' j'.
+    unfold is_permutation in isp.
+    destruct (stn_eq_or_neq i i') as [i_eq_i' | F].
+    - destruct (stn_eq_or_neq i j') as [i_eq_j' | F'].
+      + intros ?. rewrite <- i_eq_i', i_eq_j'.
+        reflexivity.
+      + destruct (stn_eq_or_neq j j') as [j_eq_j' | ?].
+        * intros j_eq_i.
+          apply isp in j_eq_i.
+          rewrite <- j_eq_j',  j_eq_i.
+          rewrite i_eq_i'.
+          apply idpath.
+        * intros j_eq_j'.
+          apply isp in j_eq_j'.
+          rewrite j_eq_j' in *.
+          apply isirrefl_natneq in h. (* TODO h ? *)
+          contradiction.
+    - destruct (stn_eq_or_neq j i') as [j_eq_i' | j_neq_i'] ;
+        destruct (stn_eq_or_neq i j') as [i_eq_j' | i_neq_j'].
+      +
+        intros i_eq_j.
+        rewrite <- i_eq_j'.
+        apply isp in i_eq_j.
+        rewrite i_eq_j.
+        rewrite j_eq_i'.
+        reflexivity.
+      + destruct (stn_eq_or_neq j j').
+        * intros i_eq_i.
+          rewrite <- p0.
+          rewrite j_eq_i'.
+          reflexivity.
+        * intros i_eq_j'.
+          apply isp in i_eq_j'.
+          rewrite i_eq_j' in i_neq_j'.
+          apply isirrefl_natneq in i_neq_j'.
+          contradiction.
+      + intros i'_eq_j.
+        apply isp in i'_eq_j.
+        rewrite i'_eq_j in j_neq_i'.
+        apply isirrefl_natneq in j_neq_i'.
+        contradiction.
+      + destruct (stn_eq_or_neq j j') as [j_eq_j' | j_neq_j'].
+        * intros i'_eq_i.
+          apply isp in i'_eq_i.
+          rewrite i'_eq_i in F.
+          apply isirrefl_natneq in F.
+          contradiction.
+        * intros i'_eq_j'.
+          apply isp in i'_eq_j'.
+          assumption.
+  Defined.
+
 
   Definition max_hq (a b : hq) : hq.
     induction (hqgthorleh a b).
@@ -1085,6 +1161,18 @@ Section Gauss.
   Local Definition matrix_mult {m n : nat} (mat1 : Matrix F m n)
     {p : nat} (mat2 : Matrix F n p) : (Matrix F m p) :=
     λ i j, Σ ((row mat1 i) ^ (col mat2 j)).
+
+  (* TODO We should also consider the following alternative *)
+  Definition matrix_mult' {m n : nat} (mat1 : Matrix F m n)
+    {p : nat} (mat2 : Matrix F n p) : (Matrix F m p) :=
+    λ i j, Σ (λ k, (mat1 i k * mat2 k j))%hq.
+
+  Lemma matrix_mult_eq_unfolded_mult  {m n : nat} (mat1 : Matrix F m n)
+        {p : nat} (mat2 : Matrix F n p) :
+    matrix_mult mat1 mat2 = matrix_mult' mat1 mat2.
+  Proof.
+    apply idpath.
+  Defined.
 
   Local Notation "A ** B" := (matrix_mult A B) (at level 80).
 
@@ -2317,16 +2405,14 @@ Section Gauss.
 
   (* Stepwise Gaussian Elimination definitions *)
 
-  (* We can probably assert at this point that m and n are > 0, as the base cases can be handled by caller *)
-  (* Performed k times . *)
-  (* We should be able to assert n, m > 0 wherever needed, by raa.*)
+
   Definition gauss_step  { n : nat } (k : (⟦ n ⟧%stn)) (mat : Matrix F n n) : Matrix F n n × ⟦ n ⟧%stn.
   Proof.
     assert (pn : (n > 0)). { exact (stn_implies_ngt0 k). }
     set (ik := (select_pivot_row mat k pn)). (* ≥ k *)
     use tpair. 2: {exact ik. }
     intros i j. (* lth S i ? *)
-    destruct (natlthorgeh i (S k)) as [LT | GTH]. {exact ((mat i j)). }
+    destruct (natlthorgeh i (S k)) as [LT | GTH]. {exact ((mat i j)). }  (* TODO this is wrong - *)
     set (mat' := gauss_switch_row mat k ik).
     set (mat'' := gauss_scalar_mult_row mat' ((- 1%hq)%hq * (hqmultinv ( mat' k k )))%hq i).
     (*
@@ -2504,9 +2590,6 @@ Section Gauss.
     unfold gauss_clear_column_step.
     destruct (natgthorleh j k) as [? | ?].
     2 : {apply idpath. }
-    (*2 : { apply natlehtonegnatgth in p''.
-          - apply fromempty. assumption.
-          - assumption. }*)
     unfold make_add_row_matrix, "**".
     unfold "^", col, row, transpose, flip.
     assert (p'' : n > 0). { apply stnnge0. assumption. } (* TODO rename stnnge0 *)
@@ -2583,49 +2666,23 @@ Section Gauss.
     admit. (* j ≤ k -> j > k -> ∅ *)
   Admitted.
 
-  (* This one broke in rewriting the gauss_step definition.
-
-  (* A zero element in r k remains 0 after column clearing step*)
-  Lemma gauss_clear_column_step_inv3 {n : nat} (k j r j': (⟦ n ⟧%stn))
-       (mat : Matrix F n n) (p : mat k k != 0%hq)  :
-        mat r k = 0%hq -> (gauss_clear_column_step n k j mat) r k = 0%hq.
-  Proof.
-    intros matkj_0.
-    unfold gauss_clear_column_step.
-    destruct (natgthorleh j k) as [h | ?].
-    2 : {exact matkj_0. }
-    destruct (stn_eq_or_neq r j) as [r_eq_j | r_neq_j].
-    - rewrite r_eq_j.
-      rewrite (gauss_clear_column_step_inv1 n k j mat).
-      + reflexivity.
-      + exact p.
-    -
-      (*apply issymm_natneq in r_neq_j.*)
-      rewrite (gauss_clear_column_step_inv2 n k r mat j r_neq_j).
-      assumption.
-  Defined.
-  *)
 
   (* iter from n -> 1, 0 return as we start with n - k (might = n)*)
-  (* assumes we have the largest (non-zero) column-wise element at mat k k *)
+  (* assumes we have the non-zero pivot element at index [k, k] *)
   Definition gauss_clear_column  { n : nat } (iter : nat) (p : iter < n)
              (k : (⟦ n ⟧%stn))
              (mat : Matrix F n n) : Matrix F n n.
   Proof.
-    revert mat.
-    induction iter as [ | m gauss_clear_column_IH ]; intros mat. (*inv1 inv2.*)
-    {exact mat. }
-    (*induction (natgthorleh (S m) k). (* Is this expression causing some issues ? *)
-    2 : { exact mat. }*)
+    (*revert mat.*)
+    induction iter as [ | m gauss_clear_column_IH ]. (* intros mat. *) (*inv1 inv2.*)
+    {exact mat. }  (* not applying the step since surely 0 ≤ k *)
     set (piv := mat k k).
-    (*set (pr1j := n - 1 - m).
-    assert (p: n - 1 - m < n). { apply (some_lemma m n k).  }*)
     set (pr1idx := S m).
     set (j := make_stn n (S m) p).
     set (m_lt_n := istransnatlth m (S m) n (natlthnsn m) p).
-    exact (gauss_clear_column_IH m_lt_n
-               (gauss_clear_column_step' n k j mat)).
-
+    (*exact (gauss_clear_column_IH m_lt_n
+               ( gauss_clear_column_step' n k j mat)).*)   (* <--- this is the old, incorrect version *)
+    exact (gauss_clear_column_step' n k j (gauss_clear_column_IH m_lt_n)).
   Defined.
 
   (* Non-recursive definition. *)
@@ -2640,6 +2697,7 @@ Section Gauss.
 
   (* Now we need to prove the equivalence of gauss_clear_column_rowwise to repeated applications
      of multiplication by elementary matrices *)
+
 
   Lemma gauss_clear_column_inv0 { m n : nat} (p : n = S m) (p' : m < n) (k : (⟦ n ⟧%stn))
         (mat : Matrix F n n) :
@@ -2656,7 +2714,7 @@ Section Gauss.
     induction n as [ | n].
     use ii1. apply idpath.
     use ii2. apply natgthsn0.
-  Qed.
+  Defined.
 
   (*
   Lemma gauss_clear_column_IHn { n : nat } (k j: (⟦ n ⟧%stn))
@@ -2696,22 +2754,6 @@ Section Gauss.
   Admitted.
   *)
 
-  (*
-  Definition nat_rect_inv1 {P: nat → UU} (p0: P 0) (IH: ∏ n: nat, P n → P (S n)) (n: nat)
-             (m : nat) (prop1 prop2 : UU -> bool) : ∏ i : nat,  i > m ->  prop1 (P i) = true -> ∏ j : nat, j ≤ m -> prop2 (P j) = true
-      -> (prop2 (nat_rect P p0 IH (S n) )) = true.
-  Proof.
-    induction (n - m) as [| i IH'].
-    - apply(P n).
-    - P IH' (IH IH').
-
-  Lemma nat_rect_split:
-  ∏ (P : nat → UU) (p0 : P 0) (IH : ∏ n : nat, P n → P (S n))
-  (n m: nat) (m_le_n : m < n) (pm : P m) ,
-             nat_rect P p0 IH (S n) =
-             IH (S n) (nat_rect P p0 IH (n - m)).
-   *)
-
   (* TODO do we actually need a separate lemma for this ? Naming ? *)
   Lemma stn_succ_inhabited_implies_pred : ∏ n : nat, (⟦ S n ⟧)%stn → ∑ m : nat, m = S n.
   Proof.
@@ -2741,45 +2783,22 @@ Section Gauss.
       + apply idpath.
     - assert (q : n' < n). admit.
       set (sn' := make_stn n (S n') p).
-      intros mat k r r_le_sn.
-      replace (gauss_clear_column (S n') p k mat)
-        with (gauss_clear_column n' q k (gauss_clear_column_step' n k sn' mat)). (* By definition *)
-      +
-        set (IHnp := IHn' q mat k r).
-        set (IHnp' := IHn' q (gauss_clear_column_step' n k sn' mat) k r).
-        rewrite IHnp'. 2 : {admit. }
-        (*do 3 rewrite <- gauss_clear_column_step_eq.*) (* so we can use the invariant lemmas *)
-        destruct (stn_eq_or_neq r sn') as [r_eq_sn' | ?].
-        * rewrite r_eq_sn'.
-          set (step := gauss_clear_column_step n k sn').
-          replace (step (step mat) sn') with (step mat sn').
-          (*{ reflexivity. }*)
-          unfold step.
-          destruct (natgthorleh sn' k) as [? | ?].
-          -- (* This should be true since secondly  we add a multiple  mat j k  /  mat k k  = 0 *)
-            unfold gauss_clear_column_step'.
-            destruct (natgthorleh sn' k).
-            2: {  reflexivity. }
-            unfold gauss_add_row.
-            apply funextfun. intros x.
-            repeat rewrite stn_neq_or_neq_refl.
-            simpl.
-            assert (k ≠ sn'). admit.
-            rewrite (stn_eq_or_neq_right X).
-            do 2 rewrite coprod_rect_compute_2.
-            set (piv := mat k k).
-            set (target := mat sn' k).
-            (* This all feels a bit superflous given the invariants for the
-               step functions *)
-            admit.
-          -- unfold gauss_clear_column_step'.
-             destruct (natgthorleh sn' k) as [? | ?].
-             2: { reflexivity. }
-             admit. (* contr. *)
-          -- (* we already proved this *)
-            admit.
-        * admit.
-      + admit. (* TODO prove replacement *)
+      intros mat k r r_le_sn. simpl.
+      set (IHnp := IHn' q mat k r).
+      assert (r_le_n' : r ≤ n'). {admit. }
+      rewrite <- (IHnp r_le_n').
+      (* step' S n' = inner matrix *)
+      assert (ne : r ≠ (S n')). admit.
+      rewrite <- gauss_clear_column_step_eq.
+      rewrite gauss_clear_column_step_inv2.
+      2 : { exact ne. }
+      assert (stneq : (istransnatlth n' (S n') n (natlthnsn n') p)
+                      = q).
+      {
+        apply proofirrelevance.
+        admit. }
+      rewrite stneq.
+      apply idpath.
   Admitted.
 
   (* Proving mat r  is unchanged after column clearance   if r > n'. *)
@@ -2788,20 +2807,25 @@ Section Gauss.
         (n' : nat) (p : n' < n)  (mat : Matrix F n n) (r : ⟦ n ⟧%stn)
     (r_gt_n' : r > n') : (gauss_clear_column n' p k mat) r = mat r.
   Proof.
+
     induction n'.
     - simpl.
       reflexivity.
     - set (sn' := make_stn n (S n')  p).
       assert (q: n' < n). admit.
-      replace (gauss_clear_column (S n') p k mat)
-        with (gauss_clear_column n' q k (gauss_clear_column_step' n k sn' mat)). (* By definition *)
-      + admit.
-      + admit. (* Same as inv0 *)
+      assert (q' : r > n'). admit.
+      simpl.
+      rewrite <- gauss_clear_column_step_eq.
+      rewrite gauss_clear_column_step_inv2.
+      2: { admit. }
+      rewrite IHn'.
+      + reflexivity.
+      + assumption.
   Admitted.
 
 
 
-  (* Invariant stating that the procedure does clear all the target entries (r, k) for r > k. *)
+  (* Invariant stating that the clearing procedure does clear all the target entries (r, k) for r > k. *)
   Lemma gauss_clear_column_inv1
         { n : nat } (k : (⟦ n ⟧%stn))
         (n' : nat) (p : n' < n)  (mat : Matrix F n n) : ∏ r : (⟦ n ⟧%stn),
@@ -2817,7 +2841,8 @@ Section Gauss.
   Admitted.
 
 
-  (* if n' ≤ k, matrix is not changed. *)
+  (* if the iterator n' ≤   the pivot index k,
+     applying the clearing procedure leaves mat invariant. *)
   Lemma gauss_clear_column_inv2
         { n : nat } (k : (⟦ n ⟧%stn))
         (n' : nat) (p : n' < n) (p': n' ≤ k)
@@ -2834,18 +2859,11 @@ Section Gauss.
       assert (p''' : m ≤ k). admit.
       set (IHn' := IHn p'' p''').
       rewrite <- IHn'.
-      unfold gauss_clear_column at 1.
-      rewrite nat_rect_step.
-      replace (gauss_clear_column_step' n k (make_stn n (S m) p) mat) with mat.
-      + unfold gauss_clear_column.
-        admit. (* subtype on stn proof *)
-      + rewrite <- gauss_clear_column_step_eq.
-        rewrite gauss_clear_column_step_inv4.
-        * reflexivity.
-        * assumption.
+      simpl.
   Admitted.
 
-  (* if r ≤ k, mat r is not changed *)
+  (* if the target row r ≤  the pivot row k,
+     mat r is not changed by the clearing procedure. *)
   Lemma gauss_clear_column_inv3
         { n : nat } (k r : (⟦ n ⟧%stn))
         (n' : nat) (p : n' < n) (p' : r ≤ k)
@@ -2960,10 +2978,9 @@ Section Gauss.
     intros i.
     induction (natlthorgeh i k). 2 : {exact (vec i). }
     set (vec' := switch_vector_els vec pivot_ik k).
-    assert (pr2stn1 : 0 < 1). { reflexivity. }
-    set ( j := make_stn 1 0 pr2stn1).
     exact (  ((((vec' i)) + ((vec' k)) * (mat i k))%hq)).  (* TODO is this right?*)
   Defined.
+
 
 
 
@@ -2972,8 +2989,8 @@ Section Gauss.
   Proof.
     intros i.
     set ( m := pr1 i ).
-    induction (natlehchoice ((S (pr1 iter)) ) (n)) as [? | ?].
-    - exact ((((vec i) - Σ (clamp_f vec i)) * (hqmultinv (mat i i)))%hq).
+    induction (natlehchoice (S (pr1 iter)) n) as [? | ?].
+    - exact (((vec i) - Σ (clamp_f vec i)) * (hqmultinv (mat i i)))%hq.   (* clamp_f should be called something like clear vec segment *)
     - exact ((vec i) * (hqmultinv (mat i i)))%hq.
     - unfold stn in i.
       apply (pr2 iter).
@@ -2985,28 +3002,33 @@ Section Gauss.
   (* Now, three fixpoint definitions for three subroutines.
      Partial pivoting on "A", defining b according to pivots on A,
      then back-substitution. *)
+
+  (* Gauss_iterate takes matrix mat to reduce
+                       a target vector b
+                       a set of pivots   (a permutation of rows)
+             and returns x  Satisfying mat ** x = b
+             or a matrix with one or more empty columns   (TODO better approach upon failure ? assumes square mtx?)
+             if the matrix is singular. *)
   Definition gauss_iterate
-     ( pr1i : nat ) { n : nat }
-     (start_idx : ⟦ n ⟧%stn ) (mat : Matrix F n n) (pivots : Vector (⟦ n ⟧%stn) n)
+     { n : nat } (it : ⟦ n ⟧%stn)
+     (mat : Matrix F n n) (b : Vector F n) (pivots : Vector (⟦ n ⟧%stn) n)
+     (p : is_permutation pivots)  (* TODO actually we should make pivots/permutations a Sigma type akin to stn. *)
     : (Matrix F n n) × (Vector (⟦ n ⟧%stn) n).
   Proof.
-    revert mat pivots.
-    induction pr1i as [ | m gauss_iterate_IH ]; intros mat pivots.
-    { (* pr1i = 0 *) exact (mat,,pivots). }
-    set (current_idx := decrement_stn_by_m start_idx (n - (S m))).
-    set (idx_nat := pr1 current_idx).
-    set (proof   := pr2 current_idx).
+    revert mat pivots p.
+    assert (p': pr1 it < n). { exact (pr2 it). }
+    induction (pr1 it) as [ | m gauss_iterate_IH ]; intros mat pivots ?.
+    { exact (mat,,pivots). }  (* TODO should we retain a permutation invariant here in the retun type ? *)
+    assert (p'': m < n). { apply natlthtoleh in p'. apply natlehsntolth in p'. exact p'.}
+    set (current_idx := make_stn n m p''). (* TODO remove that decrement_stn superflous function completely *)
     set (mat_vec_tup := ((gauss_step current_idx mat))).
     set (mat' := pr1 mat_vec_tup).
     set (piv  := (pr2 mat_vec_tup)).
-    set (pivots' := set_stn_vector_el pivots current_idx piv).
-    exact (gauss_iterate_IH mat' pivots').
+    set (pivots' := transpose_permutation pivots current_idx piv).
+    set (isp' := permutation_closed_under_tranpose ( (pivots))
+                                                   p current_idx piv).
+    exact (gauss_iterate_IH p'' mat' pivots' isp').
   Defined.
-
-  Definition gauss_clears_diagonal : True.
-    Proof.
-  Abort.
-
 
 
   Fixpoint vec_ops_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn) (b : Vector F n) ( pivots : Vector (⟦ n ⟧%stn) n) (mat : Matrix F n n) { struct iter }: Vector F n :=
@@ -3025,20 +3047,25 @@ Section Gauss.
 
 
   (* The main definition using above Fixpoints, which in turn use stepwise definitions.*)
-  Definition gaussian_elimination { n : nat } (mat : Matrix F n n) (b : Vector F n) (pn : n > 0) : Matrix F n n × Vector F n.
+  Definition gaussian_elimination { n : nat } (mat : Matrix F n n) (b : Vector F n) : Matrix F n n × Vector F n.
   Proof.
-    set (A_and_pivots := gauss_iterate n (0,,pn) mat (zero_vector_stn n)).
+    induction (natchoice0 n).
+    { exact (mat ,, b). }
+    set (pr1m := n - 1). assert (pr2m : pr1m < n). {admit. }
+    set (m := make_stn n pr1m pr2m).
+    set (A_and_pivots := gauss_iterate m mat b (id_permutation n) (idp_is_permutation)). (* TODO better permutations *)
     set (A  := pr1 A_and_pivots).
     set (pv := pr2 A_and_pivots).
-    set (b'  := vec_ops_iterate 0 (0,,pn) b pv A).
-    set (b'' := back_sub_iterate n (0,, pn) b' pv A).
-    exact (A,, b').
-  Defined.
+    (* TODO these should be redone *)
+    (*set (b'  := vec_ops_iterate 0 (0,,pn) b pv A).
+    set (b'' := back_sub_iterate n (0,, pn) b' pv A).*)
+    set (b'' := b). (* dummy *)
+    exact (A,, b'').
+  Admitted.
 
   Definition gauss_solution_invar : True.
   Proof.
   Abort.
-
 
   (* Some properties on the above procedure which we would like to prove. *)
 
@@ -3059,19 +3086,21 @@ Section Gauss.
     intros.
   Abort.
 
+  (*
   Lemma A_is_upper_triangular { n : nat} ( temp_proof_0_lt_n : 0 < n ) (mat : Matrix F n n) :
     is_upper_triangular (pr1 (gauss_iterate 0 (0,, temp_proof_0_lt_n) mat (zero_vector_stn n))).
   Proof.
     intros.
-  Abort.
+  Abort. *)
 
 
   (* Reliance on pn, coercing matrices could be done away with. *)
+  (*
   Lemma sol_is_invariant_under_gauss  {n : nat} (A : Matrix F n n) (x : Matrix F n 1) (b : Matrix F 1 n)  (pn : n > 0) (pn' : 1 > 0) :
     (A ** x) = (transpose b) -> ((pr1 (gaussian_elimination A (b (0,, pn')) pn)) ** A ** x)  = ((pr1 (gaussian_elimination A (b (0,, pn')) pn)) ** (transpose b)).
   Proof.
     intros.
-  Abort.
+  Abort. *)
 
 
 
