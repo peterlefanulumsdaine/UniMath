@@ -889,6 +889,27 @@ Section MatricesF.
       + exact (p k).
   Defined.
 
+  Definition transposition_fun {n : nat} (i j : ⟦ n ⟧%stn)
+    : ⟦ n ⟧%stn -> ⟦ n ⟧%stn.
+  Proof.
+    intros k.
+    destruct (stn_eq_or_neq i k).
+    - exact j.
+    - destruct (stn_eq_or_neq j k).
+      + exact i.
+      + exact k.
+  Defined.
+
+  Definition transposition_perm {n : nat} (i j : ⟦ n ⟧%stn)
+    : ⟦ n ⟧%stn ≃ ⟦ n ⟧%stn.
+  Proof.
+    exists (transposition_fun i j).
+    use isweq_iso.
+    - exact (transposition_fun i j).
+    - admit.
+    - admit.
+  Admitted.
+
   (* TODO clean up *)
   Definition permutation_closed_under_tranpose {n : nat} (p : ⟦ n ⟧%stn -> ⟦ n ⟧%stn) (isp : is_permutation p) :
     ∏ i j : ⟦ n ⟧%stn, is_permutation (transpose_permutation p i j).
@@ -2755,6 +2776,7 @@ Section Gauss.
   *)
 
   (* TODO do we actually need a separate lemma for this ? Naming ? *)
+  (* TODO: upstream *)
   Lemma stn_succ_inhabited_implies_pred : ∏ n : nat, (⟦ S n ⟧)%stn → ∑ m : nat, m = S n.
   Proof.
     intros n sn.
@@ -2764,7 +2786,6 @@ Section Gauss.
       rewrite <- plus_n_Sm, natplusr0.
       apply idpath.
   Defined.
-
 
   (* Proving the column clearing procedure works on one row at a time *)
   Lemma gauss_clear_column_inv0
@@ -2794,9 +2815,7 @@ Section Gauss.
       2 : { exact ne. }
       assert (stneq : (istransnatlth n' (S n') n (natlthnsn n') p)
                       = q).
-      {
-        apply proofirrelevance.
-        admit. }
+      { apply proofirrelevance, propproperty. }
       rewrite stneq.
       apply idpath.
   Admitted.
@@ -3221,6 +3240,11 @@ Section SmithNF.
 
   Local Notation "A ** B" := (matrix_mult_hz A B) (at level 80).
 
+(* universal property of minimum:
+ [ forall x,  x ≤ min a b <-> (x ≤ a & x ≤ b) ]
+
+from this: get e.g. min b a ≤ min a b and vice versa
+*)
 
   Lemma minsymm (a b : nat) : min a b = min b a.
   Proof.
