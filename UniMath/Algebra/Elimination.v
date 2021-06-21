@@ -1,4 +1,4 @@
-(** * Matrices
+ (** * Matrices
 
 Gaussian Elimination over integers.
 
@@ -56,16 +56,43 @@ Section Misc.
 
 End Misc.
 
-
 Section PrelStn.
 
- (* TODO: look for other places this can simplify proofs! and upstream? *)
+  (* TODO to write nat_eq_or_neq left/right *)
+  Lemma nat_rect_compute_1 : True.
+  Proof.
+  Abort.
+
+  Lemma nat_neq_or_neq_refl (i : nat) : nat_eq_or_neq i i = inl (idpath i).
+  Proof.
+    intros.
+    intros.
+    set (b := 2).
+    destruct (nat_eq_or_neq i i) as [ ? | cnt].
+    2 : { remember cnt as cnt'. clear Heqcnt'. apply isirrefl_natneq in cnt. contradiction. }
+    apply maponpaths.
+    apply proofirrelevance.
+    apply isaproppathsfromisolated.
+    apply isisolatedn.
+  Defined.
+
+  Lemma nat_eq_or_neq_left: ∏ {i j: nat} (p : (i = j)),
+                            nat_eq_or_neq i j = inl p.
+  Proof.
+    intros i j p.
+    unfold nat_eq_or_neq.
+    simpl.
+    destruct (nat_eq_or_neq i j).
+    -
+  Abort.
+
+  (* TODO: look for other places this can simplify proofs! and upstream? *)
   Lemma stn_neq_or_neq_refl {n} {i : ⟦ n ⟧%stn} : stn_eq_or_neq i i = inl (idpath i).
   Proof.
     intros.
     unfold stn_eq_or_neq.
 
-    destruct (nat_eq_or_neq i i).
+    destruct (nat_eq_or_neq i i).  (* TODO rewrite h*)
     2 : { remember h as h'. clear Heqh'. apply isirrefl_natneq in h. contradiction. } (* i ≠ i, i in stn*)
     rewrite coprod_rect_compute_1.
     apply maponpaths.
@@ -74,8 +101,11 @@ Section PrelStn.
     apply subtypePath_prop in p.
     set (fst := pr1 i).
     assert (X : fst = fst). { apply idpath. }
-    assert (X = p').
-  Admitted.
+    apply proofirrelevance.
+    apply isaproppathsfromisolated.
+    apply isisolatedinstn.
+  Defined.
+
 
    (* TODO: naming ? upstream?  Certainly rename p, p0. *)
   Lemma stn_eq_or_neq_left : ∏ {n : nat} {i j: (⟦ n ⟧)%stn} (p : (i = j)),
@@ -833,6 +863,16 @@ Defined.
 
   Abort.
   *)
+
+  (* Such code might go intro Matrix.v *)
+  Definition is_diagonal { m n : nat } (mat : Matrix R m n) :=
+    ∏ (i : ⟦ m ⟧%stn) (j : ⟦ n ⟧%stn), (stntonat _ i ≠ (stntonat _ j)) -> (mat i j) = 0%rig.
+
+  Definition is_upper_triangular { m n : nat } (mat : Matrix R m n) :=
+    ∏ (i : ⟦ m ⟧%stn ) (j : ⟦ n ⟧%stn ),  (stntonat _ i > (stntonat _ j)) -> (mat i j) = 0%rig.
+
+  Definition is_lower_triangular { m n : nat } (mat : Matrix R m n) :=
+    ∏ (i : ⟦ m ⟧%stn ) (j : ⟦ n ⟧%stn ), (stntonat _ i < (stntonat _ j)) -> (mat i j) = 0%rig.
 
 End Matrices.
 
@@ -2479,16 +2519,22 @@ Section Gauss.
     - exact mat.
   Defined.
 
-  (* Inputting a matrix and transforming it into an upper-triangular matrix by
+  (* Inputting a matrix and transforming it int o an upper-triangular matrix by
      elementary matrix operations or equivalent *)
   Definition gauss_clear_all_column_segments { n : nat } (mat : Matrix F n n) : Matrix F n n.
   Proof.
-    induction (natchoice0 n).
+    induction (natchoice0 n) as [n_eq_0 | n_gt_0].
     - exact mat.
-    - assert (p: n - 1 < n). admit.
+    - assert (p: n - 1 < n).  (* TOOD refactor *)
+        { apply natminuslthn.
+          - destruct n.
+            + apply negnatgth0n in n_gt_0.
+              contradiction.
+            + apply natgthsn0.
+          - reflexivity. }
       exact (gauss_clear_all_column_segments'
                (make_stn n (n - 1) p) mat).
-  Admitted.
+  Defined.
 
 
   (* TODO this is wrong but currently should be unsued *)
@@ -2970,11 +3016,19 @@ Section Gauss.
         apply (@rigmultx0 F).
   Admitted.
 
-  Lemma upper_triangular {n : nat} (mat : Matrix F n n) :
-    ∏ i j: ⟦ n ⟧%stn,  i > j -> (gauss_clear_all_column_segments mat ) i j = 0%hq.
+  Lemma gauss_inv_upper_triangular {n : nat} (mat : Matrix F n n):
+    @is_upper_triangular F n n (gauss_clear_all_column_segments mat ).
   Proof.
     intros i j i_gt_j.
-    (* unfold gauss_clear_all_column_segments. *)
+    unfold gauss_clear_all_column_segments.
+    destruct (natchoice0) as [n_eq_0 | ?].
+    - simpl.
+      set (pr2i := pr2 i).
+      rewrite <- n_eq_0 in pr2i.
+      apply negnatlthn0 in pr2i.
+      contradiction.
+    - unfold gauss_clear_all_column_segments'.
+      cbn.
   Abort.
 
   (* Showing that a zeroed column segment remains zeroed while
@@ -3082,7 +3136,7 @@ Section Gauss.
     assert (p': pr1 it < n). { exact (pr2 it). }
     induction (pr1 it) as [ | m gauss_iterate_IH ]; intros mat pivots ?.
     { exact (mat,,pivots). }  (* TODO should we retain a permutation invariant here in the retun type ? *)
-    assert (p'': m < n). { apply natlthtoleh in p'. apply natlehsntolth in p'. exact p'.}
+    assert (p'': m < n). { apply natlthtoleh in p'. apply natlehsntolth in p'. exact p'. }
     set (current_idx := make_stn n m p''). (* TODO remove that decrement_stn superflous function completely *)
     set (mat_vec_tup := ((gauss_step current_idx mat))).
     set (mat' := pr1 mat_vec_tup).
@@ -3132,22 +3186,6 @@ Section Gauss.
 
   (* Some properties on the above procedure which we would like to prove. *)
 
-  Definition is_upper_triangular { m n : nat } (mat : Matrix F m n) :=
-    ∏ i : ⟦ m ⟧%stn, ∏ j : ⟦ n ⟧%stn, i < j -> mat i j = 0%hq.
-
-  Lemma gauss_upper_trianglar : True.
-  Proof.
-  Abort.
-
-  Definition is_upper_triangular_to_k { m n : nat} ( k : nat ) (mat : Matrix F m n) :=
-    ∏ i : ⟦ m ⟧%stn, ∏ j : ⟦ n ⟧%stn, i < k -> i < j -> mat i j = 0%hq.
-
-
-  Lemma gauss_step_clears_row  { n : nat } (k : (⟦ n ⟧%stn)) (mat : Matrix F n n) :
-    is_upper_triangular_to_k (pr1 k) (pr1 (gauss_step k mat)).
-  Proof.
-    intros.
-  Abort.
 
   (*
   Lemma A_is_upper_triangular { n : nat} ( temp_proof_0_lt_n : 0 < n ) (mat : Matrix F n n) :
@@ -3330,12 +3368,10 @@ Section SmithNF.
   Defined.
 
   (* Such code might go intro Matrix.v *)
-  Definition is_diagonal { m n : nat } (mat : Matrix I m n) :=
-    ∏ (i : ⟦ m ⟧%stn ) (j : ⟦ n ⟧%stn ),  (stntonat _ i != (stntonat _ j)) -> (mat i j) = 0%hz.
 
   Definition is_smithnf { m n : nat } (A : Matrix I m n) :
     ∑ (S : Matrix I m m), ∑ (T : Matrix I n n),
-    is_diagonal  (S ** A ** T) ×
+    @is_diagonal I m n (S ** A ** T) ×
     ∏ (i j : ⟦ min n m ⟧%stn), i < j ->
     hzdiv (A (minabstn_to_bstn i) (minabstn_to_astn i))
     (A (minabstn_to_bstn j) (minabstn_to_astn i)).
