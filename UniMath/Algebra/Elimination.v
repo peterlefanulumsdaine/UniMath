@@ -1510,12 +1510,21 @@ Section Gauss.
         apply idpath.
   Defined.
 
-  (* TODO how do we do this ? *)
-  Lemma weq_mat_vector {X : UU} { n : nat } : (Matrix X 1 n ) ≃ Vector X n.
-    (*unfold Matrix. unfold Vector.*)
-  Abort.
+  (* TODO move to appropriate sections *)
+  Lemma weqmattovec
+    : ∏ X : UU, ∏ n : nat,  Vector X n ≃ Matrix X 1 n.
+  Proof.
+    intros.
+    apply weq_vector_1.
+  Defined.
 
-
+  Lemma weqvectomat
+    : ∏ X : UU, ∏ n : nat,  weq (Vector X n) (Matrix X n 1).
+  Proof.
+    intros.
+    apply weqffun.
+    apply weq_vector_1.
+  Defined.
 
 
   (* TODO : F should also be a general field, not short-hand for rationals specifically.
@@ -2510,15 +2519,24 @@ Section Gauss.
     - exact (mat i).
   Defined.
 
+
   Definition gauss_clear_all_column_segments'  { n : nat }
-             (k : (⟦ n ⟧%stn))
+             (pr1_k : nat) (pr2_k : pr1_k < n)
              (mat : Matrix F n n) : Matrix F n n.
   Proof.
-    induction (natlthorgeh (S k) n).
-    - exact (gauss_clear_column (pr1 k) (pr2 k) k mat).
-    - exact mat.
+    (*induction (natlthorgeh (S k) n) as [ | ? ?].*)
+    set (k := make_stn n pr1_k pr2_k).
+    set (mat' := gauss_clear_column pr1_k pr2_k k mat).
+    induction (pr1_k) as [ | m gauss_call_IH].
+    - assert (pr2_0 : 0 < n). {exact pr2_k. }
+      exact (gauss_clear_column 0 pr2_0 k mat').
+    - assert (pr2_sm: S m < n). {assumption. }
+      assert (pr2_m: m < n). { apply natlehsntolth. clear mat' k. apply natlthtoleh in pr2_k. assumption. }
+      set (k' := make_stn n (S m) pr2_k).
+      exact (gauss_clear_column (S m) pr2_sm k (gauss_call_IH  pr2_m)). (* In the current formulation,
+                                                                           we should be using S m ?
+                                                                           The use should be standardized. *)
   Defined.
-
   (* Inputting a matrix and transforming it int o an upper-triangular matrix by
      elementary matrix operations or equivalent *)
   Definition gauss_clear_all_column_segments { n : nat } (mat : Matrix F n n) : Matrix F n n.
@@ -2532,8 +2550,9 @@ Section Gauss.
               contradiction.
             + apply natgthsn0.
           - reflexivity. }
+
       exact (gauss_clear_all_column_segments'
-               (make_stn n (n - 1) p) mat).
+               (n - 1) p  mat).
   Defined.
 
 
@@ -3021,14 +3040,25 @@ Section Gauss.
   Proof.
     intros i j i_gt_j.
     unfold gauss_clear_all_column_segments.
-    destruct (natchoice0) as [n_eq_0 | ?].
+    destruct (natchoice0 n).
+    - simpl. admit.
     - simpl.
-      set (pr2i := pr2 i).
-      rewrite <- n_eq_0 in pr2i.
-      apply negnatlthn0 in pr2i.
-      contradiction.
-    - unfold gauss_clear_all_column_segments'.
-      cbn.
+      set (p := natminuslthn _ _ _).
+      assert (p' : n - 1 < n). admit.
+      replace (gauss_clear_all_column_segments' (n - 1) _ mat i) with (gauss_clear_column (n - 1) p' j mat i).
+
+      + rewrite  gauss_clear_column_inv0.
+        2 : {admit. }
+
+        rewrite <- gauss_clear_column_step_eq. (* TODO :  remove all these and change names of eq' and eq. *)
+        rewrite gauss_clear_column_step_inv1.
+        * reflexivity.
+        * admit. (* mat j j != 0%hq *)
+        * assumption.
+      + symmetry.
+        destruct n.
+        * admit.
+        *
   Abort.
 
   (* Showing that a zeroed column segment remains zeroed while
@@ -3102,18 +3132,39 @@ Section Gauss.
 
 
   (* This one especially needs to be checked for correctness pertaining to use of indices *)
+  (* Vec = b and we should rename ?*)
   Definition back_sub_step { n : nat } ( iter : ⟦ n ⟧%stn ) (mat : Matrix F n n) (vec : Vector F n) : Vector F n.
   Proof.
     intros i.
     set ( m := pr1 i ).
     induction (natlehchoice (S (pr1 iter)) n) as [? | ?].
-    - exact (((vec i) - Σ (clamp_f vec i)) * (hqmultinv (mat i i)))%hq.   (* clamp_f should be called something like clear vec segment *)
+    - exact (((vec i) - Σ (clamp_f vec ( i))) * (hqmultinv (mat i i)))%hq.
+    (* clamp_f should be called something like clear vec segment *)
     - exact ((vec i) * (hqmultinv (mat i i)))%hq.
     - unfold stn in i.
       apply (pr2 iter).
   Defined.
 
+  (* TODO why can't I phrase this in terms of regular Rigs in back_sub_step_solves_eqs ? *)
+  Definition diagonalsq { n : nat } (mat : Matrix F n n) : Vector F n := λ i : ⟦ n ⟧%stn, mat i i.
 
+
+
+  Lemma back_sub_step_solves_eq { n : nat } ( iter : ⟦ n ⟧%stn ) (mat : Matrix F n n) (b : Vector F n) (vec : Vector F n)
+        (p: @is_upper_triangular F n n mat)
+        (p' : ∏ i : ⟦ n ⟧%stn, (diagonalsq mat) i != 0%hq)
+        (p'' : ∏ k : ⟦ n ⟧%stn, k > iter ->
+          ( (mat ** (col_vec b)) k = (col_vec vec) k )) :
+          (((mat ** (col_vec (back_sub_step iter mat b))) iter  = (col_vec vec) iter )).
+  Proof.
+    intros.
+    unfold back_sub_step.
+    apply funextfun. intros j. (* This is a dummy for a length 1 dimension *)
+    destruct (natlehchoice (S (pr1 iter)) n).
+    - simpl.
+    (* Try this without p'' ("stateless") *)
+
+    - simpl.
 
 
   (* Now, three fixpoint definitions for three subroutines.
@@ -3155,13 +3206,55 @@ Section Gauss.
     | S m => vec_ops_iterate m start_idx (vec_row_ops_step current_idx (pivots current_idx) mat b) pivots mat
     end.
 
-  Fixpoint back_sub_iterate ( iter : nat ) { n : nat }  ( start_idx : ⟦ n ⟧%stn) (b : Vector F n) ( pivots : Vector (⟦ n ⟧%stn) n) (mat : Matrix F n n) { struct iter }: Vector F n :=
-    let current_idx := decrement_stn_by_m start_idx (n - iter)  in
-    match iter with
-    | 0 => b
-    | S m => back_sub_iterate m start_idx ( back_sub_step current_idx mat b) pivots mat
-    end.
+  Definition back_sub' { n : nat } (iter : nat) (p : iter < n)  (mat : Matrix F n n) (vec : Vector F n) : Vector F n.
+  Proof.
+    induction iter as [ | m IHn] .
+    - exact vec. (* TODO finish *)
+    - assert (p' : S m < n). { assumption. }
+      assert (p'' : m < n). {apply natlehsntolth.  apply natlthtoleh in p. assumption. }.
+      exact (back_sub_step (make_stn n (S m) p') mat (IHn p'')).
+  Defined.
 
+  Definition back_sub { n : nat } (mat : Matrix F n n) (vec : Vector F n) : Vector F n.
+  Proof.
+    intros.
+    destruct (natchoice0 n) as [n_eq_0 | n_gt_0].
+    - exact vec.
+    - assert (p: n - 1 < n).  { apply natminuslthn.      (* TODO as usual, refactor *)
+                             - destruct n.
+                               + apply negnatlthn0 in n_gt_0.
+                                 contradiction.
+                               + apply natgthsn0.
+                             - reflexivity. }
+      exact (back_sub' (n - 1) p mat vec).
+  Defined.
+
+  Lemma back_sub_solves_eqs { n : nat } (mat : Matrix F n n) (vec : Vector F n)
+        (p : ∏ i : ⟦ n ⟧%stn, (diagonalsq mat) i != 0%hq):
+    ∑ b : (Vector F n), ( (mat ** (col_vec b)) = (col_vec vec) ).
+  Proof.
+    intros.
+    use tpair.
+    - exact (back_sub mat vec).
+    - simpl.
+      unfold back_sub.
+      destruct (natchoice0 n).
+      { admit. }
+      + unfold back_sub'.
+        set (clear' := natminuslthn _ _ _).
+        simpl.
+
+
+
+unfold back_sub.
+        simpl.
+      unfold col_vec.
+
+      apply funextfun. intros i.
+      apply funextfun. intros j.
+
+      apply funextfun.
+  Abort.
 
   (* The main definition using above Fixpoints, which in turn use stepwise definitions.*)
   Definition gaussian_elimination { n : nat } (mat : Matrix F n n) (b : Vector F n) : Matrix F n n × Vector F n.
