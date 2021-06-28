@@ -3163,9 +3163,7 @@ Section Gauss.
     destruct (natlehchoice (S (pr1 iter)) n).
     - simpl.
     (* Try this without p'' ("stateless") *)
-
-    - simpl.
-
+  Abort.
 
   (* Now, three fixpoint definitions for three subroutines.
      Partial pivoting on "A", defining b according to pivots on A,
@@ -3211,7 +3209,7 @@ Section Gauss.
     induction iter as [ | m IHn] .
     - exact vec. (* TODO finish *)
     - assert (p' : S m < n). { assumption. }
-      assert (p'' : m < n). {apply natlehsntolth.  apply natlthtoleh in p. assumption. }.
+      assert (p'' : m < n). {apply natlehsntolth.  apply natlthtoleh in p. assumption. }
       exact (back_sub_step (make_stn n (S m) p') mat (IHn p'')).
   Defined.
 
@@ -3253,7 +3251,6 @@ unfold back_sub.
       apply funextfun. intros i.
       apply funextfun. intros j.
 
-      apply funextfun.
   Abort.
 
   (* The main definition using above Fixpoints, which in turn use stepwise definitions.*)
