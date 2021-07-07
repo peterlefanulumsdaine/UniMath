@@ -69,21 +69,35 @@ Section PrelStn.
     intros.
     set (b := 2).
     destruct (nat_eq_or_neq i i) as [ ? | cnt].
-    2 : { remember cnt as cnt'. clear Heqcnt'. apply isirrefl_natneq in cnt. contradiction. }
+    2 : { remember cnt as cnt'. clear Heqcnt'.
+          apply isirrefl_natneq in cnt. contradiction. }
     apply maponpaths.
     apply proofirrelevance.
     apply isaproppathsfromisolated.
     apply isisolatedn.
   Defined.
 
+  (* TODO refactor the three-step contradiction since it's used everywhere  *)
   Lemma nat_eq_or_neq_left: ∏ {i j: nat} (p : (i = j)),
                             nat_eq_or_neq i j = inl p.
   Proof.
     intros i j p.
-    unfold nat_eq_or_neq.
     simpl.
-    destruct (nat_eq_or_neq i j).
-    -
+    cbn.
+    destruct (nat_eq_or_neq i j) as [? | i_neq_j].
+    - apply proofirrelevance.
+      apply isapropcoprod.
+      + admit.
+      + admit.
+      + intros ? i_neq_j.
+        rewrite p in i_neq_j.
+        apply isirrefl_natneq in i_neq_j.
+        contradiction.
+    - remember i_neq_j as cnt.
+      clear Heqcnt.
+      rewrite p in i_neq_j.
+      apply isirrefl_natneq in i_neq_j.
+      contradiction.
   Abort.
 
   (* TODO: look for other places this can simplify proofs! and upstream? *)
@@ -91,7 +105,6 @@ Section PrelStn.
   Proof.
     intros.
     unfold stn_eq_or_neq.
-
     destruct (nat_eq_or_neq i i).  (* TODO rewrite h*)
     2 : { remember h as h'. clear Heqh'. apply isirrefl_natneq in h. contradiction. } (* i ≠ i, i in stn*)
     rewrite coprod_rect_compute_1.
@@ -140,6 +153,8 @@ Section PrelStn.
     - exact (f k).
   Defined.
 
+  (* These two lemata should probably have a contradiction "built-in" ?
+     As in, the implied contradiction should in turn imply anything. *)
   Lemma stn_implies_nneq0 { n : nat } (i : ⟦ n ⟧%stn) : n ≠ 0.
   Proof.
     induction (natchoice0 n) as [T | F].
@@ -156,6 +171,7 @@ Section PrelStn.
     exact (natneq0to0lth n (stn_implies_nneq0 i)).
   Defined.
 
+  (* And the following two seem completely unecessary and needlessly confusing - if not the forthcoming 4... *)
   Definition decrement_stn_by_m { n : nat } ( i : (⟦ n ⟧)%stn ) (m : nat) : ⟦ n ⟧%stn. (* (⟦ n ⟧)%stn.*)
   Proof.
     induction (natgehchoice m 0).
@@ -217,6 +233,7 @@ Section PrelStn.
   Defined.
   *)
 
+  (* Is this really necessary? What follows. *)
   Definition stnn_to_stn_sminusn1 { n : nat } ( i : (⟦ n ⟧)%stn ) : ((⟦ S (n - 1) ⟧)%stn).
   Proof.
     intros.
@@ -268,6 +285,8 @@ Section Matrices.
 
   Local Notation  Σ := (iterop_fun rigunel1 op1).
 
+  (* The following few lemmata are slight generalizations of the pre-existing proofs
+     for natural numbers *)
 
   (* Identical to transport_stnsum but with Σ , R*)
   Lemma transport_rigsum {m n : nat} (e: m = n) (g: ⟦ n ⟧%stn -> R) :
@@ -278,9 +297,6 @@ Section Matrices.
     apply idpath.
   Defined.
 
-
-  (* Is there some tactical way to re-use previous proofs
-     with a few changes? *)
   Lemma rigsum_eq {n : nat} (f g : ⟦ n ⟧%stn -> R) : f ~ g ->  Σ f =  Σ g.
   Proof.
     intros h.
@@ -394,7 +410,47 @@ Proof.
 Defined.
 
 
-(* Should be n not S n *)
+  (* And the following should not be necessary at all - probably
+     superflous as we might use the rig versions directly with the specific
+     rig made explicit
+
+     TODO actually, in that case, we need to supply the rig as a paremeter in above definitions. *)
+  Lemma transport_hqsum {m n : nat} (e: m = n) (g: ⟦ n ⟧%stn -> hq) :
+     iterop_fun 0%hq op1 g =  iterop_fun 0%hq op1 (λ i, g (transportf stn e i)).
+  Proof.
+    (*apply (@transport_rigsum F).*)
+  Admitted.
+
+  Lemma hqsum_eq {n : nat} (f g : ⟦ n ⟧%stn -> R) : f ~ g ->  Σ f =  Σ g.
+  Proof.
+  Admitted.
+
+  Lemma hqsum_step {n : nat} (f : ⟦ S n ⟧%stn -> hq) :
+    iterop_fun 0%hq op1 f = op1 (iterop_fun 0%hq op1 (f ∘ (dni lastelement))) (f lastelement).
+  Proof.
+    intros.
+    apply iterop_fun_step.
+    apply (@riglunax1 F).
+  Defined.
+
+
+  Lemma hqsum_left_right :
+  ∏ (m n : nat) (f : (⟦ m + n ⟧)%stn → hq),
+   iterop_fun 0%hq op1 f =  op1 (iterop_fun 0%hq op1 (f ∘ stn_left m n)) (iterop_fun 0%hq op1 (f ∘ stn_right m n)).
+  Proof.
+    intros.
+  Admitted.
+
+
+  Lemma hqsum_dni {n : nat} (f : ⟦ S n ⟧%stn -> F) (j : ⟦ S n ⟧%stn ) :
+    iterop_fun 0%hq op1 f = op1 (iterop_fun 0%hq op1 (f ∘ dni j)) (f j).
+  Proof.
+  Admitted.
+
+
+  (* And the pulse functions need refactoring too. *)
+
+  (* Should be n not S n *)
   Lemma pulse_function_sums_to_point_rig { n : nat }  (f : ⟦ S n ⟧%stn -> R) :
   ∏ (i : ⟦ S n ⟧%stn ), (∏ (j : ⟦ S n ⟧%stn), ((i ≠ j) -> (f j = 0%rig))) ->  (Σ f = f i).
   Proof.
@@ -478,7 +534,7 @@ Defined.
   Defined.
 
 
-  (* TODO : This proof is a shambles ! And should be covered by inhabited lemma above. *)
+  (* TODO : This proof is a shambles ! And should be covered by inhabited lemma above. Just remove? *)
   Definition drop_idx_vector { n : nat } ( i : ⟦ S n ⟧%stn ) ( drop : ⟦ S n ⟧%stn ) (p : n > 0) :
     ⟦ n ⟧%stn.
   Proof.
@@ -883,7 +939,7 @@ Section MatricesF.
 
   (* Not really a clamp but setting every element at low indices to zero.
      TODO Also should not be necessary with sensible selection of pivots *)
-  Local Definition clamp_f {n : nat} (f : ⟦ n ⟧%stn -> hq) (cutoff : ⟦ n ⟧%stn) : (⟦ n ⟧%stn -> hq).
+  Definition clamp_f {n : nat} (f : ⟦ n ⟧%stn -> hq) (cutoff : ⟦ n ⟧%stn) : (⟦ n ⟧%stn -> hq).
     intros i.
     induction (natlthorgeh i cutoff) as [LT | GTH].
     - exact 0%hq.
@@ -897,7 +953,7 @@ Section MatricesF.
   Definition zero_vector_nat (n : nat) : ⟦ n ⟧%stn -> nat :=
     λ i : ⟦ n ⟧%stn, 0%nat.
 
-  (* TODO is this a 0-vector? *)
+  (* TODO not really a zero vector is it? *)
   Definition zero_vector_stn (n : nat) : ⟦ n ⟧%stn -> ⟦ n ⟧%stn.
   Proof.
     intros i.
@@ -1024,7 +1080,13 @@ Section MatricesF.
     exact (max_and_idx).
   Defined.
 
-
+    (* TODO Remove... - but first remove all the dupes of R / hq  whenever possible
+       The following five almost-verbatim restated lemmata still appear superfluous after
+       refactoring. *)
+  Lemma sanitycheck : (@rigunel1 F) = 0%hq.
+  Proof.
+    reflexivity.
+  Defined.
 
   (*TODO: This is mostly a repetition of the rig equivalent. Can we generalize ? *)
   Lemma zero_function_sums_to_zero_hq:
@@ -1032,20 +1094,37 @@ Section MatricesF.
     (λ i : (⟦ n ⟧)%stn, f i) = const_vec 0%hq ->
     (Σ (λ i : (⟦ n ⟧)%stn, f i) ) = 0%hq.
   Proof.
-    intros n f X.
-    rewrite X.
-    unfold const_vec.
-    induction n.
-    - reflexivity.
-    - intros. rewrite iterop_fun_step.
-      + rewrite hqplusr0.
-        unfold "∘".
-        rewrite -> IHn with ((λ _ : (⟦ n ⟧)%stn, 0%hq)).
-        reflexivity.
-        reflexivity.
-      + unfold islunit. intros.
-        rewrite hqplusl0.
-        apply idpath.
+    apply (@zero_function_sums_to_zero F).
+  Defined.
+
+  (* Should be n not S n *)
+  Lemma pulse_function_sums_to_point_hq { n : nat }  (f : ⟦ S n ⟧%stn -> F) :
+  ∏ (i : ⟦ S n ⟧%stn ), (∏ (j : ⟦ S n ⟧%stn), ((i ≠ j) -> (f j = 0%hq))) ->  (Σ f = f i).
+  Proof.
+    apply (@pulse_function_sums_to_point_rig F).
+  Defined.
+
+(* TODO: possibly write special case [v ∧ (pulse j a) = a * (v j)]. *)
+
+  Definition is_pulse_function_hq { n : nat } ( i : ⟦ n ⟧%stn )  (f : ⟦ n ⟧%stn -> F) :=
+   ∏ (j: ⟦ n ⟧%stn), (i ≠ j) -> (f j = 0%hq).
+    (*(∏ (j : ⟦ n ⟧%stn), ((i ≠ j) -> (f j = 0%rig))) ->  (Σ f = f i).*) (* TODO : use us this one ?) *)
+
+  Lemma pulse_function_sums_to_point_hq' { n : nat } ( i : ⟦ n ⟧%stn ) {f : ⟦ n ⟧%stn -> F}
+    (p : @is_pulse_function F n i f) : (Σ f = f i).
+  Proof.
+    destruct (stn_inhabited_implies_succ i) as [n' e_n_Sn'].
+    destruct (!e_n_Sn').
+    apply (@pulse_function_sums_to_point_rig F).
+    assumption.
+  Defined.
+
+  (* ~ point of interest ~ *)
+  Lemma pulse_function_sums_to_point_hq'' { n : nat }  (f : ⟦ n ⟧%stn -> F) (p : n > 0) :
+  ∏ (i : ⟦ n ⟧%stn ),  (∏ (j : ⟦ n ⟧%stn), ((i ≠ j) -> (f j = 0%hq))) ->  (Σ f = f i).
+  Proof.
+    apply (@pulse_function_sums_to_point_rig'' F).
+    assumption.
   Defined.
 
 
@@ -1082,8 +1161,6 @@ Section Unsorted.
       + exact (max_hq_index ei ei').
 
   Defined.
-
-
 
   Lemma max_hq_index_bounded_geq_k { n : nat } (k : ⟦ n ⟧%stn) (f : ⟦ n ⟧%stn -> F)
     (ei ei' : hq × (⟦ n ⟧%stn)): pr2 (max_hq_index_bounded k f ei ei') >= k.
@@ -1511,14 +1588,14 @@ Section Gauss.
   Defined.
 
   (* TODO move to appropriate sections *)
-  Lemma weqmattovec
+  Lemma weqvec_rowvec
     : ∏ X : UU, ∏ n : nat,  Vector X n ≃ Matrix X 1 n.
   Proof.
     intros.
     apply weq_vector_1.
   Defined.
 
-  Lemma weqvectomat
+  Lemma weqvec_colwec
     : ∏ X : UU, ∏ n : nat,  weq (Vector X n) (Matrix X n 1).
   Proof.
     intros.
@@ -2653,7 +2730,7 @@ Section Gauss.
         rewrite k_eq_j.
         rewrite (@rigrunax2 F).
         rewrite <- k_eq_j.
-        rewrite hqisrinvmultinv. (* slow! *)
+        rewrite (hqisrinvmultinv (mat k k)).
         2 : {exact p'. }
         assert (∏ (x : hq), x + (- x) = x - x)%hq.
         { intros.
@@ -2662,7 +2739,7 @@ Section Gauss.
           rewrite hqlminus.
           apply idpath.
         }
-        rewrite (hqpluscomm 1%hq _).
+        rewrite (hqpluscomm 1%hq  _). (* Terribly slow for unclear reasons *)
         rewrite (hqlminus 1%hq).
         rewrite (@rigmult0x F).
         apply (@riglunax1 F).
@@ -2677,7 +2754,7 @@ Section Gauss.
         etrans. { apply maponpaths.  reflexivity. }
 
         rewrite (@rigmultx0 F).
-        rewrite (@rigrunax1 F).
+        rewrite (@rigrunax1 F _ ). (* Some weird slowdowns here *)
         rewrite <- (hqmultcomm (mat k k) (- (mat j k * hqmultinv _))%hq).
         rewrite ( hqminuscomm (mat k k)). (* slow *)
         rewrite <- (hqmultassoc (- mat k k)%hq (mat j k) (hqmultinv _)). (* slow *)
@@ -2802,6 +2879,7 @@ Section Gauss.
     - simpl.
   Abort.
 
+  (* Sure but this is uninteresting ? *)
   Lemma snchoice0 (n : nat) : (0 = n) ⨿ (0 < S n).
   Proof.
     induction n as [ | n].
@@ -3129,16 +3207,70 @@ Section Gauss.
   Defined.
 
 
+  (*   TODOs here are a few sub-proofs.
+
+       1. forall i : [[ n ]], i < j -> vec i = 0 ->  Σ vec = sum_right vec j.
+       2. sum_right vec i  = vec i + sum_right vec (S i).
+  *)
+
+  Definition splitf { n m' n': nat } (vec : Vector R n) (p : m' + n' = n) :  Vector R (m' + n').
+  Proof.
+    unfold Vector.
+    rewrite p.
+    exact vec.
+  Defined.
+
+  (* a very annoying comparator *)
+  Lemma splitf_eq_f { n m' n' : nat} (vec : Vector R n) (idx1 : ⟦ n ⟧%stn) (idx2 : ⟦ m' + n' ⟧%stn) (p : m' + n' = n) : (pr1 idx1 = pr1 idx2) -> vec idx1 = splitf vec p idx2 .
+  Proof.
+    intros pr1_eq.
+    (* How do we proceed here ? *)
+  Admitted.
 
 
-  (* This one especially needs to be checked for correctness pertaining to use of indices *)
-  (* Vec = b and we should rename ?*)
+  (* Kind of pointless ? *)
+  Definition splitstn {n : nat} (i : ⟦ n ⟧%stn) : ∑ (j : nat), ( ∑ (stn : ⟦ i + j ⟧%stn), i + j = n ).
+  Proof.
+    assert (eq: (n - i) + i = n).
+    { apply minusplusnmm.
+      exact (natgthtogeh n (pr1 i) (pr2 i)).
+    }
+    use tpair.
+    { exact (n - i). }
+    use tpair.
+    set (j := n - i).
+    - assert (pr2 : i < j + i ).
+      { unfold j.
+        rewrite eq.
+        exact (pr2 i). }
+      rewrite natpluscomm in pr2.
+      set (i' := make_stn (i + j) i (pr2)).
+      exact i'.
+    - simpl.
+      rewrite natpluscomm in  eq.
+      exact eq.
+  Defined.
+
+  (* Which form of equality is this, weak? *)
+  (*
+  Lemma splitstn_splitf_eq_f { n : nat } (vec : Vector R n) (i : ⟦ n ⟧%stn) : ∏ (j : ⟦ n ⟧%stn), (vec j) = (splitf vec i (n - i) (pr2 (pr2 (splitstn j )))) ( pr1 ( pr2 (splitstn (n - i)))).
+  Proof.
+    intros j.
+    unfold splitf.
+    unfold splitstn.
+    simpl.
+
+    rewrite subtypePath.
+    reflexivity. *)
+
+
+  (* Updating vec/b "in place"  *)
   Definition back_sub_step { n : nat } ( iter : ⟦ n ⟧%stn ) (mat : Matrix F n n) (vec : Vector F n) : Vector F n.
   Proof.
     intros i.
     set ( m := pr1 i ).
     induction (natlehchoice (S (pr1 iter)) n) as [? | ?].
-    - exact (((vec i) - Σ (clamp_f vec ( i))) * (hqmultinv (mat i i)))%hq.
+    - exact (((vec i) * (hqmultinv (mat i i)) - Σ (mat i ^ vec) + (vec i) * mat i i))%hq.
     (* clamp_f should be called something like clear vec segment *)
     - exact ((vec i) * (hqmultinv (mat i i)))%hq.
     - unfold stn in i.
@@ -3146,23 +3278,86 @@ Section Gauss.
   Defined.
 
   (* TODO why can't I phrase this in terms of regular Rigs in back_sub_step_solves_eqs ? *)
+  (* TODO also upstream (at least up this file ) *)
   Definition diagonalsq { n : nat } (mat : Matrix F n n) : Vector F n := λ i : ⟦ n ⟧%stn, mat i i.
 
+  Definition vectorize_1 ( X : UU ) : X -> Vector X 1.
+  Proof.
+    apply weq_vector_1.
+  Defined.
 
+  Definition vectorize_mat { X : UU } { n : nat }  : Matrix X n 1 -> Vector X n.
+  Proof.
+    intros.
+    unfold Matrix in X0.
+    set (thing := Vector X 1).
+    apply weqvec_rowvec in X0. (* This isn't quite working ? *)
+  Abort.
+
+  (* This should be the naming convention throughout the file. *)
+  Lemma stnmn_to_stn0n { X : UU } {n : nat} (i : ⟦ n ⟧%stn) : ⟦ n ⟧%stn.
+  Proof.
+    destruct n.
+    - apply weqstn0toempty in i. contradiction.
+    - exact(make_stn (S n) 0 (natgthsn0 0)).
+  Defined.
+
+  Lemma stnmn_to_stn01 { X : UU } {n : nat} (i : ⟦ n ⟧%stn) : ⟦ 1 ⟧%stn.
+  Proof.
+    destruct n.
+    - apply weqstn0toempty in i. contradiction.
+    - exact(make_stn (S 0) 0 (natgthsn0 0)).
+  Defined.
+
+  (*
+  Lemma sum_vec_1 : ∏ v : (Vector F 1), Σ v = v (make_stn (S 0) 0 (natgthsn0 0)).
+  Proof.
+    intros.
+    simpl.
+    unfold lastelement. *)
+
+
+  Lemma SomeMatrixVecLemma { n : nat } (mat : Matrix R n n) (vec : Vector R n) (i: ⟦ n ⟧%stn) :
+    (Matrix.matrix_mult (row_vec (mat i)) (col_vec vec)) lastelement lastelement  =  (((mat i) ^ (vec))) i.
+  Proof.
+    simpl.
+  Abort.
+
+  (*
+  Lemma stn_rightsum_to_element { n : nat } (f : ⟦ n ⟧%stn -> R) (i : ⟦ n ⟧%stn) : Σ Σ (f ∘ stn_right m n))%ring  = f i + Σ rigsum_right (S i). *)
+
+
+  (* Would we ever have something like 0%rig = %0hq ?*)
 
   Lemma back_sub_step_solves_eq { n : nat } ( iter : ⟦ n ⟧%stn ) (mat : Matrix F n n) (b : Vector F n) (vec : Vector F n)
         (p: @is_upper_triangular F n n mat)
-        (p' : ∏ i : ⟦ n ⟧%stn, (diagonalsq mat) i != 0%hq)
-        (p'' : ∏ k : ⟦ n ⟧%stn, k > iter ->
-          ( (mat ** (col_vec b)) k = (col_vec vec) k )) :
+        (p' : ∏ i : ⟦ n ⟧%stn, (diagonalsq mat) i != 0%hq):
           (((mat ** (col_vec (back_sub_step iter mat b))) iter  = (col_vec vec) iter )).
   Proof.
     intros.
     unfold back_sub_step.
-    apply funextfun. intros j. (* This is a dummy for a length 1 dimension *)
+    (*apply funextfun. intros j. (* This is a dummy for a length 1 dimension *)*)
     destruct (natlehchoice (S (pr1 iter)) n).
     - simpl.
-    (* Try this without p'' ("stateless") *)
+      unfold col_vec.
+      unfold "**", "^", row, col, transpose, flip.
+      simpl.
+      set (m := n - (S iter)).
+      assert (spliteq : n = (S iter) + m ). admit.
+      generalize iter mat b vec p' h.
+      rewrite spliteq.
+      intros iter' mat' b' vec' p'' h'.
+      apply funextfun. intros placeholderforalength1dimension.
+      rewrite (@hqsum_left_right F).
+      unfold stn_left.
+      unfold funcomp.
+      set (f1 := λ x : (⟦ S iter ⟧)%stn, _).
+      set (f2 := λ x : (   ⟦ m ⟧)%stn, _).
+      (assert (x : S iter > 0)). admit.
+      set (newidx := S (pr1 iter)).
+      assert (pr2newidx : newidx < S iter). admit.
+      set (newidx' := make_stn (S iter) newidx pr2newidx).
+      (* rewrite (@pulse_function_sums_to_point_rig'' F _  _ x newidx'). *)
   Abort.
 
   (* Now, three fixpoint definitions for three subroutines.
@@ -3213,6 +3408,7 @@ Section Gauss.
       exact (back_sub_step (make_stn n (S m) p') mat (IHn p'')).
   Defined.
 
+
   Definition back_sub { n : nat } (mat : Matrix F n n) (vec : Vector F n) : Vector F n.
   Proof.
     intros.
@@ -3238,18 +3434,9 @@ Section Gauss.
       unfold back_sub.
       destruct (natchoice0 n).
       { admit. }
-      + unfold back_sub'.
-        set (clear' := natminuslthn _ _ _).
-        simpl.
-
-
-
-unfold back_sub.
-        simpl.
-      unfold col_vec.
-
-      apply funextfun. intros i.
-      apply funextfun. intros j.
+      + set (temp := natminuslthn n 1 _).
+        (* Now a proof on back_sub' *)
+        unfold back_sub'.
 
   Abort.
 
