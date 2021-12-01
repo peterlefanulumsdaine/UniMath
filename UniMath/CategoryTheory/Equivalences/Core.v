@@ -33,11 +33,11 @@ Local Open Scope cat.
 
 (** * Sloppy equivalence of (pre)categories *)
 
-Definition forms_equivalence {A B : precategory} (X : adjunction_data A B)
+Definition forms_equivalence {A B : category} (X : adjunction_data A B)
   (η := adjunit X) (ε := adjcounit X) : UU
   := (∏ a, is_iso (η a)) × (∏ b, is_iso (ε b)).
 
-Definition equivalence_of_precats (A B : precategory) : UU
+Definition equivalence_of_precats (A B : category) : UU
   := ∑ (X : adjunction_data A B), forms_equivalence X.
 
 Coercion adjunction_data_from_equivalence_of_precats {A B}
@@ -45,14 +45,14 @@ Coercion adjunction_data_from_equivalence_of_precats {A B}
 
 (** * Equivalence of (pre)categories *)
 
-Definition adj_equivalence_of_precats {A B : precategory} (F : functor A B) : UU :=
+Definition adj_equivalence_of_precats {A B : category} (F : functor A B) : UU :=
    ∑ (H : is_left_adjoint F), forms_equivalence H.
 
-Definition adj_from_equiv (D1 D2 : precategory) (F : functor D1 D2):
+Definition adj_from_equiv (D1 D2 : category) (F : functor D1 D2):
     adj_equivalence_of_precats F → is_left_adjoint F := λ x, pr1 x.
 Coercion adj_from_equiv : adj_equivalence_of_precats >-> is_left_adjoint.
 
-Definition make_adj_equivalence_of_precats {A B : precategory} (F : functor A B)
+Definition make_adj_equivalence_of_precats {A B : category} (F : functor A B)
            (G : functor B A) η ε
            (H1 : form_adjunction F G η ε)
            (H2 : forms_equivalence ((F,,G,,η,,ε)))
@@ -63,14 +63,14 @@ Proof.
   - apply H2.
 Defined.
 
-Definition adj_equivalence_inv {A B : precategory}
+Definition adj_equivalence_inv {A B : category}
   {F : functor A B} (HF : adj_equivalence_of_precats F) : functor B A :=
     right_adjoint (pr1 HF).
 
 Local Notation "HF ^^-1" := (adj_equivalence_inv  HF)(at level 3).
 
 Section Accessors.
-  Context {A B : precategory} {F : functor A B} (HF : adj_equivalence_of_precats F).
+  Context {A B : category} {F : functor A B} (HF : adj_equivalence_of_precats F).
 
   Definition unit_pointwise_iso_from_adj_equivalence :
       ∏ a, iso a (HF^^-1 (F a)).
@@ -107,7 +107,7 @@ Section Accessors.
         (functor_composite F (right_adjoint  (pr1 HF))).
   Proof.
     exists (unit_from_left_adjoint (pr1 HF)).
-    apply functor_iso_if_pointwise_iso.
+    apply functor_iso_if_pointwise_iso. intro c.
     apply (pr1 (pr2 HF)).
   Defined.
 
@@ -116,7 +116,7 @@ Section Accessors.
         (functor_identity B).
   Proof.
     exists (counit_from_left_adjoint (pr1 HF)).
-    apply functor_iso_if_pointwise_iso.
+    apply functor_iso_if_pointwise_iso. intro c.
     apply (pr2 (pr2 HF)).
   Defined.
 End Accessors.
@@ -156,14 +156,14 @@ Proof.
   cbn.
   apply pathsinv0. etrans. apply id_left. etrans. apply (! id_right _ ).
   apply pathsinv0.
-  apply (iso_inv_to_left _ _ _ _  (make_iso _ (Hη _ ))).
+  apply (iso_inv_to_left _ _ _  (make_iso _ (Hη _ ))).
   apply (invmaponpathsweq (make_weq _ (iso_comp_left_isweq (functor_on_iso G (make_iso _ (Hε _ ))) _ ))).
   cbn.
   set (XR := functor_on_iso_is_iso _ _ G _ _ (make_iso _ (Hε x))).
   set (XR' := make_iso (#G (ε x)) XR). cbn in XR'.
   apply pathsinv0. etrans. apply id_left. etrans. apply (! id_right _ ).
   apply pathsinv0.
-  apply (iso_inv_to_left _ _ _  _ XR').
+  apply (iso_inv_to_left _ _  _ XR').
   unfold XR', XR; clear XR' XR.
 
   repeat rewrite assoc.
@@ -198,33 +198,33 @@ Let G : functor D C := right_functor E.
 Let ηntiso : iso (C:= [C,C,homset_property _ ]) (functor_identity _ ) (F ∙ G).
 Proof.
   use functor_iso_from_pointwise_iso.
-  use (adjunit E).
+  use (adjunit E). intro c.
   apply (pr1 (pr2 E)).
 Defined.
 
 Let εntiso : iso (C:= [D,D,homset_property _ ]) (G ∙ F) (functor_identity _ ).
 Proof.
   use functor_iso_from_pointwise_iso.
-  use (adjcounit E).
+  use (adjcounit E). intro c.
   apply (pr2 (pr2 E)).
 Defined.
 
-Let FF : functor [D,D,homset_property _ ] [C, D, homset_property _ ]
-  := (pre_composition_functor _ _ _ (homset_property _ ) (homset_property _ ) F).
+Let FF : functor [D,D] [C, D]
+  := (pre_comp_functor F).
 
-Let GG : functor [C,D,homset_property _ ] [D, D, homset_property _ ]
-  := (pre_composition_functor _ _ _ (homset_property _ ) (homset_property _ ) G).
+Let GG : functor [C, D] [D, D]
+  := (pre_comp_functor G).
 
 
-Definition ε'ntiso : iso (C:= [D,D,homset_property _ ]) (G ∙ F) (functor_identity _ ).
+Definition ε'ntiso : iso (C:= [D,D]) (G ∙ F) (functor_identity _ ).
 Proof.
   eapply iso_comp.
     set (XR := functor_on_iso GG (functor_on_iso FF εntiso)).
     set (XR':= iso_inv_from_iso XR). apply XR'.
   eapply iso_comp.
      2: apply εntiso.
-  set (XR := functor_on_iso (pre_composition_functor _ _ _ (homset_property _) (homset_property _ ) G) (iso_inv_from_iso ηntiso)).
-  set (XR':= functor_on_iso (post_composition_functor _ _ _ (homset_property _ )(homset_property _ ) F) XR).
+  set (XR := functor_on_iso (pre_comp_functor G) (iso_inv_from_iso ηntiso)).
+  set (XR':= functor_on_iso (post_comp_functor F) XR).
   apply XR'.
 Defined.
 
@@ -286,7 +286,7 @@ End adjointification.
 
 (** * Identity functor is an adjoint equivalence *)
 
-Lemma identity_functor_is_adj_equivalence {A : precategory} :
+Lemma identity_functor_is_adj_equivalence {A : category} :
   adj_equivalence_of_precats (functor_identity A).
 Proof.
   use tpair.
@@ -297,13 +297,13 @@ Defined.
 (** * Equivalence of categories yields equivalence of object types *)
 (**  Fundamentally needed that both source and target are categories *)
 
-Lemma adj_equiv_of_cats_is_weq_of_objects (A B : precategory)
-   (HA : is_univalent A) (HB : is_univalent B) (F : [A, B, pr2 HB ])
+Lemma adj_equiv_of_cats_is_weq_of_objects (A B : category)
+   (HA : is_univalent A) (HB : is_univalent B) (F : [A, B, B ])
    (HF : adj_equivalence_of_precats F) : isweq (pr1 (pr1 F)).
 Proof.
   set (G := right_adjoint (pr1 HF)).
-  set (et := unit_iso_from_adj_equivalence_of_precats HF (pr2 HA)).
-  set (ep := counit_iso_from_adj_equivalence_of_precats HF (pr2 HB)).
+  set (et := unit_iso_from_adj_equivalence_of_precats HF A).
+  set (ep := counit_iso_from_adj_equivalence_of_precats HF B).
   set (AAcat := is_univalent_functor_category A _ HA).
   set (BBcat := is_univalent_functor_category B _ HB).
   set (Et := isotoid _ AAcat et).
@@ -313,8 +313,8 @@ Proof.
   now apply (toforallpaths _ _ _ (base_paths _ _ (base_paths _ _ Ep))).
 Defined.
 
-Definition weq_on_objects_from_adj_equiv_of_cats (A B : precategory)
-   (HA : is_univalent A) (HB : is_univalent B) (F : ob [A, B, pr2 HB])
+Definition weq_on_objects_from_adj_equiv_of_cats (A B : category)
+   (HA : is_univalent A) (HB : is_univalent B) (F : ob [A, B, B])
    (HF : adj_equivalence_of_precats F) : weq
           (ob A) (ob B).
 Proof.
@@ -326,7 +326,7 @@ Defined.
 (** If the source precategory is a univalent_category, then being split
     essentially surjective is a proposition *)
 
-Lemma isaprop_sigma_iso (A B : precategory) (HA : is_univalent A)
+Lemma isaprop_sigma_iso (A B : category) (HA : is_univalent A)
      (F : functor A B) (HF : fully_faithful F) :
      ∏ b : ob B, isaprop (∑ a : ob A, iso (F a) b).
 Proof.
@@ -340,7 +340,7 @@ Proof.
     (functor_on_iso F (idtoiso (isotoid _ HA g)))) f).
   - generalize (isotoid _ HA g).
     intro p0; destruct p0.
-    rewrite <- functor_on_iso_inv.
+    rewrite <- functor_on_iso_inv. simpl.
     rewrite iso_inv_of_iso_id.
     apply eq_iso.
     simpl; rewrite functor_id.
@@ -366,11 +366,11 @@ Proof.
       repeat rewrite <- assoc.
       rewrite iso_after_iso_inv.
       rewrite id_right.
-      set (H := iso_inv_iso_inv _ _ _ f').
+      set (H := iso_inv_iso_inv _ _ f').
       now apply (base_paths _ _ H).
 Qed.
 
-Lemma isaprop_split_essentially_surjective (A B : precategory) (HA : is_univalent A)
+Lemma isaprop_split_essentially_surjective (A B : category) (HA : is_univalent A)
       (F : functor A B) (HF : fully_faithful F) :
   isaprop (split_essentially_surjective F).
 Proof.
@@ -381,7 +381,7 @@ Qed.
 (** If the source precategory is a univalent_category, then essential
     surjectivity of a fully faithful functor implies split essential
     surjectivity. *)
-Lemma ff_essentially_surjective_to_split (A B : precategory) (HA : is_univalent A)
+Lemma ff_essentially_surjective_to_split (A B : category) (HA : is_univalent A)
       (F : functor A B) (HF : fully_faithful F) (HF' : essentially_surjective F) :
   split_essentially_surjective F.
 Proof.
@@ -400,7 +400,7 @@ Defined.
 
 Section from_fully_faithful_and_ess_surj_to_equivalence.
 
-Variables A B : precategory.
+Variables A B : category.
 Hypothesis HA : is_univalent A.
 Variable F : functor A B.
 Hypothesis HF : fully_faithful F.
@@ -468,7 +468,7 @@ Proof.
   apply idpath.
 Qed.
 
-Definition rad : ob [B, A, pr2 HA].
+Definition rad : ob [B, A, A].
 Proof.
   exists rad_functor_data.
   apply rad_is_functor.

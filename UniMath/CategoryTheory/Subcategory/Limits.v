@@ -51,7 +51,7 @@ Local Open Scope cat.
 (** ** The subcategory inclusion reflects limits *)
 
 Corollary reflects_all_limits_sub_precategory_inclusion
-          {C : precategory} (C' : hsubtype (ob C)) :
+          {C : category} (C' : hsubtype (ob C)) :
   reflects_all_limits (sub_precategory_inclusion C (full_sub_precategory C')).
 Proof.
   apply fully_faithful_reflects_all_limits.
@@ -65,7 +65,7 @@ Section Limits.
 (** *** Terminal objects *)
 
 (** As long as the predicate holds for the terminal object, it's terminal in the full subcategory. *)
-Lemma terminal_in_full_subcategory {C : precategory} (C' : hsubtype (ob C))
+Lemma terminal_in_full_subcategory {C : category} (C' : hsubtype (ob C))
         (TC : Terminal C) (TC' : C' (TerminalObject TC)) :
   Terminal (full_sub_precategory C').
 Proof.
@@ -116,7 +116,7 @@ Proof.
       (** This is where we use the condition that C has homsets. *)
       apply subtypePath.
       { intro. apply isapropdirprod;
-          apply is_set_sub_precategory_morphisms, homset_property.
+          apply is_set_sub_precategory_morphisms.
       }
       {
         apply eq_in_sub_precategory.
@@ -130,7 +130,7 @@ Defined.
 (** *** General limits *)
 
 (** Lift a diagram from a full subcategory into the parent category *)
-Definition lift_diagram_full_subcategory {C : precategory} {C' : hsubtype (ob C)} {g : graph}
+Definition lift_diagram_full_subcategory {C : category} {C' : hsubtype (ob C)} {g : graph}
       (d : diagram g (full_sub_precategory C')) :
   diagram g C.
 Proof.
@@ -144,7 +144,7 @@ Proof.
 Defined.
 
 (** Equivalence between cones in the parent category and those in the subcategory *)
-Definition cone_in_full_subcategory {C : precategory} {g : graph} (C' : hsubtype (ob C))
+Definition cone_in_full_subcategory {C : category} {g : graph} (C' : hsubtype (ob C))
       {d : diagram g (full_sub_precategory C')}
       (c : ob C)
       (tip : C' c) :
@@ -177,7 +177,7 @@ Defined.
 
 (** A full subcategory has a limit of a given shape if the proposition holds
     for the tip of the lifted limit diagram in the parent category. *)
-Lemma lim_cone_in_full_subcategory {C : precategory} (C' : hsubtype (ob C))
+Lemma lim_cone_in_full_subcategory {C : category} (C' : hsubtype (ob C))
       {g : graph} {d : diagram g (full_sub_precategory C')}
       (LC : Lims_of_shape g C) :
   C' (lim (LC (lift_diagram_full_subcategory d))) -> LimCone d.
@@ -200,7 +200,7 @@ Qed.
 (** *** Initial objects *)
 
 (** As long as the predicate holds for the initial object, it's initial in the full subcategory. *)
-Lemma initial_in_full_subcategory {C : precategory} (C' : hsubtype (ob C))
+Lemma initial_in_full_subcategory {C : category} (C' : hsubtype (ob C))
       (IC : Initial C) (IC' : C' (InitialObject IC)) :
   Initial (full_sub_precategory C').
 Proof.
@@ -220,7 +220,7 @@ Defined.
 
 Lemma bin_coproducts_in_full_subcategory {C : category} (C' : hsubtype (ob C))
       (BPC : BinCoproducts C)
-      (all : ∏ c1 c2 : ob C, C' c1 -> C' c2 -> C' (BinCoproductObject _ (BPC c1 c2))) :
+      (all : ∏ c1 c2 : ob C, C' c1 -> C' c2 -> C' (BinCoproductObject (BPC c1 c2))) :
   BinCoproducts (full_sub_precategory C').
 Proof.
   intros c1' c2'.
@@ -228,7 +228,7 @@ Proof.
   pose (c2'_in_C := (precategory_object_from_sub_precategory_object _ _ c2')).
   use tpair; [use tpair|]; [|use make_dirprod|].
   - use precategory_object_in_subcat.
-    + apply (BinCoproductObject _ (BPC c1'_in_C c2'_in_C)).
+    + apply (BinCoproductObject (BPC c1'_in_C c2'_in_C)).
     + apply all.
       * exact (pr2 c1').
       * exact (pr2 c2').
@@ -251,7 +251,7 @@ Proof.
       (** This is where we use the condition that C has homsets. *)
       apply subtypePath.
       { intro. apply isapropdirprod;
-          apply is_set_sub_precategory_morphisms, homset_property.
+          apply is_set_sub_precategory_morphisms.
       }
       {
         apply eq_in_sub_precategory.

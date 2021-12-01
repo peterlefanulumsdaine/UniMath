@@ -36,10 +36,8 @@ Definition isTerminal_iscontr {b:C} (b_term : isTerminal b) (a : C)
 := b_term a.
 
 Definition make_isTerminal (b : C) (H : ∏ (a : C), iscontr (a --> b)) :
-  isTerminal b.
-Proof.
-  exact H.
-Defined.
+  isTerminal b
+:= H.
 
 Lemma isaprop_isTerminal (x : C) : isaprop (isTerminal x).
 Proof.
@@ -71,7 +69,8 @@ Proof.
   apply TerminalArrowEq.
 Defined.
 
-Lemma TerminalEndo_is_identity {T : Terminal} (f : T --> T) : f = identity T.
+Lemma TerminalEndo_is_identity {T : Terminal} (f : T --> T)
+  : f = identity T.
 Proof.
   apply TerminalArrowEq.
 Qed.
@@ -79,28 +78,14 @@ Qed.
 Lemma isiso_from_Terminal_to_Terminal (T T' : Terminal) :
    is_iso (TerminalArrow T T').
 Proof.
-apply (is_iso_qinv _ (TerminalArrow T' T)).
-now split; apply TerminalEndo_is_identity.
+  apply (is_iso_qinv _ (TerminalArrow T' T)).
+  now split; apply TerminalArrowEq.
 Defined.
 
 Definition iso_Terminals (T T' : Terminal) : iso T T' :=
   (TerminalArrow T' T,,isiso_from_Terminal_to_Terminal T' T) .
 
 Definition hasTerminal := ishinh Terminal.
-
-Section Terminal_Unique.
-
-Hypothesis H : is_univalent C.
-
-Lemma isaprop_Terminal : isaprop Terminal.
-Proof.
-  apply invproofirrelevance.
-  intros T T'.
-  apply (total2_paths_f (isotoid _ H (iso_Terminals T T')) ).
-  apply proofirrelevance. apply isaprop_isTerminal.
-Qed.
-
-End Terminal_Unique.
 
 End def_terminal.
 
@@ -112,10 +97,28 @@ Arguments TerminalArrowUnique {_} _ _ _.
 Arguments make_isTerminal {_} _ _ _.
 Arguments make_Terminal {_} _ _.
 
+(** * Having a terminal object is a property, in a (saturated/univalent) category *)
+
+Section Terminal_Unique.
+
+Variable C : category.
+Hypothesis H : is_univalent C.
+
+Lemma isaprop_Terminal : isaprop (Terminal C).
+Proof.
+  apply invproofirrelevance.
+  intros T T'.
+  apply (total2_paths_f (isotoid _ H (iso_Terminals T T')) ).
+  apply proofirrelevance. apply isaprop_isTerminal.
+Qed.
+
+End Terminal_Unique.
+
+
 Section Terminal_and_EmptyProd.
 
   (** Construct Terminal from empty arbitrary product. *)
-  Definition terminal_from_empty_product (C : precategory) :
+  Definition terminal_from_empty_product (C : category) :
     Product empty C fromempty -> Terminal C.
   Proof.
     intros X.
@@ -175,9 +178,9 @@ End Terminal_and_EmptyProd.
 (** * Construction of terminal object in a functor category *)
 Section TerminalFunctorCat.
 
-Variables (C D : precategory) (ID : Terminal D) (hsD : has_homsets D).
+Variables (C D : category) (ID : Terminal D).
 
-Definition Terminal_functor_precat : Terminal [C,D,hsD].
+Definition Terminal_functor_precat : Terminal [C,D].
 Proof.
 use make_Terminal.
 - use make_functor.
@@ -193,7 +196,7 @@ use make_Terminal.
     * intro a; apply TerminalArrow.
     * intros a b f; simpl.
       apply TerminalArrowEq.
-  + abstract (intros α; apply (nat_trans_eq hsD); intro a; apply TerminalArrowEq).
+  + abstract (intros α; apply (nat_trans_eq D); intro a; apply TerminalArrowEq).
 Defined.
 
 End TerminalFunctorCat.
@@ -201,7 +204,7 @@ End TerminalFunctorCat.
 (** Morphisms from the terminal object are monic *)
 Section monics_terminal.
 
-Context {C : precategory} (TC : Terminal C).
+Context {C : category} (TC : Terminal C).
 
 Lemma from_terminal_isMonic (a : C) (f : C⟦TC,a⟧) : isMonic f.
 Proof.

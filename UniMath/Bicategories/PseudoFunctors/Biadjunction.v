@@ -15,7 +15,7 @@ Require Import UniMath.CategoryTheory.Equivalences.Core.
 Require Import UniMath.CategoryTheory.Equivalences.CompositesAndInverses.
 Require Import UniMath.Bicategories.Core.Bicat. Import Bicat.Notations.
 Require Import UniMath.Bicategories.Core.Invertible_2cells.
-Require Import UniMath.Bicategories.Core.Examples.BicatOfCats.
+Require Import UniMath.Bicategories.Core.Examples.BicatOfUnivCats.
 Require Import UniMath.Bicategories.Core.Adjunctions.
 Require Import UniMath.Bicategories.Core.Univalence.
 Require Import UniMath.Bicategories.Core.BicategoryLaws.
@@ -438,14 +438,7 @@ Section BiadjunctionHom.
   Definition biadj_hom_equiv
     : adj_equivalence_of_precats biadj_left_hom.
   Proof.
-    refine (@adjointificiation
-              (make_category (hom X (R Y)) _)
-              (make_category (hom (L X) Y) _)
-              biadj_hom_equivalence).
-    - intros x y.
-      apply B₁.
-    - intros x y.
-      apply B₂.
+    exact (adjointificiation biadj_hom_equivalence).
   Defined.
 End BiadjunctionHom.
 
