@@ -1508,6 +1508,19 @@ Section Gauss.
     reflexivity.
   Defined.
 
+  (*Lemma gauss_clear_column_step_inv6
+    {m n : nat} (mat : Matrix F m n)
+    (i : (⟦ m ⟧)%stn)
+    (k_i : (⟦ m ⟧)%stn) (k_j : stn n)
+    : mat k_i k_j = 0%ring -> (gauss_clear_column_step k_i k_j i mat) = mat.
+  Proof.
+    intros kj_0.
+    rewrite gauss_clear_column_step_eq.
+    unfold gauss_clear_column_step'.
+    destruct (fldchoice0 _) as [eq0 | contr]; 
+      try apply idpath; contradiction.
+    Defined.*)
+
   (* Proving mat r  is unchanged after column clearance   if r > n'. *)
   Lemma gauss_clear_column_inv0
     { m n : nat } (k_i : (⟦ m ⟧%stn))
