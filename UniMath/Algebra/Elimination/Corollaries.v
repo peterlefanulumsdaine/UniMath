@@ -554,33 +554,11 @@ Section BackSub.
     unfold back_sub_internal'.
     destruct sep as [sep p].
     induction sep as [| sep IH].
-    { apply fromempty.
-      unfold dualelement in i_le_sep.
-      destruct (natchoice0 (S n)) as [contreq0 | ?] in i_le_sep.
-      {apply fromempty. clear i_le_sep. apply negpaths0sx in contreq0; contradiction. }
-      unfold make_stn in i_le_sep.
-      rewrite coprod_rect_compute_2 in i_le_sep.
-      simpl in i_le_sep.
-      do 2 rewrite minus0r in i_le_sep.
-      pose (contr := pr2 i); simpl in contr.
-      change (stntonat _ i) with (pr1 i) in i_le_sep.
-      apply natgthtonegnatleh in contr.
-      contradiction.
-    }
+    { apply fromempty, (dualelement_sn_stn_nge_0 _ _ i_le_sep). }
     rewrite nat_rect_step.
     destruct (natlehchoice (dualelement (sep,, p)) (i)) as [leh | eq].
-      { unfold dualelement in *.
-        destruct (natchoice0 n) as [contr_eq | ?]. {apply fromstn0. rewrite contr_eq. assumption. }
-        destruct (natchoice0 (S n)) as [contr_eq | ?] in *.
-        { pose (contr := (natneq0sx n)). rewrite <- contr_eq in contr.
-          apply isirrefl_natneq in contr. contradiction. }
-        rewrite coprod_rect_compute_2 in *.
-        simpl in *.
-        assert (eq' : ∏ n : nat, S n = (n + 1)%nat).
-        { intros. rewrite <- plus_n_Sm, natplusr0. apply idpath. }
-        rewrite eq', minus0r, natpluscomm, <- natminusminus in i_le_sep.
-        rewrite i_le_sep; reflexivity.
-      }
+    { refine (istransnatleh _ i_le_sep).
+      apply (@dualelement_sn_le); try assumption. }
     - destruct (natlthorgeh _ _) as [? | contr_geh].
       2 : { apply fromempty.
             pose (lt' := (istransnatlth _ _ _ leh lt)).
@@ -722,11 +700,11 @@ Section BackSubZero.
     {p : nat} (mat2 : Matrix R n p) (mat3 : Matrix R n p),
     mat2 = mat3 -> 
     ((@matrix_mult R m n mat1 p mat2)) = (@matrix_mult R m n mat1 p (mat3)).
-    Proof.
-      intros ? ? ? ? ? ? ? eq.
-      rewrite eq.
-      reflexivity.
-    Defined.
+  Proof.
+    intros ? ? ? ? ? ? ? eq.
+    rewrite eq.
+    reflexivity.
+  Defined.
 
   (* A better proof of that in EliminationAlts.v, and should replace that file when finished. 
      TODO rename *)
@@ -955,7 +933,6 @@ Section Inverse.
     apply fromempty.
     apply H; try assumption.
   Defined.
-
 
   Lemma right_inverse_construction_correct
     { n : nat } (mat : Matrix F n n)
@@ -1223,7 +1200,6 @@ Section Inverse.
             (* TODO remove unused arg*)
             exact (0,, gt).
           }
-          
           destruct hasz as [idx isnotz].
           pose (contr_eq := @invertible_upper_triangular_to_diagonal_all_nonzero
                 _ _ ut isinvprod idx).
