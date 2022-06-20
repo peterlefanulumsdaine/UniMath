@@ -21,7 +21,7 @@ Require Import UniMath.Algebra.Elimination.Matrices.
 
 Section GaussOps.
   (* TODO better (or any) comments for all these functions including assumptions*)
-  (* TODO Carot operator is used similarly throughout the document, move out *)
+
   Context { F : fld }.
   Local Notation Σ := (iterop_fun 0%ring op1).
   Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).

@@ -27,6 +27,119 @@ Section Vectors.
   Local Notation  Σ := (iterop_fun rigunel1 op1).
   Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
 
+
+  Definition scalar_lmult_vec
+  (s : R)
+  {n : nat} (vec: Vector R n)
+  := (const_vec s) ^ vec.
+
+  Definition scalar_rmult_vec
+  (s : R)
+  {n : nat} (vec: Vector R n)
+  := vec ^ (const_vec s).
+
+  Lemma zero_function_sums_to_zero:
+    ∏ (n : nat)
+      (f : (⟦ n ⟧)%stn -> R),
+    (λ i : (⟦ n ⟧)%stn, f i) = const_vec 0%rig ->
+    (Σ (λ i : (⟦ n ⟧)%stn, f i) ) = 0%rig.
+  Proof.
+    intros n f X.
+    rewrite X.
+    unfold const_vec.
+    induction n.
+    - reflexivity.
+    - intros. rewrite iterop_fun_step.
+      + rewrite rigrunax1.
+        unfold funcomp.
+        rewrite -> IHn with ((λ _ : (⟦ n ⟧)%stn, 0%rig));
+          reflexivity.
+      + apply riglunax1.
+  Defined.
+
+  Lemma sum_is_ldistr :
+    ∏ (n : nat) (vec : Vector R n) (s : R),
+    op2 s (Σ vec) =  Σ ((const_vec s ) ^ vec).
+  Proof.
+    intros. induction n.
+    - change (Σ vec) with (@rigunel1 R).
+      rewrite zero_function_sums_to_zero.
+      + apply rigmultx0.
+      + apply funextfun; intros i.
+        destruct (weqstn0toempty i).
+    - rewrite iterop_fun_step.  2: {apply riglunax1. }
+      rewrite rigldistr.
+      rewrite -> IHn.
+      rewrite -> replace_dni_last.
+      rewrite iterop_fun_step. 2: {apply riglunax1. }
+      rewrite -> replace_dni_last.
+      apply idpath.
+  Defined.
+
+  Lemma sum_is_rdistr:
+    ∏ (n : nat) (vec : Vector R n) (s : R),
+    op2 (Σ vec) s =  Σ (vec ^ (const_vec s)).
+  Proof.
+    intros. induction n.
+    - assert (x : ( Σ vec ) = 0%rig).
+      + apply idpath.
+      + rewrite x. apply rigmult0x.
+    - rewrite iterop_fun_step. 2: {apply riglunax1. }
+      rewrite rigrdistr.
+      rewrite -> IHn.
+      rewrite -> replace_dni_last.
+      rewrite iterop_fun_step. 2: {apply riglunax1. }
+      rewrite -> replace_dni_last.
+      apply idpath.
+  Defined.
+
+  Lemma rigsum_add :
+    ∏ (n : nat) (f1 f2 : (⟦ n ⟧)%stn -> R),
+    op1 (Σ (λ i: (⟦ n ⟧)%stn, f1 i))  (Σ (λ i : (⟦ n ⟧)%stn, f2 i))
+    = Σ (λ i: (⟦ n ⟧)%stn, op1 (f1 i) (f2 i)).
+  Proof.
+    intros.
+    induction n.
+    - assert ( sum0 : Σ (λ i : (⟦ 0 ⟧)%stn, f1 i) = 0%rig). {reflexivity. }
+      assert ( sum0': Σ (λ i : (⟦ 0 ⟧)%stn, f2 i) = 0%rig). {reflexivity. }
+      rewrite sum0. rewrite sum0'.
+      apply riglunax1.
+    - rewrite iterop_fun_step. 2: {apply riglunax1. }
+      rewrite iterop_fun_step. 2: {apply riglunax1. }
+      rewrite <- rigassoc1.
+      do 3 rewrite -> rigcomm1.
+      rewrite <- (rigcomm1 _ (f1 lastelement)).
+      rewrite rigassoc1.
+      rewrite IHn.
+      rewrite iterop_fun_step. 2: {apply riglunax1. }
+      rewrite <- rigassoc1.
+      rewrite rigcomm1.
+      rewrite (rigcomm1 R (f2 lastelement) (f1 lastelement)).
+      reflexivity.
+  Defined.
+
+  Lemma interchange_sums :
+    ∏ (m n : nat)
+      (f : (⟦ n ⟧)%stn ->  (⟦ m ⟧)%stn -> R),
+    Σ (λ i: (⟦ m ⟧)%stn, Σ (λ j : (⟦ n ⟧)%stn, f j i) )
+    = Σ (λ j: (⟦ n ⟧)%stn, Σ (λ i : (⟦ m ⟧)%stn, f j i)).
+  Proof.
+    intros. induction n. 
+    - induction m.
+      { reflexivity. }
+      change (Σ (λ i : (⟦ 0 ⟧)%stn, Σ ((λ j : (⟦ _ ⟧)%stn, f i j) )))
+        with (@rigunel1 R).
+      apply zero_function_sums_to_zero. 
+      reflexivity.
+    - rewrite -> iterop_fun_step. 2: { apply riglunax1. }
+      unfold funcomp.
+      rewrite <- IHn.
+      rewrite rigsum_add.
+      apply maponpaths, funextfun. intros i.
+      rewrite -> iterop_fun_step. 2: { apply riglunax1. }
+      reflexivity.
+  Defined.
+
   (* The following few lemmata are slight generalizations of the pre-existing proofs
      for natural numbers. Could be upstreamed. *)
 
@@ -176,11 +289,11 @@ Section Vectors.
     unfold funcomp.
     replace (const_vec 0%rig k) with (@rigunel1 R). 2: { reflexivity. }
     assert (i_neq_dni : i ≠ dni i k) . {exact (dni_neq_i i k). }
-    - intros; destruct (stn_eq_or_neq i (dni i k) ) as [eq | neq].
-        + apply (stnneq_iff_nopath i (dni i k)) in eq.
-          apply weqtoempty. intros. apply eq. assumption.
-          exact (dni_neq_i i k). (* Move up *)
-        + apply f_pulse_function. exact neq.
+    intros; destruct (stn_eq_or_neq i (dni i k) ) as [eq | neq].
+      - apply (stnneq_iff_nopath i (dni i k)) in eq.
+        apply weqtoempty. intros. apply eq. assumption.
+        exact (dni_neq_i i k).
+      - apply f_pulse_function; exact neq.
   Defined.
 
   Lemma empty_sum_eq_0  (v1 : Vector R 0) : Σ v1 = 0%rig.

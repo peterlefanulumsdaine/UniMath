@@ -30,6 +30,141 @@ Section General_Rigs.
 
 Context {R : rig}.
 
+Section General.
+
+  Definition matrix_mult_unf  {m n : nat} (mat1 : Matrix R m n)
+    {p : nat} (mat2 : Matrix R n p) : (Matrix R m p) :=
+    λ i j, Σ (λ k, (mat1 i k * mat2 k j))%rig.
+
+  Lemma matrix_mult_eq {m n : nat} (mat1 : Matrix R m n)
+    {p : nat} (mat2 : Matrix R n p) :
+    matrix_mult mat1 mat2 = matrix_mult_unf mat1 mat2.
+  Proof.
+    reflexivity.
+  Defined.
+
+  Definition matrix_add
+  {m n : nat}
+  (mat1 : Matrix R m n)
+  (mat2 : Matrix R m n)
+  : (Matrix R m n) :=
+    entrywise _ _ op1 mat1 mat2.
+  
+  Lemma matrix_add_comm:
+  ∏ {m n : nat} (mat1 : Matrix R m n)
+                (mat2 : Matrix R m n),
+  matrix_add mat1 mat2 = matrix_add mat2 mat1.
+  Proof.
+    intros.   apply funextfun.
+    intros i. apply funextfun.
+    intros j. apply rigcomm1.
+  Defined.
+
+  Lemma matrix_add_assoc:
+  ∏ {m n : nat} (mat1 : Matrix R m n)
+  (mat2 : Matrix R m n) (mat3 : Matrix R m n),
+    matrix_add (matrix_add mat1 mat2) mat3
+  = matrix_add mat1 (matrix_add mat2 mat3).
+  Proof.
+    intros.   apply funextfun.
+    intros i. apply funextfun.
+    intros j. apply rigassoc1.
+  Defined.
+
+  Lemma matrix_mult_assoc :
+    ∏ {m n : nat} (mat1 : Matrix R m n)
+      {p : nat} (mat2 : Matrix R n p)
+      {q : nat} (mat3 : Matrix R p q),
+    ((mat1 ** mat2) ** mat3) = (mat1 ** (mat2 ** mat3)).
+  Proof.
+    intros; unfold matrix_mult.
+    apply funextfun; intro i; apply funextfun; intro j.
+    etrans.
+    2: { symmetry.
+         apply maponpaths, funextfun. intros k.
+         apply sum_is_ldistr. }
+    etrans.
+      { apply maponpaths. apply funextfun. intros k.
+        apply sum_is_rdistr. }
+    rewrite interchange_sums.
+    apply maponpaths, funextfun; intros k.
+    apply maponpaths, funextfun; intros l.
+    apply rigassoc2.
+  Defined.
+
+  Local Notation "A ++' B" := (matrix_add A B) (at level 80).
+
+  Lemma matrix_mult_ldistr :
+    ∏ (m n : nat) (mat1 : Matrix R m n)
+      (p : nat) (mat2 : Matrix R n p)
+      (q : nat) (mat3 : Matrix R n p),
+    ((mat1 ** (mat2 ++' mat3))) = ((mat1 ** mat2) ++' (mat1 ** mat3)).
+  Proof.
+    intros.
+    rewrite matrix_mult_eq.
+    unfold matrix_mult_unf, matrix_add.
+    unfold entrywise, pointwise.
+    apply funextfun. intros i.
+    apply funextfun. intros j.
+    etrans. {
+      apply maponpaths. apply funextfun. intros k.
+      rewrite rigldistr.
+      reflexivity.
+    }
+    apply pathsinv0.
+    apply rigsum_add.
+  Defined.
+
+  Lemma matrix_mult_rdistr :
+    ∏ (m n p: nat) (mat1 : Matrix R n p)
+      (mat2 : Matrix R n p)
+      (q : nat) (mat3 : Matrix R p q),
+    ((mat1 ++' mat2) ** mat3) = ((mat1 ** mat3) ++' (mat2 ** mat3)).
+  Proof.
+    intros.
+    rewrite matrix_mult_eq.
+    unfold matrix_mult_unf, matrix_add.
+    unfold entrywise, pointwise.
+    apply funextfun. intros i.
+    apply funextfun. intros j.
+    etrans. {
+      apply maponpaths. apply funextfun. intros k.
+      rewrite rigrdistr.
+      reflexivity.
+    }
+    apply pathsinv0.
+    apply rigsum_add.
+  Defined.
+
+  Lemma matrix_mult_zero_vec_eq {m n : nat} {mat : Matrix R m n}
+  : (@matrix_mult R _ _ mat _
+    (col_vec (const_vec (@rigunel1 R))))
+      = (col_vec (const_vec (@rigunel1 R))).
+  Proof.
+    rewrite matrix_mult_eq; unfold matrix_mult_unf.
+    apply funextfun; intros i.
+    unfold col_vec.
+    apply funextfun; intros _.
+    rewrite zero_function_sums_to_zero;
+      try reflexivity.
+    unfold const_vec.
+    apply funextfun; intros k.
+    apply rigmultx0.
+  Defined.
+
+  Lemma matrix_mult_eq_left:
+    ∏ {m n : nat} (mat1 : Matrix R m n)
+    {p : nat} (mat2 : Matrix R n p) (mat3 : Matrix R n p),
+    mat2 = mat3 -> 
+    ((@matrix_mult R m n mat1 p mat2)) = (@matrix_mult R m n mat1 p (mat3)).
+  Proof.
+    intros ? ? ? ? ? ? eq.
+    rewrite eq.
+    reflexivity.
+  Defined.
+
+End General.
+
 Section Transposition.
 
   Definition transpose_transpose {X : UU} {m n : nat} (mat : Matrix X m n)
