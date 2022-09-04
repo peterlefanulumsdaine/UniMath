@@ -102,17 +102,15 @@ Section General.
   Proof.
     intros.
     rewrite matrix_mult_eq.
-    unfold matrix_mult_unf, matrix_add.
-    unfold entrywise, pointwise.
+    unfold matrix_mult_unf, matrix_add
+    , entrywise, pointwise.
     apply funextfun. intros i.
     apply funextfun. intros j.
     etrans. {
-      apply maponpaths. apply funextfun. intros k.
-      rewrite rigldistr.
-      reflexivity.
+      apply maponpaths, funextfun; intros k.
+      rewrite rigldistr; apply idpath.
     }
-    apply pathsinv0.
-    apply rigsum_add.
+    apply pathsinv0, rigsum_add.
   Defined.
 
   Lemma matrix_mult_rdistr :
@@ -128,12 +126,11 @@ Section General.
     apply funextfun. intros i.
     apply funextfun. intros j.
     etrans. {
-      apply maponpaths. apply funextfun. intros k.
+      apply maponpaths, funextfun; intros k.
       rewrite rigrdistr.
-      reflexivity.
+      exact (idpath _).
     }
-    apply pathsinv0.
-    apply rigsum_add.
+    apply pathsinv0, rigsum_add.
   Defined.
 
   Lemma matrix_mult_zero_vec_eq {m n : nat} {mat : Matrix R m n}
@@ -146,12 +143,13 @@ Section General.
     unfold col_vec.
     apply funextfun; intros _.
     rewrite zero_function_sums_to_zero;
-      try reflexivity.
+      try (apply idpath).
     unfold const_vec.
     apply funextfun; intros k.
     apply rigmultx0.
   Defined.
 
+  (* TODO is this used anywhere? *)
   Lemma matrix_mult_eq_left:
     ∏ {m n : nat} (mat1 : Matrix R m n)
     {p : nat} (mat2 : Matrix R n p) (mat3 : Matrix R n p),
@@ -159,8 +157,7 @@ Section General.
     ((@matrix_mult R m n mat1 p mat2)) = (@matrix_mult R m n mat1 p (mat3)).
   Proof.
     intros ? ? ? ? ? ? eq.
-    rewrite eq.
-    reflexivity.
+    rewrite eq; apply idpath.
   Defined.
 
 End General.
@@ -365,24 +362,20 @@ Section Inverses.
     ∑ (B : Matrix R n m), ((B ** A) = identity_matrix).
 
   Definition matrix_inverse {n : nat} (A : Matrix R n n) :=
-    ∑ (B : Matrix R n n), ((A ** B) = identity_matrix) × ((B ** A) = identity_matrix).
+    ∑ (B : Matrix R n n),
+      ((A ** B) = identity_matrix)
+    × ((B ** A) = identity_matrix).
 
-  (* TODO could indicate in names this applies to square matrices *)
   Lemma matrix_inverse_to_right_and_left_inverse
     {n : nat} (A : Matrix R n n)
-    : (matrix_inverse A) -> matrix_left_inverse A × matrix_right_inverse A.
+    : (matrix_inverse A) 
+      -> matrix_left_inverse A × matrix_right_inverse A.
   Proof.
     intros inv.
     destruct inv as [inv isinv].
-    use tpair.
-    - unfold matrix_left_inverse.
-      use tpair. {exact inv. }
-      simpl.
-      exact (pr2 isinv).
-    - unfold matrix_right_inverse.
-      use tpair. {exact inv. }
-      simpl.
-      exact (pr1 isinv).
+    split; exists inv.
+    - exact (pr2 isinv).
+    - exact (pr1 isinv).
   Defined.
 
   Lemma matrix_left_inverse_equals_right_inverse
@@ -406,7 +399,7 @@ Section Inverses.
   Proof.
     intros lft rght.
     use tpair; simpl. {apply lft. }
-    use tpair. 2: {apply lft. }
+    split. 2: {apply lft. }
     pose (H0 := @matrix_left_inverse_equals_right_inverse n _ n _ lft rght).
     rewrite H0.
     apply rght.
@@ -429,13 +422,9 @@ Section Inverses.
     (matrix_left_inverse (A ** A')).
   Proof.
     intros.
-    use tpair. { exact ((pr1 pb) ** (pr1 pa)). }
-    simpl.
-    rewrite matrix_mult_assoc.
-    rewrite <- (matrix_mult_assoc _ A _).
-    rewrite (pr2 pa).
-    rewrite matlunax2.
-    rewrite (pr2 pb).
+    exists ((pr1 pb) ** (pr1 pa)); simpl.
+    rewrite matrix_mult_assoc, <- (matrix_mult_assoc _ A _).
+    rewrite (pr2 pa), matlunax2, (pr2 pb).
     reflexivity.
   Defined.
 
@@ -448,9 +437,7 @@ Section Inverses.
     simpl.
     rewrite matrix_mult_assoc.
     rewrite <- (matrix_mult_assoc _ (pr1 pb) _).
-    rewrite (pr2 pb).
-    rewrite matlunax2.
-    rewrite (pr2 pa).
+    rewrite (pr2 pb), matlunax2, (pr2 pa).
     reflexivity.
   Defined.
 
@@ -465,15 +452,13 @@ Section Inverses.
     use tpair.
     - rewrite matrix_mult_assoc.
       rewrite <- (matrix_mult_assoc _ (pr1 pb) _).
-      rewrite (pr1 (pr2 pb)).
-      rewrite matlunax2.
+      rewrite (pr1 (pr2 pb)), matlunax2.
       rewrite (pr1 (pr2 pa)).
       reflexivity.
     - simpl.
       rewrite matrix_mult_assoc.
       rewrite <- (matrix_mult_assoc _ A _).
-      rewrite (pr2 (pr2 pa)).
-      rewrite matlunax2.
+      rewrite (pr2 (pr2 pa)), matlunax2.
       rewrite (pr2 (pr2 pb)).
       reflexivity.
   Defined.
@@ -481,19 +466,13 @@ Section Inverses.
   (* TODO rename identity_matrix_inv *)
   Lemma identity_matrix_is_inv { n : nat } : matrix_inverse (@identity_matrix _ n).
   Proof.
-    use tpair. { exact identity_matrix. }
+    exists identity_matrix.
     use tpair; apply matrunax2.
   Defined.
 
 End Inverses.
 
 Section Nil_Matrices.
-
-  (* TODO: upstream to Vectors *)
-  Lemma iscontr_nil_vector {X : UU} : iscontr (Vector X 0).
-  Proof.
-    apply iscontrfunfromempty2. apply fromstn0.
-  Defined.
 
   Lemma iscontr_nil_row_matrix {X : UU} {n : nat} : iscontr (Matrix X 0 n).
   Proof.
@@ -505,26 +484,12 @@ Section Nil_Matrices.
     apply impred_iscontr; intro; apply iscontr_nil_vector.
   Defined.
 
-  Lemma nil_matrix_eq1 {X : UU} {m n : nat} (A B: Matrix X m n) (eq0 : m = 0)
-    : A = B.
+  Lemma nil_matrix_is_inv {n : nat} (A : Matrix R 0 0): matrix_inverse A.
   Proof.
-    destruct (pathsinv0 eq0).
-    apply isapropifcontr, iscontr_nil_row_matrix.
-  Defined.
-
-  Lemma nil_matrix_eq2 {X : UU} {m n : nat} (A B: Matrix X m n) (eq0 : n = 0)
-    : A = B.
-  Proof.
-    destruct (pathsinv0 eq0).
-    apply isapropifcontr, iscontr_nil_col_matrix.
-  Defined.
-
-  Lemma nil_matrix_is_inv {n : nat} (A : Matrix R n n) (eq : n = 0): matrix_inverse A.
-  Proof.
-    use tpair. { exact identity_matrix. }
-    use tpair.
-    - apply nil_matrix_eq1; assumption.
-    - apply nil_matrix_eq2; assumption.
+    exists identity_matrix.
+    use tpair;
+      rewrite matrunax2; apply funextfun; intros i;
+      apply (@iscontr_nil_row_matrix _ 0); assumption.
   Defined.
 
 End Nil_Matrices.
@@ -763,63 +728,6 @@ Section Transpositions.
   Proof.
     unfold is_permutation_fun, id_permutation_fun.
     intros; assumption.
-  Defined.
-
-  Definition transpose_permutation_fun {n : nat}
-    (p : ⟦ n ⟧%stn -> ⟦ n ⟧%stn) (i j : ⟦ n ⟧%stn) : ⟦ n ⟧%stn -> ⟦ n ⟧%stn.
-  Proof.
-    apply transposition_perm.
-    - exact i.
-    - exact j.
-  Defined.
-
-  (* TODO clean up - and this should follow from  transposition_perm  ?  *)
-  Definition permutation_fun_closed_under_tranpose
-    {n : nat} (p : ⟦ n ⟧%stn -> ⟦ n ⟧%stn) (isp : is_permutation_fun p)
-    : ∏ i j : ⟦ n ⟧%stn, is_permutation_fun (transpose_permutation_fun p i j).
-  Proof.
-    intros i j.
-    unfold is_permutation_fun in *.
-    unfold transpose_permutation_fun.
-    intros i' j'.
-    simpl.
-    unfold transposition_fun, is_permutation_fun, transpose_permutation_fun.
-    destruct (stn_eq_or_neq i i') as [i_eq_i' | F].
-    - destruct (stn_eq_or_neq i j') as [i_eq_j' | F'].
-      + intros ?. rewrite <- i_eq_i', i_eq_j'.
-        reflexivity.
-      + destruct (stn_eq_or_neq j j') as [j_eq_j' | neq].
-        * intros j_eq_i.
-          rewrite <- j_eq_j', j_eq_i, i_eq_i'.
-          apply idpath.
-        * intros j_eq_j'.
-          rewrite j_eq_j' in *.
-          apply isirrefl_natneq in neq.
-          contradiction.
-    - destruct (stn_eq_or_neq j i') as [j_eq_i' | j_neq_i'] ;
-        destruct (stn_eq_or_neq i j') as [i_eq_j' | i_neq_j'].
-      + intros i_eq_j.
-        rewrite <- i_eq_j', i_eq_j, j_eq_i'.
-        reflexivity.
-      + destruct (stn_eq_or_neq j j') as [eq | neq].
-        * intros i_eq_i.
-          rewrite <- eq, j_eq_i'.
-          reflexivity.
-        * intros i_eq_j'.
-          rewrite i_eq_j' in i_neq_j'.
-          apply isirrefl_natneq in i_neq_j'.
-          contradiction.
-      + intros i'_eq_j.
-        rewrite i'_eq_j in j_neq_i'.
-        apply isirrefl_natneq in j_neq_i'.
-        contradiction.
-      + destruct (stn_eq_or_neq j j') as [j_eq_j' | j_neq_j'].
-        * intros i'_eq_i.
-          rewrite i'_eq_i in F.
-          apply isirrefl_natneq in F.
-          contradiction.
-        * intros i'_eq_j'.
-          assumption.
   Defined.
 
 End Transpositions.

@@ -34,7 +34,7 @@ Section Misc.
     - exact n.
   Defined.
 
-  Lemma min'_eq_min
+  Lemma min_eq_min'
     (n m : nat)
     : min n m = min' n m.
   Proof.
@@ -68,17 +68,17 @@ Section Misc.
     - apply ii2.
       unfold min.
       revert gt. revert b.
-      induction a; destruct b; try reflexivity.
+      induction a as [| a IH ]; destruct b as [b | lt]; try reflexivity.
       { intros. apply fromempty. apply negnatgth0n in gt. assumption.  }
-      intros; rewrite IHa. {reflexivity. }
+      intros; rewrite IH. {reflexivity. }
       apply gt.
     - apply ii1.
       unfold min; revert leh. revert b.
-      induction a; destruct b; try reflexivity.
+      induction a as [| a IH ]; destruct b as [b | lt]; try reflexivity.
       { intros; apply negnatlehsn0 in leh.
         apply fromempty; assumption. }
       intros.
-      rewrite IHa. {reflexivity. }
+      rewrite IH. {reflexivity. }
       apply leh.
   Defined.
 
@@ -126,6 +126,11 @@ Section Misc.
   Proof.
     destruct n as [| n]. {contradiction (negnatlthn0 _ p). }
     use tpair; try apply n; reflexivity.
+  Defined.
+
+  Lemma isdeceqnatcommrig : isdeceq natcommrig.
+  Proof.
+    apply isdeceqnat.
   Defined.
 
   Lemma fldchoice0 {X : fld} (e : X) : coprod (e = 0%ring) (e != 0%ring).
@@ -238,7 +243,7 @@ Section Misc.
     apply contr_hz.
     apply maponpaths, contr.
     (* Done but slow. *)
-  Abort.
+  Defined.
 
   Lemma hqplusminus
     (a b : hq) : (a + b - b)%hq = a.
@@ -390,14 +395,14 @@ Section PrelStn.
       { apply pr1i_neq_pr1j. }
   Defined.
 
-  Lemma issymm_stnneq
-    (A : UU) {n : nat} (i j : ⟦ n ⟧%stn) :
-    (i ≠ j) -> (j ≠ i).
+  (* TODO use only one of below *)
+  Lemma stn_neq_symm {n : nat} {i j : stn n} (neq : i ≠ j)
+    : (j ≠ i).
   Proof.
-    intros i_neq_j.
-    destruct i, j.
-    apply issymm_natneq.
-    assumption.
+    destruct (stn_eq_or_neq j i) as [contr_eq | ?].
+    - rewrite contr_eq in neq.
+      contradiction (isirrefl_natneq i).
+    - assumption.
   Defined.
 
   Lemma prev_stn
@@ -406,8 +411,10 @@ Section PrelStn.
     pose (m := prev_nat i p).
     destruct m as [m eq].
     use tpair.
-    - use tpair. {exact m. } simpl. refine (istransnatlth _ _ _ (natgthsnn m) _ ).
-      rewrite eq. apply (pr2 i).
+    - exists m.
+      refine (istransnatlth _ _ _ (natgthsnn m) _ ).
+      rewrite eq.
+      apply (pr2 i).
     - exact eq.
   Defined.
 
@@ -429,7 +436,6 @@ Section PrelStn.
       apply pathsinv0, maponpaths; assumption.
   Defined.
 
-
   (* TODO upstream? *)
   Lemma stn_eq
     {k : nat} (i j : stn k) (eq : pr1 i = pr1 j) : i = j.
@@ -438,13 +444,15 @@ Section PrelStn.
   Defined.
 
   Lemma stn_eq_2
-    {k : nat} (i: stn k) (j : nat) (eq : pr1 i = j) : forall P : j < k, i = (j,, P).
+    {k : nat} (i: stn k) (j : nat) (eq : pr1 i = j)
+      : forall P : j < k, i = (j,, P).
   Proof.
     intros lt; apply subtypePath_prop; assumption.
   Defined.
 
   Lemma stn_eq_3
-    {k : nat} (i: nat) (j : stn k) (eq : i = pr1 j) : forall P : i < k, j = (i,, P).
+    {k : nat} (i: nat) (j : stn k) (eq : i = pr1 j)
+      : forall P : i < k, j = (i,, P).
   Proof.
     apply stn_eq_2; symmetry; assumption.
   Defined.
@@ -453,6 +461,14 @@ Section PrelStn.
 End PrelStn.
 
 Section Maybe.
+
+  Lemma isdeceqmaybe
+    {X : UU} (dec : isdeceq X) : isdeceq (maybe X).
+  Proof.
+    apply isdeceqcoprod.
+    - exact dec.
+    - exact isdecequnit.
+  Defined.
 
   Definition maybe_choice
     {X : UU} (e : maybe X)
@@ -478,7 +494,7 @@ Section Maybe.
   : coprod (∑ i : ⟦ n ⟧%stn, e = just i) (e = nothing).
   Proof.
   destruct e as [i | u].
-  - apply ii1. use tpair. {exact i. } simpl. reflexivity.
+  - apply ii1. exists i. reflexivity.
   - apply ii2. rewrite u. exists.
   Defined.
 
@@ -510,7 +526,8 @@ Section Dual.
 
   Lemma dualelement_eq
     {n : nat} (i j : ⟦ n ⟧%stn)
-  : dualelement i = j -> i = dualelement j.
+  : dualelement i = j
+    -> i = dualelement j.
   Proof.
     unfold dualelement.
     destruct (natchoice0 n) as [contr_eq | ?].
@@ -539,7 +556,8 @@ Section Dual.
 
   Lemma dualelement_lt_comp'
     {n : nat} (i j : ⟦ n ⟧%stn)
-  : (dualelement i) < (dualelement j) -> j < i.
+  : (dualelement i) < (dualelement j)
+    -> j < i.
   Proof.
     intros lt.
     pose (H := @dualelement_lt_comp _ (dualelement i) (dualelement j) lt).
@@ -561,7 +579,8 @@ Section Dual.
 
   Lemma dualelement_le_comp'
     {n : nat} (i j : ⟦ n ⟧%stn)
-  : (dualelement i) ≤ (dualelement j) -> j ≤ i.
+  : (dualelement i) ≤ (dualelement j)
+    -> j ≤ i.
   Proof.
     intros le.
     pose (H := @dualelement_le_comp _ (dualelement i) (dualelement j) le).
@@ -652,13 +671,13 @@ Section Dual.
     contradiction.
   Defined.
 
-  (* TODO generalize variable names *)
   Lemma dualelement_lt_to_le_s
-    {n row : nat}
+    {n k : nat}
     (i : stn n)
-    (p : row < n)
-    (leh: dualelement (row,, p) < i)
-    : i >= dualelement (row,, istransnatlth row (S row) (S n) (natgthsnn row) p).
+    (p : k < n)
+    (leh: dualelement (k,, p) < i)
+    : dualelement (k,, istransnatlth k (S k) (S n) (natgthsnn k) p)
+      <= i.
   Proof.
     unfold dualelement. unfold dualelement in leh.
     destruct (natchoice0 n) as [contr_eq | ?].
@@ -667,10 +686,11 @@ Section Dual.
     unfold dualelement.
     destruct (natchoice0 (S n)) as [contr_eq | gt].
     { pose (contr := (natneq0sx n)). rewrite <- contr_eq in contr.
-      apply isirrefl_natneq in contr. contradiction. }
+      apply isirrefl_natneq in contr; contradiction. }
     rewrite coprod_rect_compute_2.
     unfold dualelement in leh.
-    destruct (natchoice0 n) as [eq | gt']. {apply fromstn0. rewrite eq. assumption. }
+    destruct (natchoice0 n) as [eq | gt'].
+    {apply fromstn0; rewrite eq; assumption. }
     simpl; simpl in leh.
     rewrite minus0r.
     apply natgthtogehsn in leh.
@@ -681,13 +701,14 @@ Section Dual.
     assert (e : n = S (n - 1)).
     { change (S (n - 1)) with (1 + (n - 1)). rewrite natpluscomm.
       apply pathsinv0. apply minusplusnmm. assumption. }
-    rewrite <- e in leh.
-    apply leh.
+    destruct (!e); apply leh.
   Defined.
 
   Lemma dualvalue_eq
-    {X : UU} {n : nat} (v : ⟦ n ⟧%stn -> X) (i : ⟦ n ⟧%stn)
-  : (v i) = (λ i' : ⟦ n ⟧%stn, v (dualelement i')) (dualelement i).
+    {X : UU} {n : nat}
+    (v : ⟦ n ⟧%stn -> X) (i : ⟦ n ⟧%stn)
+  : (v i)
+  = (λ i' : ⟦ n ⟧%stn, v (dualelement i')) (dualelement i).
   Proof.
     simpl; rewrite dualelement_2x; reflexivity.
   Defined.

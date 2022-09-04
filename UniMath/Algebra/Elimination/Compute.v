@@ -16,6 +16,7 @@ Section Tests_1.
 
   Context (R : rig).
   Context (NCR : natcommrig).
+  Context (F : fld).
 
   Let v1 := (append_vec empty_vec 2).
   Let v2 := (append_vec empty_vec 3).
@@ -44,7 +45,9 @@ Section Tests_1.
   Let m1 := append_vec (row_vec v5) v6.
 
   (* sum [2, 2] ^ [3, 3] *)
-  Let eval4 := Eval compute in ((iterop_fun (@rigunel2 natcommrig) op1 (pointwise _ op2 v5 v6))).
+  Let eval4 :=
+      Eval compute
+        in ((iterop_fun (@rigunel2 natcommrig) op1 (pointwise _ op2 v5 v6))).
   (* 12 *)
 
   Local Lemma eq4 : eval4 = 12. Proof. apply idpath. Defined.
@@ -53,10 +56,17 @@ Section Tests_1.
      [3, 3] [3, 3]   [15, 15] *)
 
   (* Computing entry (1, 1) : 10 *)
-  Let eval5 := Eval compute in firstValue (firstValue (@matrix_mult _ _ _ m1 _ m1)).
+  Let eval5 :=
+      Eval compute in firstValue (firstValue (@matrix_mult _ _ _ m1 _ m1)).
 
   Local Lemma eq5 : eval5 = 10. Proof. apply idpath. Defined.
-  (* 10 *)
+
+  Let eval6 := Eval cbn in
+    (@matrix_mult _ _ _ (@identity_matrix natcommrig 10)
+      _ (@identity_matrix natcommrig 10)).
+
+  Local Lemma eq6 : firstValue (firstValue eval6) = (@nattorig natcommrig 0).
+  Proof. try apply idpath. Abort.
 
 End Tests_1.
 
@@ -64,7 +74,6 @@ Section Tests_2.
 
     Context {R: rig}.
     Context {F: fld}.
-    Context {nat' : natcommrig}.
 
     (* Very slow *)
     (* Eval cbn in (1 + 1 + 1 + 1 + 1)%hz. *)

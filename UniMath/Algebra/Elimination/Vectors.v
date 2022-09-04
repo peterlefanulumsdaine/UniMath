@@ -17,8 +17,18 @@ Require Import UniMath.Algebra.Matrix.
 Require Import UniMath.Algebra.RigsAndRings.
 Require Import UniMath.Algebra.IteratedBinaryOperations.
 
+Require Import UniMath.Algebra.Domains_and_Fields.
+
 Require Import UniMath.Algebra.Elimination.Auxiliary.
 
+Section Misc.
+
+  Lemma iscontr_nil_vector {X : UU} : iscontr (Vector X 0).
+  Proof.
+    apply iscontrfunfromempty2. apply fromstn0.
+  Defined.
+
+End Misc.
 
 Section Vectors.
 
@@ -26,7 +36,6 @@ Section Vectors.
 
   Local Notation  Σ := (iterop_fun rigunel1 op1).
   Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
-
 
   Definition scalar_lmult_vec
   (s : R)
@@ -47,32 +56,31 @@ Section Vectors.
     intros n f X.
     rewrite X.
     unfold const_vec.
-    induction n.
-    - reflexivity.
-    - intros. rewrite iterop_fun_step.
-      + rewrite rigrunax1.
-        unfold funcomp.
-        rewrite -> IHn with ((λ _ : (⟦ n ⟧)%stn, 0%rig));
-          reflexivity.
-      + apply riglunax1.
+    induction n as [| n IH]. {apply idpath. }
+    intros. rewrite iterop_fun_step.
+    - rewrite rigrunax1.
+      unfold funcomp.
+      rewrite IH
+        with ((λ _ : (⟦ n ⟧)%stn, 0%rig))
+      ; reflexivity.
+    - apply riglunax1.
   Defined.
 
   Lemma sum_is_ldistr :
     ∏ (n : nat) (vec : Vector R n) (s : R),
     op2 s (Σ vec) =  Σ ((const_vec s ) ^ vec).
   Proof.
-    intros. induction n.
+    intros. induction n as [| n IH].
     - change (Σ vec) with (@rigunel1 R).
       rewrite zero_function_sums_to_zero.
       + apply rigmultx0.
       + apply funextfun; intros i.
         destruct (weqstn0toempty i).
     - rewrite iterop_fun_step.  2: {apply riglunax1. }
-      rewrite rigldistr.
-      rewrite -> IHn.
-      rewrite -> replace_dni_last.
+      rewrite rigldistr, IH.
+      rewrite replace_dni_last.
       rewrite iterop_fun_step. 2: {apply riglunax1. }
-      rewrite -> replace_dni_last.
+      rewrite replace_dni_last.
       apply idpath.
   Defined.
 
@@ -80,13 +88,12 @@ Section Vectors.
     ∏ (n : nat) (vec : Vector R n) (s : R),
     op2 (Σ vec) s =  Σ (vec ^ (const_vec s)).
   Proof.
-    intros. induction n.
+    intros. induction n as [| n IH].
     - assert (x : ( Σ vec ) = 0%rig).
       + apply idpath.
       + rewrite x. apply rigmult0x.
     - rewrite iterop_fun_step. 2: {apply riglunax1. }
-      rewrite rigrdistr.
-      rewrite -> IHn.
+      rewrite rigrdistr, IH.
       rewrite -> replace_dni_last.
       rewrite iterop_fun_step. 2: {apply riglunax1. }
       rewrite -> replace_dni_last.
@@ -99,7 +106,7 @@ Section Vectors.
     = Σ (λ i: (⟦ n ⟧)%stn, op1 (f1 i) (f2 i)).
   Proof.
     intros.
-    induction n.
+    induction n as [| n IH].
     - assert ( sum0 : Σ (λ i : (⟦ 0 ⟧)%stn, f1 i) = 0%rig). {reflexivity. }
       assert ( sum0': Σ (λ i : (⟦ 0 ⟧)%stn, f2 i) = 0%rig). {reflexivity. }
       rewrite sum0. rewrite sum0'.
@@ -110,12 +117,21 @@ Section Vectors.
       do 3 rewrite -> rigcomm1.
       rewrite <- (rigcomm1 _ (f1 lastelement)).
       rewrite rigassoc1.
-      rewrite IHn.
+      rewrite IH.
       rewrite iterop_fun_step. 2: {apply riglunax1. }
       rewrite <- rigassoc1.
       rewrite rigcomm1.
       rewrite (rigcomm1 R (f2 lastelement) (f1 lastelement)).
       reflexivity.
+  Defined.
+
+  (* TODO replace rigsum_add with this one *)
+  Lemma sum_pointwise_op1 { n : nat } (v1 v2 : Vector R n)
+    : Σ (pointwise n op1 v1 v2) = (Σ v1 + Σ v2)%rig.
+  Proof.
+    unfold pointwise.
+    apply pathsinv0.
+    apply rigsum_add.
   Defined.
 
   Lemma interchange_sums :
@@ -124,7 +140,7 @@ Section Vectors.
     Σ (λ i: (⟦ m ⟧)%stn, Σ (λ j : (⟦ n ⟧)%stn, f j i) )
     = Σ (λ j: (⟦ n ⟧)%stn, Σ (λ i : (⟦ m ⟧)%stn, f j i)).
   Proof.
-    intros. induction n. 
+    intros. induction n as [| n IH].
     - induction m.
       { reflexivity. }
       change (Σ (λ i : (⟦ 0 ⟧)%stn, Σ ((λ j : (⟦ _ ⟧)%stn, f i j) )))
@@ -133,7 +149,7 @@ Section Vectors.
       reflexivity.
     - rewrite -> iterop_fun_step. 2: { apply riglunax1. }
       unfold funcomp.
-      rewrite <- IHn.
+      rewrite <- IH.
       rewrite rigsum_add.
       apply maponpaths, funextfun. intros i.
       rewrite -> iterop_fun_step. 2: { apply riglunax1. }
@@ -301,16 +317,6 @@ Section Vectors.
     reflexivity.
   Defined.
 
-  (* TODO resolve this situation with multiple aliases for essentially the same lemma
-    - this is just rigsum_add. *)
-  Lemma sum_pointwise_op1 { n : nat } (v1 v2 : Vector R n)
-    : Σ (pointwise n op1 v1 v2) = (Σ v1 + Σ v2)%rig.
-  Proof.
-    unfold pointwise.
-    apply pathsinv0.
-    apply rigsum_add.
-  Defined.
-
   Definition stdb_vector { n : nat } (i : ⟦ n ⟧%stn) : Vector R n.
   Proof.
     intros j.
@@ -394,7 +400,7 @@ Section Vectors.
       (X : ∏ (k: ⟦ n ⟧%stn), (k ≠ i) -> (k ≠ j) -> (f k = 0%rig))
     : (Σ f = f i + f j)%rig.
   Proof.
-    assert (H : f = pointwise n op1  (scalar_lmult_vec (f i) (stdb_vector i))
+    assert (H : f = pointwise n op1 (scalar_lmult_vec (f i) (stdb_vector i))
                     (scalar_lmult_vec (f j) (stdb_vector j))).
     { unfold pointwise.
       apply funextfun. intros k.

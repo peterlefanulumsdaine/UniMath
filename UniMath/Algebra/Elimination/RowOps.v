@@ -380,20 +380,10 @@ Section Elementary.
     - apply (@ringlinvax1 F).
   Defined.
 
-  (* TODO upstream *)
-  Lemma stn_neq_symm {n : nat} {i j : stn n} (neq : i ≠ j)
-    : (j ≠ i).
-  Proof.
-    destruct (stn_eq_or_neq j i) as [contr_eq | ?].
-    - rewrite contr_eq in neq.
-      contradiction (isirrefl_natneq i).
-    - assumption.
-  Defined.
-
-  Lemma switch_row_matrix_self_inverse
+  Lemma switch_row_matrix_involution
     { n : nat } ( r1 r2 : ⟦ n ⟧%stn )
     : ((switch_row_matrix r1 r2)
-     ** (switch_row_matrix r1 r2))
+      ** (switch_row_matrix r1 r2))
       = @identity_matrix _ _.
   Proof.
     intros.
@@ -422,11 +412,13 @@ Section Elementary.
     { n : nat } ( r1 r2 : ⟦ n ⟧%stn )
     : @matrix_inverse F n (switch_row_matrix r1 r2).
   Proof.
-    use tpair.
-    { exact (switch_row_matrix r1 r2). }
-    use tpair; apply switch_row_matrix_self_inverse.
+    exists (switch_row_matrix r1 r2).
+    split; apply switch_row_matrix_involution.
   Defined.
 
 End Elementary.
 
 End GaussOps.
+
+(* Section ColOps. 
+   ... *)
