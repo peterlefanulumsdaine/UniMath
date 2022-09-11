@@ -170,7 +170,7 @@ Section Transposition.
     specialize (H j). apply toforallpaths in H. apply H.
   Defined.
 
-  (* TODO: probably switch direction, for consistency *)
+  (* Note: probably switch direction, for consistency *)
   Definition is_symmetric_mat {X : UU} {n : nat} (mat : Matrix X n n)
     := mat = transpose mat.
 
@@ -228,13 +228,6 @@ Section Identity_Matrix.
     Σ ((identity_matrix i) ^ v) = (v i).
   Proof.
     apply sum_stdb_vector_pointwise_prod.
-  Defined.
-
-  (* TODO should this really be necessary? Used? *)
-  Lemma sum_id_pointwise_prod_unf { n : nat } (v : Vector R n) (i : ⟦ n ⟧%stn) :
-    Σ (λ j : ⟦ n ⟧%stn, (identity_matrix i j) * (v j))%rig = (v i).
-  Proof.
-    apply sum_id_pointwise_prod.
   Defined.
 
   Definition matlunel2 (n : nat) := @identity_matrix R n.
@@ -350,6 +343,24 @@ Section Inverses.
     split; exists inv.
     - exact (pr2 isinv).
     - exact (pr1 isinv).
+  Defined.
+
+  Lemma make_matrix_left_inverse
+    {m n k: nat}
+    (A : Matrix R m n) (B : Matrix R n m)
+    (eq : matrix_mult A B = identity_matrix)
+    : matrix_left_inverse B.
+  Proof.
+    now exists A.
+  Defined.
+
+  Lemma make_matrix_right_inverse
+    {m n k: nat}
+    (A : Matrix R m n) (B : Matrix R n m)
+    (eq : matrix_mult A B = identity_matrix)
+    : matrix_right_inverse A.
+  Proof.
+    now exists B.
   Defined.
 
   Lemma matrix_left_inverse_equals_right_inverse
@@ -516,7 +527,7 @@ End Misc.
 
 End General_Rigs.
 
-  (* TODO Some material can be moved to semirings section above *)
+  (* Note: Some material can be moved to semirings section above *)
 Section MatricesFld.
 
   Context {F : fld}.
@@ -659,7 +670,7 @@ Section Transpositions.
     - apply toforallpaths, transposition_self_inverse.
   Defined.
 
-  (* TODO: generalize to functions on rows? *)
+  (* Note: can be generalize to functions on rows? *)
   Definition transposition_mat_rows {X : UU} {m n : nat} (i j : ⟦ m ⟧%stn)
     : (Matrix X m n) -> Matrix X m n.
   Proof.

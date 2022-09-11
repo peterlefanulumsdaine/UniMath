@@ -159,7 +159,7 @@ Section BackSub.
     destruct (natlehchoice row i) as [lt | eq]. {apply le. }
     - rewrite matrix_mult_eq in *.
       apply pathsinv0.
-      rewrite matrix_mult_eq in *.
+      rewrite matrix_mult_eq.
       unfold matrix_mult_unf in *.
       apply funextfun; intros ?.
       apply maponpaths, funextfun; intros i'.
@@ -184,7 +184,6 @@ Section BackSub.
        = (mat ** (col_vec (back_sub_step row mat b vec))) i.
   Proof.
     intros i lt.
-    unfold transpose, flip in *.
     destruct (natlehchoice row i (natlthtoleh _ _ lt)) as [? | eq].
     2: { rewrite <- eq in lt.
          apply isirreflnatgth in lt. contradiction. }
@@ -201,6 +200,25 @@ Section BackSub.
     rewrite is_ut; try reflexivity; now rewrite eq.
   Defined.
 
+  (* row parameter for later proof reasons *)
+  Definition back_sub_internal
+    { n : nat }
+    (mat : Matrix F n n)
+    (x : Vector F n) (b : Vector F n)
+    (sep : ⟦ S n ⟧%stn)
+    (row : ⟦ S n ⟧%stn)
+    : Vector F n.
+  Proof.
+    destruct sep as [sep p].
+    induction sep as [ | m IHn] .
+    - exact x.
+    - destruct (natlthorgeh (dualelement (m,, p)) row).
+      + refine (back_sub_step (dualelement (m,, p)) mat (IHn _) b).
+        apply (istransnatlth _ _ _ (natgthsnn m) p).
+      + exact x.
+  Defined.
+
+  (*
   Definition back_sub_internal
     { n : nat }
     (mat : Matrix F n n)
@@ -213,152 +231,23 @@ Section BackSub.
     - exact x.
     - refine (back_sub_step (dualelement (m,, p)) mat (IHn _) b).
       apply (istransnatlth _ _ _ (natgthsnn m) p).
-  Defined.
+  Defined.*)
 
   Definition back_sub
     {n : nat}
     (mat : Matrix F n n)
     (vec : Vector F n)
-    := back_sub_internal mat vec vec (n,, natgthsnn n).
+    := back_sub_internal mat vec vec (n,, natgthsnn n) (n,, natgthsnn n).
 
-  Lemma back_sub_internal_inv0
+    Lemma back_sub_internal_inv0'
     { n : nat }
     (mat : Matrix F n n)
     (b : Vector F n) (vec : Vector F n)
     (ut : @is_upper_triangular F _ _ mat)
+    (sep : ⟦ S n ⟧%stn)
     (row : ⟦ S n ⟧%stn)
-    : ∏ (i : ⟦ n ⟧%stn), i < (dualelement row)
-    -> (((col_vec (back_sub_internal mat b vec row)))) i = ((col_vec b) i).
-  Proof.
-    destruct row as [row p].
-    induction row as [| row IH].
-    { intros i H.
-      destruct (natchoice0 (S n)) as [contr_eq | gt] in H.
-      { clear H. now apply negpaths0sx in contr_eq. }
-      reflexivity.
-    }
-    unfold back_sub_internal.
-    intros i i_lt_dual.
-    rewrite nat_rect_step.
-    assert (p': row < S n). { apply (istransnatlth _ _ _ (natgthsnn row) p). }
-    rewrite <- (IH p'); try assumption.
-    rewrite back_sub_step_inv1; try reflexivity; try assumption.
-    3:  { apply (natlthlehtrans _ _ _ i_lt_dual),
-            dualelement_le_comp, natlehnsn. }
-    2:  { apply natlthtoneq.
-          apply (natlthlehtrans _ _ _ i_lt_dual).
-          apply (@dualelement_sn_le_2 row row n n).
-    }
-    unfold back_sub_internal.
-    apply maponpaths_2, maponpaths, proofirrelevance, propproperty.
-  Defined.
-
-  Lemma back_sub_internal_inv1
-    { n : nat }
-    (mat : Matrix F n n)
-    (b : Vector F n) (vec : Vector F n)
-    (ut : @is_upper_triangular F _ _ mat)
-    (sep : ⟦ S n ⟧%stn)
-    : ∏ (i : ⟦ n ⟧%stn), i < (dualelement sep)
-    -> ((((back_sub_internal mat b vec sep)))) i = (b i).
-  Proof.
-    intros.
-    pose (eq :=
-      @col_vec_inj_pointwise F n (back_sub_internal mat b vec sep) b i).
-    rewrite eq. {apply idpath. }
-    now apply (back_sub_internal_inv0).
-  Defined.
-
-  Lemma back_sub_internal_inv2
-    { n : nat }
-    (mat : Matrix F n n)
-    (x : Vector F n) (b : Vector F n)
-    (ut : @is_upper_triangular F _ _ mat)
-    (row : ⟦ S n ⟧%stn)
-    : ∏ (i : ⟦ n ⟧%stn), i ≥ (dualelement row)
-    -> (mat i i != 0)%ring
-    -> (mat ** (col_vec (back_sub_internal mat x b row))) i = (col_vec b) i.
-  Proof.
-    unfold transpose, flip.
-    intros i i_le_row neq0.
-    unfold back_sub_internal.
-    destruct row as [row p].
-    induction row as [| row IH].
-    { apply fromempty, (dualelement_sn_stn_nge_0 _ _ i_le_row). }
-    rewrite nat_rect_step.
-    destruct (natlehchoice (dualelement (row,, p)) (i)) as [leh | eq].
-    { refine (istransnatleh _ i_le_row); apply (@dualelement_sn_le row row n n). }
-    - rewrite back_sub_step_inv2; try reflexivity; try assumption.
-      { now apply natlthtoleh. }
-      rewrite IH; try reflexivity.
-      now apply dualelement_lt_to_le_s.
-    - rewrite (stn_eq _ _ eq).
-      now rewrite back_sub_step_inv0.
-  Defined.
-
-  Lemma back_sub_inv0
-    { n : nat }
-    (mat : Matrix F n n) (vec : Vector F n)
-    (ut : @is_upper_triangular F _ _ mat)
-    (df : @diagonal_all_nonzero F _ mat)
-    : back_sub_stmt mat vec ut df.
-  Proof.
-    unfold back_sub_stmt.
-    exists (back_sub mat vec).
-    intros; unfold back_sub.
-    destruct (natchoice0 n) as [eq0 | ?].
-    { apply funextfun. intros i. apply fromstn0. rewrite eq0. simpl. assumption. }
-    apply funextfun; intros i.
-    apply back_sub_internal_inv2;
-      try assumption; unfold dualelement.
-    destruct (natchoice0 (S n)) as [eq0 | ?].
-    { apply fromempty. apply negpaths0sx in eq0. assumption. }
-    simpl; now rewrite minus0r, minusnn0.
-    apply df.
-  Defined.
-
-End BackSub.
-
-Section BackSubZero.
-
-  (** Showing that right invertible matrix, upper triangular,
-     must have non-zero diagonal *)
-
-  Context {F : fld}.
-
-  Local Notation Σ := (iterop_fun (@ringunel1 F) op1).
-  Local Notation "A ** B" := (@matrix_mult F _ _ A _ B) (at level 80).
-  Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
-
-  Local Notation "0" := (@ringunel1 F).
-
-  (* Alternate version partially back-substituting, defined for proof reasons *)
-  Definition back_sub_internal'
-    { n : nat }
-    (mat : Matrix F n n)
-    (x : Vector F n) (b : Vector F n)
-    (sep : ⟦ S n ⟧%stn)
-    (row : stn n)
-    : Vector F n.
-  Proof.
-    destruct sep as [sep p].
-    induction sep as [ | m IHn] .
-    - exact x.
-    - destruct (natlthorgeh (dualelement (m,, p)) row).
-      + refine (back_sub_step F (dualelement (m,, p)) mat (IHn _) b).
-        apply (istransnatlth _ _ _ (natgthsnn m) p).
-      + exact x.
-  Defined.
-
-  Lemma back_sub_internal_inv0'
-    { n : nat }
-    (mat : Matrix F n n)
-    (b : Vector F n) (vec : Vector F n)
-    (ut : @is_upper_triangular F _ _ mat)
-    (sep : ⟦ S n ⟧%stn)
-    (row : stn n)
     : ∏ (i : ⟦ n ⟧%stn), i >= row
-    -> (col_vec (back_sub_internal' mat b vec sep row)) i = (col_vec b i).
+    -> (col_vec (back_sub_internal mat b vec sep row)) i = (col_vec b i).
   Proof.
     destruct sep as [sep p].
     induction sep as [| sep IH].
@@ -367,14 +256,14 @@ Section BackSubZero.
       { clear H. apply negpaths0sx in contr_eq. contradiction. }
       reflexivity.
     }
-    unfold back_sub_internal'.
+    unfold back_sub_internal.
     intros i i_lt_row.
     rewrite nat_rect_step.
     destruct (natlthorgeh _ _) as [lt | geh].
     2: {reflexivity. }
     assert (p': sep < S n). { apply (istransnatlth _ _ _ (natgthsnn sep) p). }
     rewrite <- (IH p'); try assumption.
-    unfold back_sub_internal'.
+    unfold back_sub_internal.
     rewrite back_sub_step_inv1; try reflexivity; try assumption.
     {apply maponpaths_2, maponpaths, proofirrelevance, propproperty. }
     apply natgthtoneq.
@@ -383,38 +272,38 @@ Section BackSubZero.
     - assumption.
   Defined.
 
-  Lemma back_sub_internal_inv1'
+  Lemma back_sub_internal_inv1
     { n : nat }
     (mat : Matrix F n n)
     (b : Vector F n) (vec : Vector F n)
     (ut : @is_upper_triangular F _ _ mat)
     (sep : ⟦ S n ⟧%stn)
-    (row : stn n)
+    (row : ⟦ S n ⟧%stn)
     : ∏ i : stn n, i >= row
-    -> (back_sub_internal' mat b vec sep row) i = b i.
+    -> (back_sub_internal mat b vec sep row) i = b i.
   Proof.
     intros.
     rewrite (@col_vec_inj_pointwise F n
-      (back_sub_internal' mat b vec sep row) b i).
+      (back_sub_internal mat b vec sep row) b i).
     - apply idpath.
     - now apply (back_sub_internal_inv0').
   Defined.
 
-  Lemma back_sub_internal_inv2'
+  Lemma back_sub_internal_inv2
     { n : nat }
     (mat : Matrix F n n)
     (x : Vector F n) (b : Vector F n)
     (ut : @is_upper_triangular F _ _ mat)
     (sep : ⟦ S n ⟧%stn)
-    (row : stn n)
+    (row : ⟦ S n ⟧%stn)
     : ∏ (i : ⟦ n ⟧%stn), i ≥ (dualelement sep)
     -> (mat i i != 0)%ring
     -> i < row
-    -> (mat ** (col_vec (back_sub_internal' mat x b sep row))) i = (col_vec b) i.
+    -> (mat ** (col_vec (back_sub_internal mat x b sep row))) i = (col_vec b) i.
   Proof.
     unfold transpose, flip.
     intros i i_le_sep neq0 lt.
-    unfold back_sub_internal'.
+    unfold back_sub_internal.
     destruct sep as [sep p].
     induction sep as [| sep IH].
     { apply fromempty, (dualelement_sn_stn_nge_0 _ _ i_le_sep). }
@@ -440,6 +329,43 @@ Section BackSubZero.
       + rewrite <- (stn_eq _ _ eq) in lt.
         contradiction (isirreflnatlth _ (natlthlehtrans _ _ _ lt contr_geh)).
   Defined.
+
+  Lemma back_sub_inv0
+    { n : nat }
+    (mat : Matrix F n n) (vec : Vector F n)
+    (ut : @is_upper_triangular F _ _ mat)
+    (df : @diagonal_all_nonzero F _ mat)
+    : back_sub_stmt mat vec ut df.
+  Proof.
+    unfold back_sub_stmt.
+    exists (back_sub mat vec).
+    intros; unfold back_sub.
+    destruct (natchoice0 n) as [eq0 | ?].
+    { apply funextfun. intros i. apply fromstn0. rewrite eq0. simpl. assumption. }
+    apply funextfun; intros i.
+    apply back_sub_internal_inv2;
+      try assumption; unfold dualelement.
+    destruct (natchoice0 (S n)) as [eq0 | ?].
+    { apply fromempty. apply negpaths0sx in eq0. assumption. }
+    simpl; now rewrite minus0r, minusnn0.
+    apply df.
+    exact (pr2 i).
+  Defined.
+
+End BackSub.
+
+Section BackSubZero.
+
+  (** Showing that right invertible matrix, upper triangular,
+     must have non-zero diagonal *)
+
+  Context {F : fld}.
+
+  Local Notation Σ := (iterop_fun (@ringunel1 F) op1).
+  Local Notation "A ** B" := (@matrix_mult F _ _ A _ B) (at level 80).
+  Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
+
+  Local Notation "0" := (@ringunel1 F).
 
   Lemma back_sub_zero
     { n : nat }
@@ -494,7 +420,7 @@ Section BackSubZero.
         rewrite matlunax2 in eq.
         pose (eq' := @matrix_mult_zero_vec_eq F _ _ inv).
         symmetry in eq.
-        change 0%ring with (@rigunel1 F) in *.
+        change 0%ring with (@rigunel1 F) in * |-.
         unfold col_vec, const_vec in *.
         rewrite eq' in eq.
         destruct zero as [zero iszero].
@@ -507,14 +433,14 @@ Section BackSubZero.
         { rewrite <- eq. reflexivity. }
         simpl in contr_eq'.
         apply toforallpaths in contr_eq'.
-        change 0%rig with (@rigunel1 F) in *.
+        change 0%rig with (@rigunel1 F) in * |-.
         rewrite contr_eq' in x3.
         2: { exact (make_stn _ _ (natgthsnn 0)). }
         contradiction.
     }
     destruct zero as [zero iszero].
     use tpair.
-    { apply back_sub_internal'.
+    { apply back_sub_internal.
       - exact mat.
       - intros j.
         destruct (natlthorgeh (pr1 zero) j).
@@ -524,11 +450,11 @@ Section BackSubZero.
           * exact (@rigunel2 F).
       - exact (const_vec 0).
       - exact (n,, natgthsnn n).
-      - exact (zero).
+      - exact (pr1 zero,, (istransnatlth _ _ _ (pr2 zero) (natgthsnn _))).
     }
     exists zero.
     use tpair.
-    - rewrite back_sub_internal_inv1'; try assumption.
+    - rewrite back_sub_internal_inv1; try assumption.
       2: {apply isreflnatleh. }
       destruct (natlthorgeh _ _) as [lt | ge].
       * contradiction (isirreflnatgth _ lt).
@@ -537,7 +463,7 @@ Section BackSubZero.
         apply (@nonzeroax F).
     - apply funextfun; intros j.
       destruct (natlthorgeh j zero) as [? | ge].
-      + rewrite back_sub_internal_inv2'; try assumption.
+      + rewrite back_sub_internal_inv2; try assumption.
         {reflexivity. }
         * unfold dualelement.
           destruct (natchoice0 (S n)).
@@ -559,13 +485,13 @@ Section BackSubZero.
           rewrite (pr1 iszero); apply rigmult0x.
         * etrans.
           -- apply maponpaths.
-             rewrite back_sub_internal_inv1'; try assumption.
+             rewrite back_sub_internal_inv1; try assumption.
              2: {apply (istransnatleh ge le). }
              destruct (natlthorgeh _ _) as [? | ?].
              ++ reflexivity.
              ++ destruct (natgehchoice _ _) as [? | eq].
                 ** reflexivity.
-                ** rewrite (stn_eq _ _ eq) in *.
+                ** rewrite (stn_eq _ _ eq) in * |-.
                    contradiction (isirrefl_natneq k).
           -- apply rigmultx0.
   Defined.
@@ -611,7 +537,7 @@ Section Inverse.
       pose (H2 := @leading_entry_compute_inv3 F _
         (flip_fld_bin_vec v) (pr1 some) (pr2 some)).
       destruct H2 as [H2 H3].
-      unfold is_leading_entry, flip_fld_bin_vec, flip_fld_bin in *.
+      unfold is_leading_entry, flip_fld_bin_vec, flip_fld_bin in * |-.
       destruct (fldchoice0 (v (pr1 some))); try contradiction.
       use tpair; try assumption; simpl.
       intros j lt.
@@ -764,26 +690,6 @@ Section Inverse.
     now rewrite <- eq3.
   Defined.
 
-  (* TODO upstream *)
-  Lemma make_matrix_left_inverse
-    {R : rig}
-    {m n k: nat}
-    (A : Matrix R m n) (B : Matrix R n m)
-    (eq : matrix_mult A B = identity_matrix)
-    : matrix_left_inverse B.
-  Proof.
-    now exists A.
-  Defined.
-
-  Lemma make_matrix_right_inverse
-    {R : rig} {m n k: nat}
-    (A : Matrix R m n) (B : Matrix R n m)
-    (eq : matrix_mult A B = identity_matrix)
-    : matrix_right_inverse A.
-  Proof.
-    now exists B.
-  Defined.
-
   Lemma left_inverse_implies_right { n : nat } (A B: Matrix F n n)
     : (B ** A) = (@identity_matrix F n)
     -> (@matrix_right_inverse F n n A).
@@ -818,8 +724,8 @@ Section Inverse.
       try assumption.
       pose (H3 := @clear_rows_up_to_matrix_invertible
         F _ n (n,, natgthsnn n) A gt).
-      destruct H3 as [M isinv].
-      destruct isinv as [linv rinv].
+      destruct H3 as [M isinv]
+      , isinv as [linv rinv].
       apply left_inv_matrix_prod_is_left_inv.
       - now exists M.
       - now exists B.
@@ -838,7 +744,7 @@ Section Inverse.
         F n n (n,, natgthsnn n) A gt).
       apply (matrix_inverse_to_right_and_left_inverse) in H9.
       destruct H9 as [H9 H10].
-      unfold clear_rows_up_to_as_left_matrix in *.
+      unfold clear_rows_up_to_as_left_matrix in * |-.
       pose (H11 := @H8 F n _ n
         (clear_rows_up_to_as_left_matrix_internal
           F A (n,, natgthsnn n) gt) (H9) ((A ** D),, H4)).
@@ -936,7 +842,7 @@ Section Inverse.
       2: {rewrite eq. simpl; reflexivity. }
       now rewrite (pr2 linv).
     }
-    simpl in *
+    simpl in * |-
     ; now rewrite <- BAC_id, <- linv_eq.
   Defined.
 

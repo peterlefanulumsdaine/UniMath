@@ -37,7 +37,7 @@ Section Vectors.
 
   Local Notation  Σ := (iterop_fun rigunel1 op1).
   Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
-
+  
   Definition scalar_lmult_vec
   (s : R)
   {n : nat} (vec: Vector R n)
@@ -344,7 +344,7 @@ Section Vectors.
     (f g : stn n -> R) {i : stn n} (H : is_pulse_function i f)
     : is_pulse_function i (f ^ g).
   Proof.
-    unfold is_pulse_function in *; intros j.
+    unfold is_pulse_function in * |-; intros j.
     intros neq; unfold pointwise.
     replace (f j) with (@rigunel1 R).
     - apply rigmult0x.
@@ -468,3 +468,31 @@ Section Vectors.
   Proof. easy. Defined.
 
 End Vectors.
+
+Section VectorsField.
+
+  Context {F : fld}.
+  Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
+
+  (* Can be generalized to rigs -- and upstreamed to Vectors *)
+  Lemma pointwise_rdistr_vector { n : nat } (v1 v2 v3 : Vector F n)
+    : (pointwise n op1 v1 v2) ^ v3 = pointwise n op1 (v1 ^ v3) (v2 ^ v3).
+  Proof.
+    use (pointwise_rdistr (rigrdistr F)).
+  Defined.
+
+  (* Can be generalized to rigs -- upstream *)
+  Lemma pointwise_assoc2_vector { n : nat } (v1 v2 v3 : Vector F n)
+    : (v1 ^ v2) ^ v3 = v1 ^ (v2 ^ v3).
+  Proof.
+    use (pointwise_assoc (rigassoc2 F)).
+  Defined.
+
+  (* Can be generalized to commrigs -- upstream *)
+  Lemma pointwise_comm2_vector { n : nat } (v1 v2 : Vector F n)
+    : v1 ^ v2 = v2 ^ v1.
+  Proof.
+    use (pointwise_comm (rigcomm2 F)).
+  Defined.
+
+End VectorsField.

@@ -46,8 +46,8 @@ Section Misc.
     intros.
     unfold min.
     revert a.
-    induction b; destruct a ; try reflexivity.
-    apply IHb.
+    induction b as [| b IH]; destruct a ; try reflexivity.
+    apply IH.
   Defined.
 
   Lemma min_le_a:
@@ -56,8 +56,8 @@ Section Misc.
     intros.
     unfold min.
     revert a.
-    induction b; destruct a ; try reflexivity.
-    apply IHb.
+    induction b as [| b IH]; destruct a ; try reflexivity.
+    apply IH.
   Defined.
 
   Lemma min_eq_a_or_eq_b :
@@ -68,13 +68,13 @@ Section Misc.
     - apply ii2.
       unfold min.
       revert gt. revert b.
-      induction a as [| a IH ]; destruct b as [_| lt]; try reflexivity.
+      induction a as [| a IH ]; destruct b; try reflexivity.
       { intros. apply fromempty. apply negnatgth0n in gt. assumption.  }
       intros; rewrite IH. {reflexivity. }
       apply gt.
     - apply ii1.
       unfold min; revert leh. revert b.
-      induction a as [| a IH ]; destruct b as [_ | lt]; try reflexivity.
+      induction a as [| a IH ]; destruct b; try reflexivity.
       { intros; apply negnatlehsn0 in leh.
         apply fromempty; assumption. }
       intros.
@@ -234,12 +234,12 @@ Section Misc.
      reflexivity.
   Defined.
 
-  (* TODO: try to simplify/speed up? *)
+  (* could try to simplify/speed up? *)
   Lemma hqone_neq_hqzero : 1%hq != 0%hq.
   Proof.
     intro contr.
     assert (contr_hz : intpart 1%hq != intpart 0%hq).
-    { unfold intpart; apply hzone_neg_hzzero. }
+    { unfold intpart. apply hzone_neg_hzzero. }
     apply contr_hz.
     apply maponpaths, contr.
   Defined.
@@ -336,15 +336,13 @@ Section PrelStn.
     intros ? ? ? p. unfold stn_eq_or_neq.
     destruct (nat_eq_or_neq i j).
     - apply fromempty. rewrite p0 in p.
-       apply isirrefl_natneq in p.
-       assumption.
-    -  apply isapropcoprod.
+       now apply isirrefl_natneq in p.
+    - apply isapropcoprod.
        + apply stn_ne_iff_neq in p. apply isdecpropfromneg. assumption.
        + apply negProp_to_isaprop.
        + intros i_eq_j.
          rewrite i_eq_j in p.
-         apply isirrefl_natneq in p.
-         apply fromempty; assumption.
+         now apply isirrefl_natneq in p.
   Defined.
 
   Lemma stn_implies_nneq0
@@ -354,8 +352,8 @@ Section PrelStn.
     - rewrite <- T in i.
       apply weqstn0toempty in i. apply fromempty. assumption.
     - destruct n.
-      + apply isirreflnatgth in F. apply fromempty. assumption.
-      + apply natgthtoneq in F. reflexivity.
+      + now apply isirreflnatgth in F.
+      + now apply natgthtoneq in F.
   Defined.
 
   Lemma stn_implies_ngt0
@@ -370,28 +368,23 @@ Section PrelStn.
     intros ngt0 snltm.
     assert (n_lt_sn : n < S n).
       { apply natlthnsn. }
-    apply natlehsntolth.
-      assumption.
+    now apply natlehsntolth.
   Defined.
 
   Lemma stn_eq_nat_eq
     { n : nat} (i j : ⟦ n ⟧%stn) : i = j <-> (pr1 i = pr1 j).
   Proof.
     split.
-    - intros i_eq_j.
-      { rewrite i_eq_j. apply idpath. }
-    - intros pr1i_eq_pr1j.
-      { apply subtypePath_prop; assumption. }
+    - intros i_eq_j; now rewrite i_eq_j.
+    - intros pr1i_eq_pr1j; now apply subtypePath_prop.
   Defined.
 
   Lemma stn_neq_nat_neq
     { n : nat} (i j : ⟦ n ⟧%stn) : i ≠ j <-> (pr1 i ≠ pr1 j).
   Proof.
     split.
-    - intros i_neq_j.
-      { apply i_neq_j. }
-    - intros pr1i_neq_pr1j.
-      { apply pr1i_neq_pr1j. }
+    - now intros i_neq_j.
+    - now intros pr1i_neq_pr1j.
   Defined.
 
   Lemma stn_neq_symm {n : nat} {i j : stn n} (neq : i ≠ j)
@@ -492,8 +485,8 @@ Section Maybe.
   : coprod (∑ i : ⟦ n ⟧%stn, e = just i) (e = nothing).
   Proof.
   destruct e as [i | u].
-  - apply ii1. exists i. reflexivity.
-  - apply ii2. rewrite u. exists.
+  - apply ii1. now exists i.
+  - apply ii2. rewrite u; exists.
   Defined.
 
   Definition from_maybe
@@ -503,7 +496,7 @@ Section Maybe.
      destruct m as [x | u].
      - exact x.
      - contradiction p.
-       rewrite u; reflexivity.
+       now rewrite u.
   Defined.
 
 End Maybe.
@@ -668,12 +661,12 @@ Section Dual.
     unfold dualelement in leh |- *.
     destruct (natchoice0 n) as [contr_eq | ?].
     {apply fromstn0. rewrite contr_eq. assumption. }
-    rewrite coprod_rect_compute_2 in *.
+    rewrite coprod_rect_compute_2 in * |-.
     unfold dualelement.
     destruct (natchoice0 (S n)) as [contr_eq | gt].
-    { destruct (!contr_eq). pose (contr := (natneq0sx n));
+    { pose (contr := (natneq0sx n));
       rewrite <- contr_eq in contr.
-      apply isirrefl_natneq in contr; contradiction. }
+      contradiction (isirrefl_natneq _ contr). }
     rewrite coprod_rect_compute_2.
     destruct (natchoice0 n) as [eq | gt'].
     {apply fromstn0; now rewrite eq. }

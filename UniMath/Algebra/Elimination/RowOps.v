@@ -20,37 +20,11 @@ Require Import UniMath.Algebra.Elimination.Vectors.
 Require Import UniMath.Algebra.Elimination.Matrices.
 
 Section GaussOps.
-  (* TODO better (or any) comments for all these functions including assumptions*)
 
   Context { F : fld }.
   Local Notation Σ := (iterop_fun 0%ring op1).
   Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
   Local Notation "A ** B" := (@matrix_mult F _ _ A _ B) (at level 80).
-
-Section Auxiliary.
-
-  (* Can be generalized to rigs -- and upstreamed to Vectors *)
-  Lemma pointwise_rdistr_vector { n : nat } (v1 v2 v3 : Vector F n)
-    : (pointwise n op1 v1 v2) ^ v3 = pointwise n op1 (v1 ^ v3) (v2 ^ v3).
-  Proof.
-    use (pointwise_rdistr (rigrdistr F)).
-  Defined.
-
-  (* Can be generalized to rigs -- upstream *)
-  Lemma pointwise_assoc2_vector { n : nat } (v1 v2 v3 : Vector F n)
-    : (v1 ^ v2) ^ v3 = v1 ^ (v2 ^ v3).
-  Proof.
-    use (pointwise_assoc (rigassoc2 F)).
-  Defined.
-
-  (* Can be generalized to commrigs -- upstream *)
-  Lemma pointwise_comm2_vector { n : nat } (v1 v2 : Vector F n)
-    : v1 ^ v2 = v2 ^ v1.
-  Proof.
-    use (pointwise_comm (rigcomm2 F)).
-  Defined.
-
-End Auxiliary.
 
 Section RowOps.
 
@@ -142,8 +116,7 @@ Section RowOps.
       simpl; try reflexivity.
     rewrite <- i'_eq_j', eq0.
     unfold const_vec ; simpl.
-    rewrite (@ringmultx0 F), (@rigrunax1 F).
-    reflexivity.
+    now rewrite (@ringmultx0 F), (@rigrunax1 F).
   Defined.
 
   Lemma gauss_switch_row_inv0
@@ -190,7 +163,7 @@ Section RowOps.
     destruct (stn_eq_or_neq _ _) as [eq | neq];
       destruct (stn_eq_or_neq _ _) as [eq' | neq'];
       try rewrite eq; try rewrite eq';
-      try rewrite m_eq; try reflexivity.
+      try rewrite m_eq; reflexivity.
   Defined.
 
   Definition switch_row_matrix
@@ -440,7 +413,7 @@ Section Elementary.
       reflexivity.
     - rewrite stn_eq_or_neq_refl; simpl.
       destruct (stn_eq_or_neq _ _) as [eq | ?]; simpl.
-      + rewrite eq; reflexivity.
+      + now rewrite eq.
       + reflexivity.
   Defined.
 

@@ -42,11 +42,6 @@ Require Import UniMath.Algebra.Elimination.RowOps.
     
 *)
 
-(** TODO interchange j1 j2 
-    Possible form: for all i1 j1, is_leading_entry 
-    M i1 j1 -> forall i2, j2, i2 > i1, j2 <_ j1, _ = 0
-    TODO cover other forms (enforce other)
-    *)
 Section Summary.
 
   Context (R: ring).
@@ -315,7 +310,7 @@ Section LeadingEntry.
       destruct (fldchoice0 _) as [? | eq'] in eq.
       {contradiction. }
       apply just_injectivity in eq.
-      now rewrite <- eq in *.
+      now rewrite <- eq in * |-.
   Defined.
 
   Lemma leading_entry_compute_internal_inv1
@@ -447,13 +442,13 @@ Section Pivot.
           _ _ (col mat k) (m,, natgthsnn m) H1 (H2')).
         destruct H3 as [H3 H4].
         intros i ke_le_i.
-        unfold col, transpose, flip in *.
+        unfold col, transpose, flip in * |-.
         rewrite H4; try reflexivity; try assumption.
         now apply (natlthlehtrans H1 row_sep i).
         exact (pr2 i).
       + apply ii1.
         exists H1, gt.
-        unfold col, transpose, flip in *.
+        unfold col, transpose, flip in * |-.
         destruct
           H2 as [? H2]
         , H2 as [? H2].
@@ -971,7 +966,7 @@ Section Gauss.
             destruct (!eq).
             now apply natlehneggth in leh.
         }
-        rewrite <- (stn_eq_2 _ _ eq p) in *.
+        rewrite <- (stn_eq_2 _ _ eq p).
         destruct (stn_eq_or_neq _ _) as [contr_eq | ?].
         { rewrite contr_eq in k_le_r. contradiction (isirreflnatgth _ k_le_r). }
         replace _ with (gauss_clear_column_step k_i k_j r mat r).
@@ -1007,8 +1002,7 @@ Section Gauss.
               = (gauss_clear_column mat k_i k_j (make_stn _ _  q) k_i k_j)).
             { rewrite gauss_clear_column_inv1;
               try reflexivity; apply isreflnatleh. }
-            destruct (!eq'').
-            apply idpath.
+            now destruct (!eq'').
           - rewrite gauss_clear_column_inv1; try reflexivity;
               apply isreflnatleh.
         }
@@ -1048,8 +1042,7 @@ Section Gauss.
   Proof.
     unfold gauss_clear_column.
     destruct iter as [iter lt].
-    induction iter as [| iter IH].
-    { intros i. simpl. reflexivity. }
+    induction iter as [| iter IH]. { now intros i. }
     intros i.
     rewrite nat_rect_step, gauss_clear_column_step_eq.
     destruct (stn_eq_or_neq (iter,, lt) k_i) as [eq | ?].
@@ -1140,7 +1133,7 @@ Section Gauss.
         (S (pr1 row_sep),, p').
   Proof.
      intros H1.
-     unfold is_row_echelon_partial_1 in *.
+     unfold is_row_echelon_partial_1.
      unfold gauss_clear_rows_up_to.
      intros i_1 i_2 j_1 j_2 i1_lt H2 i1_lt_i2 j1_lt_j2.
      revert H2; unfold gauss_clear_row; clear p.
@@ -1169,7 +1162,7 @@ Section Gauss.
         2: { apply natlthtoneq; assumption. }
         rewrite gauss_clear_column_inv4.
         { rewrite gauss_switch_row_inv2.
-          - rewrite (H1 i_1 i_2 j_1 j_2); try reflexivity; try assumption.
+          - now rewrite (H1 i_1 i_2 j_1 j_2).
           - do 2 (rewrite (H1 i_1 _ j_1 j_2); try reflexivity; try assumption).
             refine (natlthlehtrans _ _ _ lt leh).
         }
@@ -1183,7 +1176,7 @@ Section Gauss.
       - unfold gauss_switch_row.
         destruct (stn_eq_or_neq _ _) as [eq' | neq]; simpl.
         + destruct (stn_eq_or_neq _ _) as [contr_eq | neq']; simpl.
-          { rewrite eq0; try reflexivity; try assumption. }
+          { now rewrite eq0. }
           rewrite eq0; try reflexivity; try assumption.
           apply (isreflnatleh).
         + destruct (stn_eq_or_neq _ _) as [contr_eq | neq']; simpl.
@@ -1268,7 +1261,7 @@ Section Gauss.
           unfold gauss_clear_column_step'.
           destruct (stn_eq_or_neq _ _) as [contr_eq | ?].
           { contradiction (isirreflnatgth row_sep).
-            rewrite contr_eq in *. assumption. }
+            rewrite contr_eq in * |-. assumption. }
           rewrite gauss_add_row_inv1; try assumption.
           -- rewrite gauss_switch_row_inv1.
              ++ now rewrite IH.
@@ -1281,8 +1274,7 @@ Section Gauss.
         * rewrite gauss_clear_column_inv1 in le_nought.
           2: { now apply natlthtoleh. }
           rewrite gauss_switch_row_inv0 in le_nought.
-          3: { apply natlthtoneq.
-               apply (natgehgthtrans _ _ _ leh i1_lt_rowsep). }
+          3: { apply natlthtoneq, (natgehgthtrans _ _ _ leh i1_lt_rowsep). }
           2: { now apply natlthtoneq. }
           do 2 (rewrite IH; try assumption; try reflexivity).
           apply (natgehgthtrans _ _ _ leh i1_lt_rowsep).
@@ -1302,7 +1294,7 @@ Section Gauss.
           2: {apply natlthtoneq, (natlthlehtrans _ _ _ i1_lt_i2 i2_le_rowsep). }
           do 2 (rewrite IH; try assumption; try reflexivity).
           apply (natgehgthtrans _ _ _ leh i1_lt_rowsep).
-    - intros; unfold gauss_clear_row in *.
+    - intros; unfold gauss_clear_row in * |-.
       destruct (select_uncleared_column _ _) as [col | no_col].
       2: { apply funextfun; intros j_2.
            assert (le : row_sep ≤ i_2).
@@ -1428,8 +1420,7 @@ Section Gauss.
           intros i_1 i_2 i1_lt_iter ? ?.
           rewrite (re_2 i_1 i_2); try assumption; try reflexivity.
           apply (istransnatlth _ _ _ i1_lt_iter (natgthsnn iter)).
-      + pose (H := @leading_entry_compute_inv2 F n _ none).
-        rewrite H; try reflexivity.
+      + now rewrite (@leading_entry_compute_inv2 F n _ none).
     - unfold stntonat in eq.
       assert (eq' : i = (iter,, p')).
       { apply subtypePath_prop; apply eq. }
@@ -1454,44 +1445,44 @@ Section Gauss.
              contradiction (pr1 H2).
              rewrite (IH iter_lt_sn); try reflexivity; try assumption.
              use tpair.
-             ** intros i_1 i_2 j_1 j_2 i1_lt_iter H' ? ?.
+             ++ intros i_1 i_2 j_1 j_2 i1_lt_iter H' ? ?.
                 rewrite (re_1 i_1 i_2 j_1 j_2); try assumption; try reflexivity.
                 apply (istransnatlth _ _ _ i1_lt_iter (natgthsnn iter)).
-             ** simpl.
+             ++ simpl.
                 intros i_1 i_2 i1_lt_iter ? ?.
                 rewrite (re_2 i_1 i_2); try assumption; try reflexivity.
                 apply (istransnatlth _ _ _ i1_lt_iter (natgthsnn iter)).
-             ** destruct (natgthorleh u prev) as [gt | leh]; try assumption.  
+             ++ destruct (natgthorleh u prev) as [gt | leh]; try assumption.  
                 contradiction (pr1 H1).
                 rewrite (re_1 u i t prev); try assumption;
                   try reflexivity; try assumption.
-                --- apply natgehsntogth.
-                    rewrite u_lt, eq'.
-                    apply natgehsnn.
-                --- apply natgehsntogth.
-                     rewrite u_lt, eq'.
-                     apply (isreflnatleh).
-                --- destruct (natgthorleh t prev) as [gt | leh']; try assumption.
-                    apply (istransnatleh contr_gt).
-                    refine (istransnatleh _ leh).
-                    apply natlehsntolth, natlthsntoleh.
-                    rewrite u_lt; apply lt.
-             ** apply natgehsntogth.
+                ** apply natgehsntogth.
+                   rewrite u_lt, eq'.
+                   apply natgehsnn.
+                ** apply natgehsntogth.
+                   rewrite u_lt, eq'.
+                   apply (isreflnatleh).
+                ** destruct (natgthorleh t prev) as [gt | leh']; try assumption.
+                   apply (istransnatleh contr_gt).
+                   refine (istransnatleh _ leh).
+                   apply natlehsntolth, natlthsntoleh.
+                   rewrite u_lt; apply lt.
+             ++ apply natgehsntogth.
                 rewrite u_lt, eq'.
                 apply (isreflnatleh).
-            -- rewrite (re_2 u i ); try assumption; try reflexivity.
-             ++ simpl; apply natlthtolths. rewrite <- eq.
-                try apply (natlehlthtrans _ _ _ contr_gt lt ).
-                apply natgehsntogth.
-                rewrite u_lt, eq'.
-                apply (isreflnatleh).
-             ++ pose (H := @leading_entry_compute_inv2
-                  F n _ none_prev).
-                apply funextfun; intros j'; rewrite (H j'); try reflexivity.
-             ++ try apply (natlehlthtrans _ _ _ contr_gt lt).
-                apply natgehsntogth.
-                rewrite u_lt; rewrite eq'.
-                apply (isreflnatleh).
+          -- rewrite (re_2 u i ); try assumption; try reflexivity.
+              ++ simpl; apply natlthtolths. rewrite <- eq.
+                 try apply (natlehlthtrans _ _ _ contr_gt lt ).
+                 apply natgehsntogth.
+                 rewrite u_lt, eq'.
+                 apply (isreflnatleh).
+              ++ pose (H := @leading_entry_compute_inv2
+                   F n _ none_prev).
+                 apply funextfun; intros j'; rewrite (H j'); try reflexivity.
+              ++ try apply (natlehlthtrans _ _ _ contr_gt lt).
+                 apply natgehsntogth.
+                 rewrite u_lt; rewrite eq'.
+                 apply (isreflnatleh).
       + now rewrite (@leading_entry_compute_inv2 _ _ _ none).
   Defined.
 
