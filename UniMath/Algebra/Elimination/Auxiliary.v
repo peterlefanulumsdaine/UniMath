@@ -68,13 +68,13 @@ Section Misc.
     - apply ii2.
       unfold min.
       revert gt. revert b.
-      induction a as [| a IH ]; destruct b as [b | lt]; try reflexivity.
+      induction a as [| a IH ]; destruct b as [_| lt]; try reflexivity.
       { intros. apply fromempty. apply negnatgth0n in gt. assumption.  }
       intros; rewrite IH. {reflexivity. }
       apply gt.
     - apply ii1.
       unfold min; revert leh. revert b.
-      induction a as [| a IH ]; destruct b as [b | lt]; try reflexivity.
+      induction a as [| a IH ]; destruct b as [_ | lt]; try reflexivity.
       { intros; apply negnatlehsn0 in leh.
         apply fromempty; assumption. }
       intros.
@@ -438,21 +438,21 @@ Section PrelStn.
   Lemma stn_eq
     {k : nat} (i j : stn k) (eq : pr1 i = pr1 j) : i = j.
   Proof.
-    apply subtypePath_prop; assumption.
+    now apply subtypePath_prop.
   Defined.
 
   Lemma stn_eq_2
     {k : nat} (i: stn k) (j : nat) (eq : pr1 i = j)
       : forall P : j < k, i = (j,, P).
   Proof.
-    intros lt; apply subtypePath_prop; assumption.
+    intros lt; now apply subtypePath_prop.
   Defined.
 
   Lemma stn_eq_3
     {k : nat} (i: nat) (j : stn k) (eq : i = pr1 j)
       : forall P : i < k, j = (i,, P).
   Proof.
-    apply stn_eq_2; symmetry; assumption.
+    now apply stn_eq_2.
   Defined.
 
 
@@ -515,7 +515,7 @@ Section Dual.
   Proof.
     unfold dualelement.
     destruct (natchoice0 n) as [contr_eq | gt]; simpl.
-    { simpl. apply fromstn0. rewrite <- contr_eq in i. assumption. }
+    { simpl. apply fromstn0. now rewrite <- contr_eq in i. }
     unfold make_stn.
     apply subtypePath_prop; simpl.
     rewrite (doubleminuslehpaths (n - 1) i); try reflexivity.
@@ -533,7 +533,7 @@ Section Dual.
     intros H; apply subtypePath_prop; revert H; simpl.
     intros eq; rewrite <- eq; simpl.
     rewrite minusminusmmn; try reflexivity.
-    apply (natlthsntoleh).
+    apply natlthsntoleh.
     rewrite minussn1non0; try assumption; exact (pr2 i).
   Defined.
 
@@ -546,8 +546,8 @@ Section Dual.
     destruct (natchoice0 n) as [contr_eq | ?]; simpl.
     {simpl. apply fromstn0. rewrite contr_eq. assumption. }
     apply minusgth0inv.
-    rewrite natminusminusassoc, natpluscomm.
-    rewrite <- natminusminusassoc, minusminusmmn.
+    rewrite natminusminusassoc, natpluscomm,
+    <- natminusminusassoc, minusminusmmn.
     2: {apply (natgthtogehm1 _ _ (pr2 j)). }
     apply (minusgth0 _ _ lt).
   Defined.
@@ -559,7 +559,7 @@ Section Dual.
   Proof.
     intros lt.
     pose (H := @dualelement_lt_comp _ (dualelement i) (dualelement j) lt).
-    do 2 rewrite dualelement_2x in H; assumption.
+    now do 2 rewrite dualelement_2x in H.
   Defined.
 
   Lemma dualelement_le_comp
@@ -571,7 +571,7 @@ Section Dual.
     { apply natlthtoleh. apply (dualelement_lt_comp _ _ lt). }
     unfold dualelement.
     destruct (natchoice0 n) as [contr_eq | ?].
-    { simpl; apply fromstn0. rewrite contr_eq. assumption.  }
+    { simpl; apply fromstn0. now rewrite contr_eq. }
     rewrite eq; apply isreflnatgeh.
   Defined.
 
@@ -582,7 +582,7 @@ Section Dual.
   Proof.
     intros le.
     pose (H := @dualelement_le_comp _ (dualelement i) (dualelement j) le).
-    do 2 rewrite dualelement_2x in H; exact H.
+    now do 2 rewrite dualelement_2x in H.
   Defined.
 
   Lemma dualelement_lt_trans_2
@@ -591,20 +591,17 @@ Section Dual.
     : (m < (dualelement (n,, p2))).
   Proof.
     unfold dualelement.
-    destruct (natchoice0 _) as [eq | ?].
+    destruct (natchoice0 _) as [eq | ?]; simpl.
     - rewrite <- eq in p3.
       contradiction (negnatgth0n _ p3).      
-    - simpl.
-      refine (istransnatlth _ _ _ _ _).
+    - refine (istransnatlth _ _ _ _ _).
       {exact lt_dual. }
       unfold dualelement.
       destruct (natchoice0 _) as [contr_eq | ?].
-      + apply fromempty.
-        clear lt_dual.
+      + apply fromempty; clear lt_dual.
         rewrite <- contr_eq in p1.
         contradiction (negnatgth0n _ p1).
-      + simpl.
-        do 2 rewrite natminusminus.
+      + simpl; do 2 rewrite natminusminus.
         apply natlthandminusl; try assumption.
         refine (natlehlthtrans _ _ _ _ _).
         * rewrite natpluscomm.
@@ -621,17 +618,10 @@ Section Dual.
     destruct (natchoice0 _) as [eq | ?].
     - apply fromempty.
       rewrite <- eq in lt.
-      simpl in lt.
       contradiction (nopathsfalsetotrue).
-    - destruct (natchoice0 _).
-      + simpl.
-        rewrite natminuseqn.
-        rewrite natminusminus.
-        reflexivity.
-      + simpl.
-        rewrite natminuseqn.
-        rewrite natminusminus.
-        reflexivity.
+    - destruct (natchoice0 _); simpl.
+      + now rewrite natminuseqn, natminusminus.
+      + now rewrite natminuseqn, natminusminus.
   Defined.
 
   Lemma dualelement_sn_le
@@ -657,16 +647,14 @@ Section Dual.
     intros lt gt.
     unfold dualelement in gt.
     destruct (natchoice0 (S n)) as [contreq0 | ?] in gt.
-    {apply fromempty. clear gt. apply negpaths0sx in contreq0; contradiction. }
+    { clear gt; now apply negpaths0sx in contreq0. }
     unfold make_stn in gt.
     destruct (natchoice0 n) as [contr_eq | ?].
-    {simpl. apply fromstn0. rewrite contr_eq. assumption. }
+    {simpl. apply fromstn0. now rewrite contr_eq. }
     rewrite coprod_rect_compute_2 in gt.
     simpl in gt.
     do 2 rewrite minus0r in gt.
-    pose (contr := pr2 i).
-    apply natgthtonegnatleh in contr.
-    contradiction.
+    contradiction (natgthtonegnatleh _ _ (pr2 i)).
   Defined.
 
   Lemma dualelement_lt_to_le_s
@@ -677,29 +665,29 @@ Section Dual.
     : dualelement (k,, istransnatlth k (S k) (S n) (natgthsnn k) p)
       <= i.
   Proof.
-    unfold dualelement. unfold dualelement in leh.
+    unfold dualelement in leh |- *.
     destruct (natchoice0 n) as [contr_eq | ?].
     {apply fromstn0. rewrite contr_eq. assumption. }
     rewrite coprod_rect_compute_2 in *.
     unfold dualelement.
     destruct (natchoice0 (S n)) as [contr_eq | gt].
-    { pose (contr := (natneq0sx n)). rewrite <- contr_eq in contr.
+    { destruct (!contr_eq). pose (contr := (natneq0sx n));
+      rewrite <- contr_eq in contr.
       apply isirrefl_natneq in contr; contradiction. }
     rewrite coprod_rect_compute_2.
-    unfold dualelement in leh.
     destruct (natchoice0 n) as [eq | gt'].
-    {apply fromstn0; rewrite eq; assumption. }
-    simpl; simpl in leh.
+    {apply fromstn0; now rewrite eq. }
+    simpl in leh |- *.
     rewrite minus0r.
     apply natgthtogehsn in leh.
     rewrite pathssminus in leh.
     2: { rewrite pathssminus.
-         - rewrite minussn1; exact p.
-         - simpl; apply gt'. }
+         - now rewrite minussn1.
+         - now apply gt'. }
     assert (e : n = S (n - 1)).
     { change (S (n - 1)) with (1 + (n - 1)). rewrite natpluscomm.
       apply pathsinv0. apply minusplusnmm. assumption. }
-    destruct (!e); apply leh.
+    now destruct (!e).
   Defined.
 
   Lemma dualvalue_eq
@@ -708,7 +696,7 @@ Section Dual.
   : (v i)
   = (λ i' : ⟦ n ⟧%stn, v (dualelement i')) (dualelement i).
   Proof.
-    simpl; rewrite dualelement_2x; reflexivity.
+    simpl; now rewrite dualelement_2x.
   Defined.
 
 End Dual.

@@ -2,6 +2,7 @@ Require Import UniMath.Foundations.PartA.
 Require Import UniMath.Foundations.NaturalNumbers.
 Require Import UniMath.MoreFoundations.PartA.
 Require Import UniMath.MoreFoundations.Nat.
+Require Import UniMath.MoreFoundations.Tactics.
 
 Require Import UniMath.Combinatorics.StandardFiniteSets.
 Require Import UniMath.Combinatorics.FiniteSequences.
@@ -87,20 +88,19 @@ Section BackSub.
     { unfold m.
       rewrite natpluscomm, minusplusnmm.
       - apply idpath.
-      - simpl. exact (pr2 row). }
-    destruct (stn_inhabited_implies_succ row) as [s_row s_row_eq].
-    destruct (!s_row_eq).
+      - exact (pr2 row). }
+    destruct (stn_inhabited_implies_succ row) as [s_row s_row_eq],
+    (!s_row_eq).
     apply funextfun; intros ?.
-    rewrite (@rigsum_dni F (s_row) _ row).
-    rewrite nat_eq_or_neq_refl.
+    rewrite (@rigsum_dni F (s_row) _ row)
+    , nat_eq_or_neq_refl.
     destruct (fldchoice0 _) as [contr0 | neq].
     {contradiction. }
     etrans.
     { apply maponpaths_2; apply maponpaths.
       apply funextfun; intros q.
       unfold funcomp.
-      rewrite (nat_eq_or_neq_right (dni_neq_i row q)).
-      apply idpath. }
+      now rewrite (nat_eq_or_neq_right (dni_neq_i row q)). }
     rewrite (@rigsum_dni F (s_row)  _ row).
     etrans.
     { apply maponpaths.
@@ -108,8 +108,7 @@ Section BackSub.
       { apply maponpaths.
         rewrite (@ringcomm2 F).
         apply maponpaths.
-        rewrite (@ringcomm2 F).
-        reflexivity. }
+        now rewrite (@ringcomm2 F). }
       apply (@ringminusdistr F (mat row row)).
     }
     etrans.
@@ -121,11 +120,9 @@ Section BackSub.
       apply (@riglunax2 F). }
     etrans.
     { do 3 apply maponpaths.
-      rewrite (@rigcomm2 F), (@fldplusminus F).
-      reflexivity. }
+      now rewrite (@rigcomm2 F), (@fldplusminus F). }
     rewrite (@rigcomm1 F); rewrite (@rigassoc1 F).
-    rewrite (@ringlinvax1 F), (@rigrunax1 F).
-    apply idpath.
+    now rewrite (@ringlinvax1 F), (@rigrunax1 F).
   Defined.
 
   Lemma back_sub_step_inv1
@@ -170,10 +167,10 @@ Section BackSub.
       2 : { rewrite back_sub_step_inv1; try assumption; reflexivity. }
       replace (mat i i') with (@ringunel1 F).
       2 : { rewrite is_ut; try reflexivity. rewrite eq; assumption. }
-      do 2 rewrite (@rigmult0x F); reflexivity.
-    - rewrite (stn_eq _ _ eq).
-      rewrite back_sub_step_inv0; try assumption.
-      rewrite H; apply idpath.
+      now do 2 rewrite (@rigmult0x F).
+    - rewrite (stn_eq _ _ eq)
+      , back_sub_step_inv0; try assumption.
+      now rewrite H.
   Defined.
 
   Lemma back_sub_step_inv3
@@ -201,9 +198,7 @@ Section BackSub.
     2: { rewrite back_sub_step_inv1; try assumption; reflexivity. }
     replace (mat i i') with (@ringunel1 F).
     { do 2 rewrite (@rigmult0x F); reflexivity. }
-    rewrite is_ut; try reflexivity.
-    rewrite eq.
-    assumption.
+    rewrite is_ut; try reflexivity; now rewrite eq.
   Defined.
 
   Definition back_sub_internal
@@ -239,7 +234,7 @@ Section BackSub.
     induction row as [| row IH].
     { intros i H.
       destruct (natchoice0 (S n)) as [contr_eq | gt] in H.
-      { clear H. apply negpaths0sx in contr_eq. contradiction. }
+      { clear H. now apply negpaths0sx in contr_eq. }
       reflexivity.
     }
     unfold back_sub_internal.
@@ -270,9 +265,8 @@ Section BackSub.
     intros.
     pose (eq :=
       @col_vec_inj_pointwise F n (back_sub_internal mat b vec sep) b i).
-    rewrite eq.
-    {apply idpath. }
-    apply (back_sub_internal_inv0); assumption.
+    rewrite eq. {apply idpath. }
+    now apply (back_sub_internal_inv0).
   Defined.
 
   Lemma back_sub_internal_inv2
@@ -295,13 +289,11 @@ Section BackSub.
     destruct (natlehchoice (dualelement (row,, p)) (i)) as [leh | eq].
     { refine (istransnatleh _ i_le_row); apply (@dualelement_sn_le row row n n). }
     - rewrite back_sub_step_inv2; try reflexivity; try assumption.
-      { apply natlthtoleh.
-        assumption. }
+      { now apply natlthtoleh. }
       rewrite IH; try reflexivity.
-      apply dualelement_lt_to_le_s.
-      assumption.
+      now apply dualelement_lt_to_le_s.
     - rewrite (stn_eq _ _ eq).
-      rewrite back_sub_step_inv0; try reflexivity; try assumption.
+      now rewrite back_sub_step_inv0.
   Defined.
 
   Lemma back_sub_inv0
@@ -321,7 +313,7 @@ Section BackSub.
       try assumption; unfold dualelement.
     destruct (natchoice0 (S n)) as [eq0 | ?].
     { apply fromempty. apply negpaths0sx in eq0. assumption. }
-    simpl; rewrite minus0r, minusnn0; reflexivity.
+    simpl; now rewrite minus0r, minusnn0.
     apply df.
   Defined.
 
@@ -405,7 +397,7 @@ Section BackSubZero.
     rewrite (@col_vec_inj_pointwise F n
       (back_sub_internal' mat b vec sep row) b i).
     - apply idpath.
-    - apply (back_sub_internal_inv0'); try assumption.
+    - now apply (back_sub_internal_inv0').
   Defined.
 
   Lemma back_sub_internal_inv2'
@@ -429,12 +421,10 @@ Section BackSubZero.
     rewrite nat_rect_step.
     destruct (natlehchoice (dualelement (sep,, p)) i) as [leh | eq].
     { refine (istransnatleh _ i_le_sep).
-      apply (@dualelement_sn_le); try assumption. }
+      now apply (@dualelement_sn_le). }
     - destruct (natlthorgeh _ _) as [? | contr_geh].
-      2 : { apply fromempty.
-            pose (lt' := (istransnatlth _ _ _ leh lt)).
-            pose (contr_lt := (natlthlehtrans _ _ _ lt' contr_geh)).
-            contradiction (isirreflnatlth _ contr_lt).
+      2 : { contradiction (isirreflnatlth _ 
+              (natlthlehtrans _ _ _ (istransnatlth _ _ _ leh lt) contr_geh)).
       }
       rewrite back_sub_step_inv2; try reflexivity; try assumption.
       { unfold dualelement. unfold dualelement in leh.
@@ -443,15 +433,12 @@ Section BackSubZero.
         rewrite coprod_rect_compute_2 in *.
         apply natgthtogeh; assumption. }
       rewrite IH; try reflexivity.
-        apply dualelement_lt_to_le_s.
-        assumption.
+        now apply dualelement_lt_to_le_s.
     - destruct (natlthorgeh _ _) as [? | contr_geh].
       + rewrite (stn_eq _ _ eq).
-        rewrite back_sub_step_inv0; try reflexivity; try assumption.
+        now rewrite back_sub_step_inv0.
       + rewrite <- (stn_eq _ _ eq) in lt.
-        apply fromempty.
-        pose (contr_lt := (natlthlehtrans _ _ _ lt contr_geh)).
-        contradiction (isirreflnatlth _ contr_lt).
+        contradiction (isirreflnatlth _ (natlthlehtrans _ _ _ lt contr_geh)).
   Defined.
 
   Lemma back_sub_zero
@@ -472,14 +459,11 @@ Section BackSubZero.
       - rewrite <- (pr1 (pr2 zero)).
         unfold const_vec.
         rewrite eq0_1 in eq0_2.
-        rewrite (stn_eq _ _ eq0_2).
-        apply idpath.
+        now rewrite (stn_eq _ _ eq0_2).
       - unfold transpose, flip.
         rewrite ut; try reflexivity.
-        rewrite <- eq0_1.
-        assumption.
-      - apply matrix_left_inverse_to_transpose_right_inverse.
-        assumption.
+        now rewrite <- eq0_1.
+      - now apply matrix_left_inverse_to_transpose_right_inverse.
     }
     assert (contr_exists :  ∑ x : (Vector F n), (∑ i' : stn n,
       (x i' != 0) × ((mat ** (col_vec x)) = (@col_vec F _ (const_vec 0)) ))).
@@ -559,8 +543,8 @@ Section BackSubZero.
           destruct (natchoice0 (S n)).
           {simpl. rewrite minus0r, minusxx. apply idpath. }
           rewrite coprod_rect_compute_2.
-          simpl. rewrite minus0r, minusxx. apply idpath.
-        * apply (pr2 iszero); assumption.
+          simpl; now rewrite minus0r, minusxx.
+        * now apply (pr2 iszero).
       + rewrite matrix_mult_eq; unfold matrix_mult_unf.
         unfold col_vec, const_vec.
         apply funextfun; intros ?.
@@ -572,8 +556,7 @@ Section BackSubZero.
         destruct (stn_eq_or_neq (zero) k) as [eq | ?].
         * rewrite <- eq in *.
           rewrite <- (stn_eq _ _ (isantisymmnatgeh _ _ le ge)).
-          rewrite (pr1 iszero).
-          apply rigmult0x.
+          rewrite (pr1 iszero); apply rigmult0x.
         * etrans.
           -- apply maponpaths.
              rewrite back_sub_internal_inv1'; try assumption.
@@ -634,9 +617,7 @@ Section Inverse.
       intros j lt.
       pose (eq := H3 _ lt).
       generalize eq; clear eq H3.
-      intros c.
-      destruct (fldchoice0 (v j)); try contradiction.
-      assumption.
+      now destruct (fldchoice0 (v j)).
     - left; intros j.
       pose (H3 := @leading_entry_compute_inv2 _ _
         (flip_fld_bin_vec v) none j).
@@ -647,7 +628,7 @@ Section Inverse.
         rewrite eq; intros contr_neq.
         contradiction (nonzeroax _ (pathsinv0 contr_neq)).
       + destruct (fldchoice0 (v j)) as [contr_eq | ?]; try assumption.
-        rewrite contr_eq in neq; contradiction.
+        now rewrite contr_eq in neq.
   Defined.
 
   Definition vector_all_nonzero_compute
@@ -676,7 +657,7 @@ Section Inverse.
       apply l. }
     unfold diagonal_sq in r.
     apply fromempty.
-    apply (@back_sub_zero _ _ A p); try assumption.
+    now apply (@back_sub_zero _ _ A p).
   Defined.
 
   Lemma right_inverse_construction_inv
@@ -759,32 +740,31 @@ Section Inverse.
     exists B.
     use tpair; try assumption.
     assert (eq0: ∏ y, (A ** (col_vec (back_sub F A y))) = (col_vec y)).
-    { intros. apply (back_sub_inv0 _ _ _ ut df); assumption. }
+    { intros. now apply (back_sub_inv0 _ _ _ ut df). }
     assert (eq1 : ∏ y,
       (B ** (A ** (col_vec (back_sub F A y)))) = (B ** (col_vec y))).
     { intros y.
-      rewrite (eq0 y); reflexivity.  }
+      now rewrite (eq0 y).  }
     assert (eq2 : ∏ y, col_vec y = (A ** (B ** (col_vec y)))).
     { intros y.
       pose (H1 := eq0 y).
       unfold col_vec in *.
       rewrite <- H1.
       apply maponpaths.
-      rewrite <- matrix_mult_assoc, H0, matlunax2.
-      apply idpath. }
+      now rewrite <- matrix_mult_assoc, H0, matlunax2.
+    }
     apply identity_matrix_unique_left.
     intros n' A'.
     apply funextfun; intros i.
     apply funextfun; intros j.
     pose (H := (eq2 (col A' j))).
-    rewrite <- matrix_mult_assoc in H.
-    symmetry in H.
+    rewrite <- matrix_mult_assoc in H; symmetry in H.
     pose (eq3 := @col_vec_mult_eq F n n _ _ _ H).
     unfold col, transpose, flip in eq3.
-    rewrite <- eq3.
-    apply idpath.
+    now rewrite <- eq3.
   Defined.
 
+  (* TODO upstream *)
   Lemma make_matrix_left_inverse
     {R : rig}
     {m n k: nat}
@@ -792,7 +772,7 @@ Section Inverse.
     (eq : matrix_mult A B = identity_matrix)
     : matrix_left_inverse B.
   Proof.
-    exists A; assumption.
+    now exists A.
   Defined.
 
   Lemma make_matrix_right_inverse
@@ -801,7 +781,7 @@ Section Inverse.
     (eq : matrix_mult A B = identity_matrix)
     : matrix_right_inverse A.
   Proof.
-    exists B; assumption.
+    now exists B.
   Defined.
 
   Lemma left_inverse_implies_right { n : nat } (A B: Matrix F n n)
@@ -841,10 +821,8 @@ Section Inverse.
       destruct H3 as [M isinv].
       destruct isinv as [linv rinv].
       apply left_inv_matrix_prod_is_left_inv.
-      - exists M.
-        assumption.
-      - exists B.
-        assumption.
+      - now exists M.
+      - now exists B.
     }
     pose (H4 := @right_inverse_construction_inv _ _ H1 H2).
     unfold CA in H4.
@@ -869,20 +847,15 @@ Section Inverse.
       replace (@matrix_mult F _ _ A _
         (upper_triangular_right_inverse_construction
         (@matrix_mult F _ _ C _ A)))
-          with (pr1 H9).
-      2: { rewrite H11. reflexivity. }
-      simpl.
-      unfold matrix_left_inverse in H9.
-      destruct H9 as [H9 H9'].
-      simpl; unfold C.
-      assumption.
+          with (pr1 H9); simpl.
+      2: { now rewrite H11. }
+      now destruct H9.
     }
     rewrite (@matrix_mult_assoc F n n A n D n C) in eq.
     rewrite <- matrix_mult_assoc in H4.
     unfold D, CA in eq.
     rewrite H4 in eq.
-    apply pathsinv0.
-    apply eq.
+    apply pathsinv0, eq.
   Defined.
 
   Lemma right_inverse_implies_left 
@@ -927,14 +900,13 @@ Section Inverse.
           pose (isinv := @make_matrix_left_inverse _ _ _ n _ _ isr).
           assert (isinvprod : (matrix_left_inverse BA)).
           { apply left_inv_matrix_prod_is_left_inv; try assumption.
-            apply (@matrix_inverse_to_right_and_left_inverse F _ B).
-            apply clear_rows_up_to_matrix_invertible. }
+            apply (@matrix_inverse_to_right_and_left_inverse F _ B),
+              clear_rows_up_to_matrix_invertible. }
           destruct hasz as [idx isnotz].
           pose 
             (contr_eq := @left_invertible_upper_triangular_to_diagonal_all_nonzero
               _ _ ut isinvprod idx).
-          rewrite isnotz in contr_eq.
-          contradiction.
+          now rewrite isnotz in contr_eq.
     }
     left.
     set (BAC_id := @right_inverse_construction_inv _ _ ut nz).
@@ -946,12 +918,11 @@ Section Inverse.
       apply linv. }
     exists (C ** B).
     simpl; use tpair.
-    2: { simpl. rewrite matrix_mult_assoc. apply rinv_eq. }
+    2: { simpl; rewrite matrix_mult_assoc; apply rinv_eq. }
     rewrite <- matrix_mult_assoc.
     unfold BA in BAC_id.
     assert (linv_eq : ((B ** A ** C) = (A ** C ** B))).
-    { rewrite matrix_mult_assoc.
-      rewrite matrix_mult_assoc in BAC_id.
+    { rewrite matrix_mult_assoc in BAC_id |- *.
       unfold C in *; clear C;
         set (C := (upper_triangular_right_inverse_construction BA)).
       pose (B_rinv := @make_matrix_right_inverse F _ _ n B (A ** C) (BAC_id)).
@@ -963,12 +934,10 @@ Section Inverse.
       rewrite (pr2 B_rinv).
       replace (pr1 B_rinv) with (pr1 linv); try assumption.
       2: {rewrite eq. simpl; reflexivity. }
-      rewrite (pr2 linv); reflexivity.
+      now rewrite (pr2 linv).
     }
-    simpl in *.
-    rewrite <- BAC_id, <- linv_eq.
-    unfold C, BA.
-    reflexivity.
+    simpl in *
+    ; now rewrite <- BAC_id, <- linv_eq.
   Defined.
 
 End Inverse.

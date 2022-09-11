@@ -155,9 +155,7 @@ Section Transposition.
 
   Definition transpose_transpose {X : UU} {m n : nat} (mat : Matrix X m n)
     : transpose (transpose mat) = mat.
-  Proof.
-    reflexivity.
-  Defined.
+  Proof. easy. Defined.
 
   Lemma transpose_inj {X : UU} {m n : nat} (mat1 mat2 : Matrix X m n):
     transpose mat1 = transpose mat2 -> mat1 = mat2.
@@ -200,9 +198,7 @@ Section Identity_Matrix.
 
   Definition id_row_stdb_vector {n} (i : ⟦n⟧%stn)
     : row (@identity_matrix R n) i = stdb_vector i.
-  Proof.
-    reflexivity.
-  Defined.
+  Proof. easy. Defined.
 
   Definition id_col_stdb_vector {n} (i : ⟦n⟧%stn)
     : col (@identity_matrix R n) i = stdb_vector i.
@@ -224,15 +220,8 @@ Section Identity_Matrix.
     unfold identity_matrix, scalar_lmult_vec, pointwise.
     apply funextfun. intros k.
     destruct (stn_eq_or_neq i k) as [eq | neq].
-    - simpl.
-      rewrite riglunax2.
-      rewrite rigrunax2.
-      rewrite eq.
-      reflexivity.
-    - simpl.
-      rewrite rigmultx0.
-      rewrite rigmult0x.
-      apply idpath.
+    - now rewrite riglunax2, rigrunax2, eq.
+    - now rewrite rigmultx0, rigmult0x.
   Defined.
 
   Lemma sum_id_pointwise_prod { n : nat } (v : Vector R n) (i : ⟦ n ⟧%stn) :
@@ -267,8 +256,7 @@ Section Identity_Matrix.
     : ∏ i : (stn m),
     @iterop_fun R (@rigunel1 R) op1 n ((mat i) ^ v1) = v2 i.
   Proof.
-    apply toforallpaths; use col_vec_inj.
-    exact e.
+    now apply toforallpaths; use col_vec_inj.
   Defined.
 
   Lemma idmat_i_to_idvec {n : nat} (i : ⟦ n ⟧%stn)
@@ -276,14 +264,14 @@ Section Identity_Matrix.
   Proof.
     apply funextfun. intros j.
     apply funextfun. intros k.
-    destruct (stn_eq_or_neq j k); simpl; apply idpath.
+    now destruct (stn_eq_or_neq j k).
   Defined.
 
   Lemma id_mat_ii {n : nat} (i : ⟦ n ⟧%stn)
      : (@identity_matrix R n) i i = rigunel2.
   Proof.
-    unfold identity_matrix.
-    rewrite (stn_eq_or_neq_refl); simpl; apply idpath.
+    unfold identity_matrix;
+    now rewrite (stn_eq_or_neq_refl).
   Defined.
 
   Lemma id_mat_ij {n : nat} (i j : ⟦ n ⟧%stn)
@@ -291,7 +279,7 @@ Section Identity_Matrix.
   Proof.
     intros i_neq_j.
     unfold identity_matrix.
-    rewrite (stn_eq_or_neq_right i_neq_j); simpl; apply idpath.
+    now rewrite (stn_eq_or_neq_right i_neq_j).
   Defined.
 
   Lemma matrunax2 : ∏ (m n : nat) (mat : Matrix R m n),
@@ -304,11 +292,9 @@ Section Identity_Matrix.
     rewrite (pulse_function_sums_to_point _ j);
     rewrite <- (symmetric_mat_row_eq_col _ _ identity_matrix_symmetric);
     unfold pointwise, row.
-    - rewrite id_mat_ii, rigrunax2.
-      apply idpath.
-    - intros k j_neq_k.
-      rewrite (id_mat_ij _ _ j_neq_k), rigmultx0.
-      apply idpath.
+    - now rewrite id_mat_ii, rigrunax2.
+    - intros k j_neq_k;
+      now rewrite (id_mat_ij _ _ j_neq_k), rigmultx0.
   Defined.
 
   Lemma identity_matrix_unique_left {m : nat}
@@ -371,14 +357,10 @@ Section Inverses.
   (lft : matrix_left_inverse A) (rght : matrix_right_inverse A)
   : pr1 lft = pr1 rght.
   Proof.
-    destruct lft as [lft islft].
+    destruct lft as [? islft].
     destruct rght as [rght isrght]; simpl.
     pose (H0 := matlunax2 n n rght).
-    rewrite <- islft in H0.
-    rewrite matrix_mult_assoc in H0.
-    rewrite isrght in H0.
-    rewrite matrunax2 in H0.
-    exact H0.
+    now rewrite <- islft, matrix_mult_assoc, isrght, matrunax2 in H0.
   Defined.
 
   Lemma matrix_right_left_inverse_to_inverse
@@ -389,8 +371,7 @@ Section Inverses.
     use tpair; simpl. {apply lft. }
     split. 2: {apply lft. }
     pose (H0 := @matrix_left_inverse_equals_right_inverse n _ n _ lft rght).
-    rewrite H0.
-    apply rght.
+    rewrite H0; apply rght.
   Defined.
 
   Lemma matrix_inverse_unique {n : nat} (A : Matrix R n n)
@@ -398,11 +379,9 @@ Section Inverses.
   Proof.
     assert (eq : pr1 B = ((pr1 B) ** (A ** (pr1 C)))).
     { rewrite (pr1 (pr2 C)).
-      rewrite matrunax2; apply idpath. }
-    rewrite eq.
-    rewrite <- matrix_mult_assoc.
-    rewrite (pr2 (pr2 B)).
-    rewrite matlunax2; apply idpath.
+      now rewrite matrunax2. }
+    rewrite eq, <- matrix_mult_assoc, (pr2 (pr2 B)).
+    now rewrite matlunax2.
   Defined.
 
   Lemma left_inv_matrix_prod_is_left_inv {m n : nat} (A : Matrix R m n)
@@ -412,8 +391,7 @@ Section Inverses.
     intros.
     exists ((pr1 pb) ** (pr1 pa)); simpl.
     rewrite matrix_mult_assoc, <- (matrix_mult_assoc _ A _).
-    rewrite (pr2 pa), matlunax2, (pr2 pb).
-    reflexivity.
+    now rewrite (pr2 pa), matlunax2, (pr2 pb).
   Defined.
 
   Lemma right_inv_matrix_prod_is_right_inv {m n : nat} (A : Matrix R m n)
@@ -421,12 +399,10 @@ Section Inverses.
     (matrix_right_inverse (A ** A')).
   Proof.
     intros.
-    use tpair. { exact ((pr1 pb) ** (pr1 pa)). }
-    simpl.
-    rewrite matrix_mult_assoc.
-    rewrite <- (matrix_mult_assoc _ (pr1 pb) _).
-    rewrite (pr2 pb), matlunax2, (pr2 pa).
-    reflexivity.
+    use tpair; simpl. { exact ((pr1 pb) ** (pr1 pa)). }
+    rewrite matrix_mult_assoc,
+    <- (matrix_mult_assoc _ (pr1 pb) _).
+    now rewrite (pr2 pb), matlunax2, (pr2 pa).
   Defined.
 
   Lemma inv_matrix_prod_is_inv {n : nat} (A : Matrix R n n)
@@ -439,14 +415,10 @@ Section Inverses.
     - rewrite matrix_mult_assoc.
       rewrite <- (matrix_mult_assoc _ (pr1 pb) _).
       rewrite (pr1 (pr2 pb)), matlunax2.
-      rewrite (pr1 (pr2 pa)).
-      reflexivity.
-    - simpl.
-      rewrite matrix_mult_assoc.
-      rewrite <- (matrix_mult_assoc _ A _).
-      rewrite (pr2 (pr2 pa)), matlunax2.
-      rewrite (pr2 (pr2 pb)).
-      reflexivity.
+      now rewrite (pr1 (pr2 pa)).
+    - simpl; rewrite matrix_mult_assoc.
+      now rewrite <- (matrix_mult_assoc _ A _),
+      (pr2 (pr2 pa)), matlunax2, (pr2 (pr2 pb)).
   Defined.
 
   Lemma identity_matrix_invertible { n : nat } : matrix_inverse (@identity_matrix _ n).
