@@ -125,7 +125,6 @@ Section Vectors.
       reflexivity.
   Defined.
 
-  (* TODO replace rigsum_add with this one *)
   Lemma sum_pointwise_op1 { n : nat } (v1 v2 : Vector R n)
     : Σ (pointwise n op1 v1 v2) = (Σ v1 + Σ v2)%rig.
   Proof.

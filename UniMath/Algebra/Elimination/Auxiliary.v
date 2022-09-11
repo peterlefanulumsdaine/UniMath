@@ -239,10 +239,9 @@ Section Misc.
   Proof.
     intro contr.
     assert (contr_hz : intpart 1%hq != intpart 0%hq).
-    { apply hzone_neg_hzzero. }
+    { unfold intpart; apply hzone_neg_hzzero. }
     apply contr_hz.
     apply maponpaths, contr.
-    (* Done but slow. *)
   Defined.
 
   Lemma hqplusminus
@@ -274,7 +273,7 @@ Section Misc.
     apply isisolatedn.
   Defined.
 
-  (* TODO: upstream? *)
+  (* could upstream to stn *)
   Lemma stn_eq_or_neq_refl
     {n : nat} {i : ⟦ n ⟧%stn} : stn_eq_or_neq i i = inl (idpath i).
   Proof.
@@ -395,7 +394,6 @@ Section PrelStn.
       { apply pr1i_neq_pr1j. }
   Defined.
 
-  (* TODO use only one of below *)
   Lemma stn_neq_symm {n : nat} {i j : stn n} (neq : i ≠ j)
     : (j ≠ i).
   Proof.
@@ -436,7 +434,7 @@ Section PrelStn.
       apply pathsinv0, maponpaths; assumption.
   Defined.
 
-  (* TODO upstream? *)
+  (* upstream to stn? *)
   Lemma stn_eq
     {k : nat} (i j : stn k) (eq : pr1 i = pr1 j) : i = j.
   Proof.

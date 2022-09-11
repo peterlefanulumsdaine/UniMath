@@ -149,17 +149,6 @@ Section General.
     apply rigmultx0.
   Defined.
 
-  (* TODO is this used anywhere? *)
-  Lemma matrix_mult_eq_left:
-    ∏ {m n : nat} (mat1 : Matrix R m n)
-    {p : nat} (mat2 : Matrix R n p) (mat3 : Matrix R n p),
-    mat2 = mat3 -> 
-    ((@matrix_mult R m n mat1 p mat2)) = (@matrix_mult R m n mat1 p (mat3)).
-  Proof.
-    intros ? ? ? ? ? ? eq.
-    rewrite eq; apply idpath.
-  Defined.
-
 End General.
 
 Section Transposition.
@@ -303,7 +292,6 @@ Section Identity_Matrix.
     intros i_neq_j.
     unfold identity_matrix.
     rewrite (stn_eq_or_neq_right i_neq_j); simpl; apply idpath.
-    (* TODO Should we try to use ; all the time ?*)
   Defined.
 
   Lemma matrunax2 : ∏ (m n : nat) (mat : Matrix R m n),
@@ -441,8 +429,6 @@ Section Inverses.
     reflexivity.
   Defined.
 
-  (* The product of two invertible matrices being invertible *)
-  (* TODO Rewrite this in terms of above instead of copying. *)
   Lemma inv_matrix_prod_is_inv {n : nat} (A : Matrix R n n)
     (A' : Matrix R n n) (pa : matrix_inverse A) (pb : matrix_inverse A') :
     (matrix_inverse (A ** A')).
@@ -463,8 +449,7 @@ Section Inverses.
       reflexivity.
   Defined.
 
-  (* TODO rename identity_matrix_inv *)
-  Lemma identity_matrix_is_inv { n : nat } : matrix_inverse (@identity_matrix _ n).
+  Lemma identity_matrix_invertible { n : nat } : matrix_inverse (@identity_matrix _ n).
   Proof.
     exists identity_matrix.
     use tpair; apply matrunax2.

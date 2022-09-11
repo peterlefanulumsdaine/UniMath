@@ -29,21 +29,21 @@ Section GaussOps.
 
 Section Auxiliary.
 
-  (* TODO: generalize to rigs, upstream to Vectors *)
+  (* Can be generalized to rigs -- and upstreamed to Vectors *)
   Lemma pointwise_rdistr_vector { n : nat } (v1 v2 v3 : Vector F n)
     : (pointwise n op1 v1 v2) ^ v3 = pointwise n op1 (v1 ^ v3) (v2 ^ v3).
   Proof.
     use (pointwise_rdistr (rigrdistr F)).
   Defined.
 
-  (* TODO: generalize to rigs, upstream to Vectors *)
+  (* Can be generalized to rigs -- upstream *)
   Lemma pointwise_assoc2_vector { n : nat } (v1 v2 v3 : Vector F n)
     : (v1 ^ v2) ^ v3 = v1 ^ (v2 ^ v3).
   Proof.
     use (pointwise_assoc (rigassoc2 F)).
   Defined.
 
-  (* TODO: generalize to commrigs, upstream to Vectors *)
+  (* Can be generalized to commrigs -- upstream *)
   Lemma pointwise_comm2_vector { n : nat } (v1 v2 : Vector F n)
     : v1 ^ v2 = v2 ^ v1.
   Proof.
@@ -108,6 +108,42 @@ Section RowOps.
     - induction (stn_eq_or_neq i r2).
       + exact (mat r1 j).
       + exact (mat i j).
+  Defined.
+
+  Lemma gauss_add_row_inv0
+    {m n : nat}
+    (mat : Matrix F m n)
+    (i : ⟦ m ⟧%stn) (j: ⟦ m ⟧%stn)
+    (s : F)
+    : ∏ (k : ⟦ m ⟧%stn), j ≠ k -> gauss_add_row mat i j s k = mat k.
+  Proof.
+    intros k j_ne_k.
+    unfold gauss_add_row.
+    destruct (stn_eq_or_neq k j) as [k_eq_j | k_neq_j]; try reflexivity.
+    rewrite k_eq_j in j_ne_k.
+    apply isirrefl_natneq in j_ne_k.
+    apply fromempty; assumption.
+  Defined.
+
+  Lemma gauss_add_row_inv1
+    {m n : nat}
+    (mat : Matrix F m n)
+    (i : ⟦ m ⟧%stn)
+    (j: ⟦ m ⟧%stn)
+    (s : F)
+    : ∏ (k : ⟦ m ⟧%stn),
+      (mat i = const_vec 0%ring)
+      -> gauss_add_row mat i j s = mat.
+  Proof.
+    intros k eq0.
+    apply funextfun; intros i'; apply funextfun; intros j'.
+    unfold gauss_add_row.
+    destruct (stn_eq_or_neq _ _ ) as [i'_eq_j' | i'_neq_j'];
+      simpl; try reflexivity.
+    rewrite <- i'_eq_j', eq0.
+    unfold const_vec ; simpl.
+    rewrite (@ringmultx0 F), (@rigrunax1 F).
+    reflexivity.
   Defined.
 
   Lemma gauss_switch_row_inv0
@@ -217,7 +253,7 @@ Section Elementary.
       use sum_stdb_vector_pointwise_prod.
   Defined.
 
-  (* TODO should certainly be over R *)
+  (* Can be over R. *)
   Lemma switch_row_mat_elementary
     { m n : nat } (mat : Matrix F m n)
     (r1 r2 : ⟦ m ⟧%stn)
@@ -239,17 +275,17 @@ Section Elementary.
         rewrite (@id_mat_ij F m r2 k r2_neq_k).
         apply (@rigmult0x F).
     - simpl.
-      pose (H := @sum_id_pointwise_prod_unf F).
+      pose (H' := @sum_id_pointwise_prod F).
+      unfold pointwise in H'.
       destruct (stn_eq_or_neq i r2) as [i_eq_r2 | i_neq_r2].
       + simpl.
         destruct (stn_eq_or_neq i r1) as [? | ?].
-        * rewrite H; apply idpath.
-        * rewrite H; apply idpath.
-      + simpl; rewrite H.
+        * rewrite H'; apply idpath.
+        * rewrite H'; apply idpath.
+      + simpl; rewrite H'.
         apply idpath.
   Defined.
 
-  (* TODO fix mixed up signatures on add_row  / add_row_matrix *)
   Lemma add_row_mat_elementary
     { m n : nat } (mat : Matrix F m n)
     (r1 r2 : ⟦ m ⟧%stn) (p : r1 ≠ r2) (s : F)
