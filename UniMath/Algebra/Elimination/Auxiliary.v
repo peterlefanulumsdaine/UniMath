@@ -476,7 +476,7 @@ Section Maybe.
   Proof.
   destruct e as [x | u].
   - apply ii1. exact x.
-  - apply ii2. rewrite u. exists.
+  - apply ii2. rewrite u; exists.
   Defined.
 
   Definition maybe_stn_choice

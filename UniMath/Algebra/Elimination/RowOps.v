@@ -26,7 +26,20 @@ Section GaussOps.
   Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
   Local Notation "A ** B" := (@matrix_mult F _ _ A _ B) (at level 80).
 
+
 Section RowOps.
+
+  (** Defining the three row operations on F;
+      Addition of a multiple of a row to another row,
+      the interchange of two rows,
+      multiplication of a row by a nonzero scalar.
+
+      Two versions of each operation: directly on input matrix,
+      or as left multiplication by a matrix.
+
+      Some material could be generalized to (comm)ri(n)gs, 
+      which could be of interest e.g. as providing constructions 
+      for help in computing Smith Normal Form. *)
 
   Definition gauss_add_row
     { m n : nat } ( mat : Matrix F m n )
@@ -226,7 +239,6 @@ Section Elementary.
       use sum_stdb_vector_pointwise_prod.
   Defined.
 
-  (* Can be over R. *)
   Lemma switch_row_mat_elementary
     { m n : nat } (mat : Matrix F m n)
     (r1 r2 : ⟦ m ⟧%stn)
@@ -321,7 +333,7 @@ Section Elementary.
     apply maponpaths_2, (rigcomm2 F).
   Defined.
 
-  Lemma scalar_mult_matrix_is_inv
+  Lemma scalar_mult_matrix_invertible
     { n : nat }
     ( i : ⟦ n ⟧%stn ) ( s : F ) ( ne : s != 0%ring )
   : @matrix_inverse F _ (mult_row_matrix s i).
@@ -376,7 +388,7 @@ Section Elementary.
     apply maponpaths, (@rigcomm1 F).
   Defined.
 
-  Lemma add_row_matrix_is_inv { n : nat } ( r1 r2 : ⟦ n ⟧%stn )
+  Lemma add_row_matrix_invertible { n : nat } ( r1 r2 : ⟦ n ⟧%stn )
   (r1_neq_r2 : r1 ≠ r2) ( s : F )
    : @matrix_inverse F n (add_row_matrix r1 r2 s).
   Proof.
@@ -417,7 +429,7 @@ Section Elementary.
       + reflexivity.
   Defined.
 
-  Lemma switch_row_matrix_is_inv
+  Lemma switch_row_matrix_invertible
     { n : nat } ( r1 r2 : ⟦ n ⟧%stn )
     : @matrix_inverse F n (switch_row_matrix r1 r2).
   Proof.
@@ -429,5 +441,5 @@ End Elementary.
 
 End GaussOps.
 
-(* Section ColOps. 
-   ... *)
+(* Section ColOps ... Note -- Above should be re-usable for comparable
+   column operations ? *)

@@ -33,6 +33,9 @@ End Misc.
 
 Section Vectors.
 
+  (** Additional material on vectors --
+      facts for zero vectors, sums, products, standard basis vectors. *)
+
   Context { R : rig }.
 
   Local Notation  Σ := (iterop_fun rigunel1 op1).
@@ -474,21 +477,21 @@ Section VectorsField.
   Context {F : fld}.
   Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
 
-  (* Can be generalized to rigs -- and upstreamed to Vectors *)
+  (* Can be generalized to rigs *)
   Lemma pointwise_rdistr_vector { n : nat } (v1 v2 v3 : Vector F n)
     : (pointwise n op1 v1 v2) ^ v3 = pointwise n op1 (v1 ^ v3) (v2 ^ v3).
   Proof.
     use (pointwise_rdistr (rigrdistr F)).
   Defined.
 
-  (* Can be generalized to rigs -- upstream *)
+  (* Can be generalized to rigs *)
   Lemma pointwise_assoc2_vector { n : nat } (v1 v2 v3 : Vector F n)
     : (v1 ^ v2) ^ v3 = v1 ^ (v2 ^ v3).
   Proof.
     use (pointwise_assoc (rigassoc2 F)).
   Defined.
 
-  (* Can be generalized to commrigs -- upstream *)
+  (* Can be generalized to commrigs *)
   Lemma pointwise_comm2_vector { n : nat } (v1 v2 : Vector F n)
     : v1 ^ v2 = v2 ^ v1.
   Proof.

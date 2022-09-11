@@ -25,7 +25,8 @@ Local Notation "A ** B" := (matrix_mult A B) (at level 80).
 Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
 
 (* Matrix algebra facts that hold over an arbitrary rig,
-   not yet assumed commutative *)
+   not yet assumed commutative. *)
+
 Section General_Rigs.
 
 Context {R : rig}.
@@ -416,7 +417,7 @@ Section Inverses.
     now rewrite (pr2 pb), matlunax2, (pr2 pa).
   Defined.
 
-  Lemma inv_matrix_prod_is_inv {n : nat} (A : Matrix R n n)
+  Lemma inv_matrix_prod_invertible {n : nat} (A : Matrix R n n)
     (A' : Matrix R n n) (pa : matrix_inverse A) (pb : matrix_inverse A') :
     (matrix_inverse (A ** A')).
   Proof.
@@ -452,7 +453,7 @@ Section Nil_Matrices.
     apply impred_iscontr; intro; apply iscontr_nil_vector.
   Defined.
 
-  Lemma nil_matrix_is_inv {n : nat} (A : Matrix R 0 0): matrix_inverse A.
+  Lemma nil_matrix_invertible {n : nat} (A : Matrix R 0 0): matrix_inverse A.
   Proof.
     exists identity_matrix.
     use tpair;

@@ -25,7 +25,7 @@ Require Import UniMath.RealNumbers.Prelim.
 
 Require Import UniMath.Algebra.Elimination.Auxiliary.
 Require Import UniMath.Algebra.Elimination.Vectors.
-Require Import UniMath.Algebra.Elimination.Matrices.
+Require Import UniMath.Algebra.Elimination.Matrices. 
 Require Import UniMath.Algebra.Elimination.RowOps.
 Require Import UniMath.Algebra.Elimination.Elimination.
 
@@ -77,7 +77,7 @@ Section BackSub.
     (row : ⟦ n ⟧%stn) (mat : Matrix F n n)
     (x : Vector F n) (b : Vector F n)
     (p: @is_upper_triangular F n n mat)
-    (p' : ((mat row row != 0)%ring))
+    (p' : (mat row row != 0)%ring)
     : (mat ** (col_vec (back_sub_step row mat x b))) row = (col_vec b) row.
   Proof.
     unfold back_sub_step, col_vec.
@@ -200,7 +200,7 @@ Section BackSub.
     rewrite is_ut; try reflexivity; now rewrite eq.
   Defined.
 
-  (* row parameter for later proof reasons *)
+  (* carries an row parameter for later proof reasons *)
   Definition back_sub_internal
     { n : nat }
     (mat : Matrix F n n)
@@ -218,28 +218,13 @@ Section BackSub.
       + exact x.
   Defined.
 
-  (*
-  Definition back_sub_internal
-    { n : nat }
-    (mat : Matrix F n n)
-    (x : Vector F n) (b : Vector F n)
-    (row : ⟦ S n ⟧%stn)
-    : Vector F n.
-  Proof.
-    destruct row as [row p].
-    induction row as [ | m IHn] .
-    - exact x.
-    - refine (back_sub_step (dualelement (m,, p)) mat (IHn _) b).
-      apply (istransnatlth _ _ _ (natgthsnn m) p).
-  Defined.*)
-
   Definition back_sub
     {n : nat}
     (mat : Matrix F n n)
     (vec : Vector F n)
     := back_sub_internal mat vec vec (n,, natgthsnn n) (n,, natgthsnn n).
 
-    Lemma back_sub_internal_inv0'
+    Lemma back_sub_internal_inv0
     { n : nat }
     (mat : Matrix F n n)
     (b : Vector F n) (vec : Vector F n)
@@ -286,7 +271,7 @@ Section BackSub.
     rewrite (@col_vec_inj_pointwise F n
       (back_sub_internal mat b vec sep row) b i).
     - apply idpath.
-    - now apply (back_sub_internal_inv0').
+    - now apply (back_sub_internal_inv0).
   Defined.
 
   Lemma back_sub_internal_inv2
@@ -357,7 +342,9 @@ End BackSub.
 Section BackSubZero.
 
   (** Showing that right invertible matrix, upper triangular,
-     must have non-zero diagonal *)
+     must have fully non-zero diagonal.
+     
+     Derive contradiction from uniqueness of inverse. *)
 
   Context {F : fld}.
 
@@ -513,7 +500,7 @@ Section Inverse.
     { n : nat }
     (mat : Matrix F n n)
     := transpose (λ i : (stn n), (back_sub F (mat) ((@identity_matrix F n) i))).
-    
+
   Local Definition flip_fld_bin
     (e : F) : F.
   Proof.
@@ -788,7 +775,7 @@ Section Inverse.
   Proof.
     unfold matrix_inverse_or_non_invertible_stmt.
     destruct (natchoice0 n) as [eq0 | gt].
-    { left. symmetry in eq0; destruct (!eq0); apply (@nil_matrix_is_inv F 0 A). }
+    { left. symmetry in eq0; destruct (!eq0); apply (@nil_matrix_invertible F 0 A). }
     set (B:= @clear_rows_up_to_as_left_matrix _ _ _ A (n,, natgthsnn n) gt).
     set (BA := B ** A).
     set (C := upper_triangular_right_inverse_construction BA).
@@ -842,8 +829,7 @@ Section Inverse.
       2: {rewrite eq. simpl; reflexivity. }
       now rewrite (pr2 linv).
     }
-    simpl in * |-
-    ; now rewrite <- BAC_id, <- linv_eq.
+    simpl in * |- ; now rewrite <- BAC_id, <- linv_eq.
   Defined.
 
 End Inverse.
