@@ -11,6 +11,8 @@ Require Import UniMath.Algebra.IteratedBinaryOperations.
 
 Require Import UniMath.RealNumbers.Prelim.
 
+(** Observing the extent that it is 
+    possible to compute some of the Elimination material. *)
 
 Section Tests_1.
 
@@ -44,7 +46,7 @@ Section Tests_1.
 
   Let m1 := append_vec (row_vec v5) v6.
 
-  (* sum [2, 2] ^ [3, 3] *)
+  (* dot product of [2, 2], [3, 3] *)
   Let eval4 :=
       Eval compute
         in ((iterop_fun (@rigunel2 natcommrig) op1 (pointwise _ op2 v5 v6))).
@@ -52,10 +54,10 @@ Section Tests_1.
 
   Local Lemma eq4 : eval4 = 12. Proof. apply idpath. Defined.
 
-  (* [2, 2] [2, 2] = [10, 10]
-     [3, 3] [3, 3]   [15, 15] *)
+  (* matrix product : [2, 2] [2, 2] = [10, 10]
+                      [3, 3] [3, 3]   [15, 15] *)
 
-  (* Computing entry (1, 1) : 10 *)
+  (* Computing entry (1, 1) : *)
   Let eval5 :=
       Eval compute in firstValue (firstValue (@matrix_mult _ _ _ m1 _ m1)).
 

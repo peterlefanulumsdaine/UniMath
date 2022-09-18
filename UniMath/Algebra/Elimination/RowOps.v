@@ -39,7 +39,10 @@ Section RowOps.
 
       Some material could be generalized to (comm)ri(n)gs, 
       which could be of interest e.g. as providing constructions 
-      for help in computing Smith Normal Form. *)
+      for help in computing Smith Normal Form.
+      
+      Hopefully the material can be easily re-used for
+      column operations too. *)
 
   Definition gauss_add_row
     { m n : nat } ( mat : Matrix F m n )
@@ -130,6 +133,18 @@ Section RowOps.
     rewrite <- i'_eq_j', eq0.
     unfold const_vec ; simpl.
     now rewrite (@ringmultx0 F), (@rigrunax1 F).
+  Defined.
+
+  Definition gauss_add_row_comp
+    { m n : nat }
+    ( mat : Matrix F m n )
+    ( r1 r2 : ⟦ m ⟧%stn )
+    (s : F)
+    (c : ⟦ n ⟧%stn)
+  : (gauss_add_row mat r1 r2 s) r2 c = op1 (mat r2 c) (op2 s (mat r1 c)).
+  Proof.
+    unfold gauss_add_row
+    ; now rewrite stn_eq_or_neq_refl.
   Defined.
 
   Lemma gauss_switch_row_inv0
@@ -440,6 +455,3 @@ Section Elementary.
 End Elementary.
 
 End GaussOps.
-
-(* Section ColOps ... Note -- Above should be re-usable for comparable
-   column operations ? *)

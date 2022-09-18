@@ -421,8 +421,7 @@ Section Inverses.
     (A' : Matrix R n n) (pa : matrix_inverse A) (pb : matrix_inverse A') :
     (matrix_inverse (A ** A')).
   Proof.
-    use tpair. { exact ((pr1 pb) ** (pr1 pa)). }
-    simpl.
+    use tpair; simpl. { exact ((pr1 pb) ** (pr1 pa)). }
     use tpair.
     - rewrite matrix_mult_assoc.
       rewrite <- (matrix_mult_assoc _ (pr1 pb) _).
@@ -569,9 +568,8 @@ Section MatricesFld.
     : (@matrix_inverse F n (transpose mat))
   -> (@matrix_inverse F n mat).
   Proof.
-    intros.
-    rewrite <- transpose_transpose.
-    apply invertible_to_transpose_invertible; assumption.
+    intros; rewrite <- transpose_transpose.
+    now apply invertible_to_transpose_invertible.
   Defined.
 
   Lemma matrix_left_inverse_to_transpose_right_inverse
@@ -623,7 +621,7 @@ Section MatricesFld.
     (H: @is_upper_triangular F m n A)
     : (@is_lower_triangular F n m (transpose A)).
   Proof.
-    intros i j lt; unfold is_upper_triangular; apply H; assumption.
+    intros i j lt; unfold is_upper_triangular; now apply H.
   Defined.
 
 End MatricesFld.
@@ -649,13 +647,13 @@ Section Transpositions.
     apply funextsec; intros k; simpl; unfold transposition_fun.
     destruct (stn_eq_or_neq i k) as [i_eq_k | i_neq_k];
       destruct (stn_eq_or_neq i j) as [i_eq_j | i_neq_j].
-    - destruct i_eq_j. assumption.
-    - rewrite stn_eq_or_neq_refl. assumption.
+    - now destruct i_eq_j.
+    - now rewrite stn_eq_or_neq_refl.
     - destruct i_eq_j.
       do 2 rewrite (stn_eq_or_neq_right i_neq_k).
       reflexivity.
     - destruct (stn_eq_or_neq j k) as [j_eq_k | j_neq_k].
-      + rewrite stn_eq_or_neq_refl. assumption.
+      + now rewrite stn_eq_or_neq_refl.
       + rewrite (stn_eq_or_neq_right i_neq_k).
         rewrite (stn_eq_or_neq_right j_neq_k).
         reflexivity.

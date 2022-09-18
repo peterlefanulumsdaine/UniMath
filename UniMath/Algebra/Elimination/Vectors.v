@@ -119,8 +119,7 @@ Section Vectors.
       rewrite rigassoc1, IH.
       rewrite iterop_fun_step. 2: {apply riglunax1. }
       rewrite <- rigassoc1, rigcomm1.
-      rewrite (rigcomm1 R (f2 lastelement) (f1 lastelement)).
-      reflexivity.
+      now rewrite (rigcomm1 R (f2 lastelement) (f1 lastelement)).
   Defined.
 
   Lemma sum_pointwise_op1 { n : nat } (v1 v2 : Vector R n)
@@ -253,8 +252,7 @@ Section Vectors.
           -- apply subtypePath_prop. simpl. apply idpath.
       + apply maponpaths.
         rewrite transport_stn; simpl.
-        apply subtypePath_prop.
-        apply idpath.
+        apply subtypePath_prop, idpath.
   Defined.
 
   Lemma rigsum_to_rightsum {n m' n' : nat} (p : m' + n' = n) (f :  ⟦ m' + n' ⟧%stn -> R)
@@ -300,7 +298,7 @@ Section Vectors.
       - apply f_pulse_function; exact neq.
   Defined.
 
-  Lemma empty_sum_eq_0  (v1 : Vector R 0) : Σ v1 = 0%rig.
+  Lemma empty_sum_eq_0 (v1 : Vector R 0) : Σ v1 = 0%rig.
   Proof.
     reflexivity.
   Defined.
@@ -358,7 +356,8 @@ Section Vectors.
     : Σ (stdb_vector i ^ v) = (v i).
   Proof.
     etrans.
-    { apply (pulse_function_sums_to_point _ i)
+    { apply
+        (pulse_function_sums_to_point _ i)
       , (pulse_prod_is_pulse _ _ )
       , is_pulse_function_stdb_vector. }
     unfold pointwise, stdb_vector.
