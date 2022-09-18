@@ -50,7 +50,7 @@ Section General.
   (mat2 : Matrix R m n)
   : (Matrix R m n) :=
     entrywise _ _ op1 mat1 mat2.
-  
+
   Lemma matrix_add_comm:
   ∏ {m n : nat} (mat1 : Matrix R m n)
                 (mat2 : Matrix R m n),
@@ -336,7 +336,7 @@ Section Inverses.
 
   Lemma matrix_inverse_to_right_and_left_inverse
     {n : nat} (A : Matrix R n n)
-    : (matrix_inverse A) 
+    : (matrix_inverse A)
       -> matrix_left_inverse A × matrix_right_inverse A.
   Proof.
     intros inv.

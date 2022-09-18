@@ -40,7 +40,7 @@ Section Vectors.
 
   Local Notation  Σ := (iterop_fun rigunel1 op1).
   Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
-  
+
   Definition scalar_lmult_vec
   (s : R)
   {n : nat} (vec: Vector R n)
@@ -140,7 +140,7 @@ Section Vectors.
       { reflexivity. }
       change (Σ (λ i : (⟦ 0 ⟧)%stn, Σ ((λ j : (⟦ _ ⟧)%stn, f i j) )))
         with (@rigunel1 R).
-      apply zero_function_sums_to_zero. 
+      apply zero_function_sums_to_zero.
       reflexivity.
     - rewrite -> iterop_fun_step. 2: { apply riglunax1. }
       unfold funcomp.
@@ -273,7 +273,7 @@ Section Vectors.
     - now rewrite right_part_is_zero.
   Defined.
 
-  Definition is_pulse_function { n : nat } ( i : ⟦ n ⟧%stn ) 
+  Definition is_pulse_function { n : nat } ( i : ⟦ n ⟧%stn )
   (f : ⟦ n ⟧%stn -> R)
     := ∏ (j: ⟦ n ⟧%stn), (i ≠ j) -> (f j = 0%rig).
 
@@ -290,7 +290,7 @@ Section Vectors.
     apply funextfun; intros k.
     unfold funcomp.
     replace (const_vec 0%rig k) with (@rigunel1 R). 2: { reflexivity. }
-    assert (i_neq_dni : i ≠ dni i k) . {exact (dni_neq_i i k). }
+    assert (i_neq_dni : i ≠ dni i k). {exact (dni_neq_i i k). }
     intros; destruct (stn_eq_or_neq i (dni i k) ) as [eq | neq].
       - apply (stnneq_iff_nopath i (dni i k)) in eq.
         apply weqtoempty. intros. apply eq. assumption.

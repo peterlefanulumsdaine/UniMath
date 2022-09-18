@@ -155,7 +155,7 @@ Section Misc.
     - apply proofirrelevance.
       apply isapropcoprod.
       + use setproperty.
-      + apply isapropneg. 
+      + apply isapropneg.
       + intros; contradiction.
     - contradiction.
   Defined.
@@ -167,7 +167,7 @@ Section Misc.
     - contradiction.
     - apply proofirrelevance; apply isapropcoprod.
       + use setproperty.
-      + apply isapropneg. 
+      + apply isapropneg.
       + intros; contradiction.
   Defined.
 
@@ -210,7 +210,7 @@ Section Misc.
     destruct (fldchoice0 _).
     - contradiction.
     - apply fldmultinvlax.
-  Defined. 
+  Defined.
 
   Lemma fldmultinvrax' {X: fld} (e : X) (ne : e != 0%ring) :
     (e * fldmultinv' e)%ring = 1%ring.
@@ -219,7 +219,7 @@ Section Misc.
     destruct (fldchoice0 _).
     - contradiction.
     - apply fldmultinvrax.
-  Defined. 
+  Defined.
 
   Lemma fldplusminus
     {F: fld} (a b : F) : (a + b - b)%ring = a.
@@ -586,7 +586,7 @@ Section Dual.
     unfold dualelement.
     destruct (natchoice0 _) as [eq | ?]; simpl.
     - rewrite <- eq in p3.
-      contradiction (negnatgth0n _ p3).      
+      contradiction (negnatgth0n _ p3).
     - refine (istransnatlth _ _ _ _ _).
       {exact lt_dual. }
       unfold dualelement.
@@ -602,7 +602,7 @@ Section Dual.
           exact p1.
         * assumption.
   Defined.
-      
+
   Lemma dualelement_sn_eq
     {m n k q: nat} (lt : S n < S k)
     : pr1 (dualelement (n,, lt)) = (pr1 (dualelement (S n,, lt))).

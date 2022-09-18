@@ -11,7 +11,7 @@ Require Import UniMath.Algebra.IteratedBinaryOperations.
 
 Require Import UniMath.RealNumbers.Prelim.
 
-(** Observing the extent that it is 
+(** Observing the extent that it is
     possible to compute some of the Elimination material. *)
 
 Section Tests_1.
@@ -35,7 +35,7 @@ Section Tests_1.
   Local Lemma eq2 : eval2 = 6. Proof. apply idpath. Defined.
 
   Let eval3 := Eval compute in stnsum (@pointwise nat _ mul v3 v4).
-  
+
   Local Lemma eq3 : eval3 = 18. Proof. apply idpath. Defined.
 
   Let e1 := (@nattorig natcommrig 2).
@@ -93,9 +93,9 @@ Section Tests_2.
     (* < 1 second, not computing. *)
     (* Eval cbn in
         firstValue (firstValue (@matrix_mult hz _ _ (row_vec v3) _ (col_vec v3))). *)
-    
+
     (* A minute - and not computing *)
     (* Let eval6 := Eval cbn in
         ((@gaussian_elimination hq _ _ (row_vec v4))). *)
-    
+
 End Tests_2.

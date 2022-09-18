@@ -25,11 +25,11 @@ Require Import UniMath.RealNumbers.Prelim.
 
 Require Import UniMath.Algebra.Elimination.Auxiliary.
 Require Import UniMath.Algebra.Elimination.Vectors.
-Require Import UniMath.Algebra.Elimination.Matrices. 
+Require Import UniMath.Algebra.Elimination.Matrices.
 Require Import UniMath.Algebra.Elimination.RowOps.
 Require Import UniMath.Algebra.Elimination.Elimination.
 
-(** 
+(**
   In this module, we define a back-substitution procedure that works on
   nxn matrices that are upper triangular with all non-zero diagonal.
 
@@ -102,7 +102,7 @@ Section BackSub.
       apply funextfun; intros q.
       unfold funcomp.
       now rewrite (nat_eq_or_neq_right (dni_neq_i row q)). }
-    rewrite (@rigsum_dni F (s_row)  _ row).
+    rewrite (@rigsum_dni F (s_row) _ row).
     etrans.
     { apply maponpaths.
       etrans.
@@ -142,7 +142,7 @@ Section BackSub.
     contradiction (isirrefl_natneq _ ne).
   Defined.
 
-  Lemma back_sub_step_inv2 
+  Lemma back_sub_step_inv2
     { n : nat }
     (row : ⟦ n ⟧%stn)
     (mat : Matrix F n n)
@@ -291,7 +291,7 @@ Section BackSub.
     { refine (istransnatleh _ i_le_sep).
       now apply (@dualelement_sn_le). }
     - destruct (natlthorgeh _ _) as [? | contr_geh].
-      2 : { contradiction (isirreflnatlth _ 
+      2 : { contradiction (isirreflnatlth _
               (natlthlehtrans _ _ _ (istransnatlth _ _ _ leh lt) contr_geh)).
       }
       rewrite back_sub_step_inv2; try easy.
@@ -357,7 +357,7 @@ Section BackSubZero.
   Proof.
     unfold transpose, flip.
     destruct (natchoice0 (pr1 zero)) as [eq0_1 | gt].
-    { apply (zero_row_to_non_right_invertibility (transpose mat) (pr1 zero)); 
+    { apply (zero_row_to_non_right_invertibility (transpose mat) (pr1 zero));
         try assumption.
       apply funextfun; intros k.
       destruct (natchoice0 k) as [eq0_2 | ?].
@@ -385,7 +385,7 @@ Section BackSubZero.
         }
         assert (contr_eq' : ((@ringunel1 F) != (@ringunel1 F))).
         2: {contradiction. }
-        rewrite <- eqz in contr_exists.     
+        rewrite <- eqz in contr_exists.
         destruct contr_exists as [x1 [x2 [x3 contr_exists]]].
         destruct inv as [inv isinv].
         rewrite <- contr_exists in eqz.
@@ -549,7 +549,7 @@ Section Locals.
       (∏ i : (stn n), f i = g i) ->
         iterop_fun 0%ring op1 f =  iterop_fun 0%ring op1 g).
       { intros f g H. apply maponpaths. apply funextfun. intros j. apply H. }
-      apply sum_pointwise_eq. 
+      apply sum_pointwise_eq.
       intros; apply (@ringcomm2 F). }
     assert (f_eq : ∏ f g: (stn n) -> (stn 1) -> F,
       (∏ i : (stn n), ∏ j : (stn 1), f i j = g i j) -> f = g).
@@ -565,8 +565,8 @@ Section Inverse.
 
   (** Some additional properties of matrix inverses,
       having now defined Gaussian elimination and
-      back-substitution. 
-      
+      back-substitution.
+
       Computes a matrix inverse or shows it is non-invertible. *)
 
   Context (F : fld).
@@ -585,9 +585,9 @@ Section Inverse.
   Lemma left_invertible_upper_triangular_to_diagonal_all_nonzero
     {n : nat }
     (A : Matrix F n n)
-    (p : @is_upper_triangular F n n A)
+    (p : @is_upper_triangular F _ _ A)
     (p': @matrix_left_inverse F _ _ A)
-    : (@diagonal_all_nonzero F n A).
+    : (@diagonal_all_nonzero F _ A).
   Proof.
     pose (H := @vector_all_nonzero_compute_internal _ _ (@diagonal_sq F _ A)).
     destruct H as [l | r].
@@ -622,7 +622,7 @@ Section Inverse.
 
   (* (BA)C = I -> D, s.t. BD = I*)
   Local Lemma matrix_product_right_inverse_to_left_term_right_inverse
-    {R : rig} {n : nat} 
+    {R : rig} {n : nat}
     (A : Matrix R n n) (B : Matrix R n n)
     (inv : (matrix_right_inverse (matrix_mult A B))) : matrix_right_inverse A.
   Proof.
@@ -728,7 +728,7 @@ Section Inverse.
       unfold clear_rows_up_to_as_left_matrix in * |-.
       pose (H11 := @H8 F n _ n
         (clear_rows_up_to_as_left_matrix_internal
-          F A (n,, natgthsnn n) gt) (H9) ((A ** D),, H4)).
+          F A (n,, natgthsnn _) gt) (H9) ((A ** D),, H4)).
       simpl in H11; unfold D, CA in H11.
       replace (@matrix_mult F _ _ A _
         (upper_triangular_right_inverse_construction
@@ -744,8 +744,8 @@ Section Inverse.
     apply pathsinv0, eq.
   Defined.
 
-  Lemma right_inverse_implies_left 
-    { n : nat } (A B: Matrix F n n) 
+  Lemma right_inverse_implies_left
+    { n : nat } (A B: Matrix F n n)
     : @matrix_right_inverse F _ _ A -> (@matrix_left_inverse F _ _ A).
   Proof.
     intros [rinv isrinv].
@@ -772,9 +772,9 @@ Section Inverse.
     { unfold BA.
       pose (is_echelon
         := @gauss_clear_rows_up_to_inv3 F _ _ A gt (n,, natgthsnn n)).
-      rewrite <- (gauss_clear_rows_up_to_as_matrix_eq F _ _ gt) in is_echelon.
+      rewrite <- (gauss_clear_rows_up_to_as_matrix_eq _ _ _ gt) in is_echelon.
       now apply row_echelon_to_upper_triangular. }
-    destruct (vector_all_nonzero_compute (λ i : (stn n), BA i i)) 
+    destruct (vector_all_nonzero_compute (λ i : (stn n), BA i i))
     as [nz | [idx isnotz]].
     2 : { right.
           intros [invM [isl isr]].
@@ -783,7 +783,7 @@ Section Inverse.
           { apply left_inv_matrix_prod_is_left_inv; try assumption.
             apply (@matrix_inverse_to_right_and_left_inverse F _ B),
               clear_rows_up_to_matrix_invertible. }
-          pose 
+          pose
             (contr_eq := @left_invertible_upper_triangular_to_diagonal_all_nonzero
               _ _ ut isinvprod idx).
           now rewrite isnotz in contr_eq.

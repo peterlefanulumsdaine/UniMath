@@ -37,10 +37,10 @@ Section RowOps.
       Two versions of each operation: directly on input matrix,
       or as left multiplication by a matrix.
 
-      Some material could be generalized to (comm)ri(n)gs, 
-      which could be of interest e.g. as providing constructions 
+      Some material could be generalized to (comm)ri(n)gs,
+      which could be of interest e.g. as providing constructions
       for help in computing Smith Normal Form.
-      
+
       Hopefully the material can be easily re-used for
       column operations too. *)
 
