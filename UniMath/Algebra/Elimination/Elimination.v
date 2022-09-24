@@ -1,8 +1,9 @@
- (*** * Matrices
+ (** * Matrices
 
 Gaussian Elimination over fields.
 
-Author: @Skantz (2022)
+Author: Daniel @Skantz (September 2022)
+  With much help from, nad thanks to, Peter LeFanu Lumsdaine
 *)
 
 Require Import UniMath.Foundations.PartA.
@@ -34,7 +35,7 @@ Require Import UniMath.Algebra.Elimination.Matrices.
 Require Import UniMath.Algebra.Elimination.RowOps.
 
 
-(*** In this Module we formalize gaussian elimination by means of
+(** In this Module we formalize gaussian elimination by means of
     matrix multiplication equivalent elementary row operations.
 
     We first formalize the notion of row echelon form,
@@ -85,7 +86,7 @@ Section Summary.
 
 End Summary.
 
-(*** In the proceeding, we provide a sub-module
+(** In the proceeding, we provide a sub-module
     for calculating the leading entry of a vector,
     and provide suitable invness lemmata for it. *)
 
@@ -527,7 +528,7 @@ End Pivot.
 
 Section Gauss.
 
-  (*** - Defining procedures for gaussian elimination as
+  (** - Defining procedures for gaussian elimination as
         direct operations on matrix / left matrix multiplication equivalents
       - Proving their correctness
       - First defining & showing procedure for clearing individual entries,
@@ -584,6 +585,8 @@ Section Gauss.
     - now apply issymm_natneq.
   Defined.
 
+  (** Zeroing the column segment below [k_i]:
+        elements [mat {i} k_j], for {i} > [k_i]*)
   Definition gauss_clear_column { m n : nat }
     (mat : Matrix F m n) (k_i : (⟦ m ⟧%stn))
     (k_j : (⟦ n ⟧%stn)) (row_sep : ⟦ S m ⟧%stn)
@@ -742,9 +745,11 @@ Section Gauss.
       apply IH.
   Defined.
 
-  (*** The notion of clearing a row is finding the
-      next uncleared column and performing elimination over it
-      -- we inline a pivoting operation here as well. *)
+  (** The notion of clearing a row is finding the
+      next uncleared column {c} (having non-zero element below [row] at {r})
+      and performing elimination over it.
+      We inline a pivoting operation here as well,
+      switching [row] and {r} *)
   Definition gauss_clear_row
     { m n : nat }
     (mat : Matrix F m n)
@@ -1127,7 +1132,9 @@ Section Gauss.
       + now rewrite coprod_rect_compute_2.
   Defined.
 
-  (*** Notion of being row echelon "up to" a separator. For proof reasons. *)
+  (** Notion of being row echelon "up to" a separator,
+      and fulfilling criteria 1 and 2 from the preamble separately.
+      For proof reasons. *)
   Definition is_row_echelon_partial_1
     {m n : nat} (mat : Matrix F m n) (row_sep : ⟦ S m ⟧%stn) :=
     ∏ i_1 i_2 : ⟦ m ⟧%stn,
@@ -1304,7 +1311,7 @@ Section Gauss.
       now rewrite H2.
   Defined.
 
-  (*** Stepwise invariant *)
+  (** Step lemma*)
   Lemma gauss_clear_row_inv0
     { m n : nat } (mat : Matrix F m n) (p : n > 0)
     (row_sep : (⟦ S m ⟧%stn)) (p' : row_sep < m)

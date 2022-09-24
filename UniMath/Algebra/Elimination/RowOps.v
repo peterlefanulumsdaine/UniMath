@@ -1,8 +1,8 @@
-(*** * Matrices
+(** * Matrices
 
 Elementary row operations on matrices, for elimination procedures
 
-Author: @Skantz (April 2021)
+Author: Daniel @Skantz (September 2022)
 *)
 
 Require Import UniMath.Foundations.All.
@@ -29,7 +29,7 @@ Section GaussOps.
 
 Section RowOps.
 
-  (*** Defining the three row operations on F;
+  (** Defining the three row operations on F;
       Addition of a multiple of a row to another row,
       the interchange of two rows,
       multiplication of a row by a nonzero scalar.
@@ -247,7 +247,7 @@ Section Elementary.
     - simpl coprod_rect.
       etrans.
       { apply maponpaths.
-        etrans. { apply maponpaths_2, pointwise_comm2_vector. }
+        etrans. { apply maponpaths_2, (@pointwise_comm2_vector F). }
         apply pointwise_assoc2_vector. }
       use sum_stdb_vector_pointwise_prod.
     - simpl coprod_rect.
@@ -297,14 +297,14 @@ Section Elementary.
     unfold matrix_mult, add_row_matrix, gauss_add_row, row.
     destruct (stn_eq_or_neq k r2) as [k_eq_r2 | k_neq_r2].
     - simpl coprod_rect.
-      etrans. { apply maponpaths, pointwise_rdistr_vector. }
+      etrans. { apply maponpaths, (@pointwise_rdistr_vector F). }
       etrans. { apply (@sum_pointwise_op1 F). }
       apply map_on_two_paths.
       + etrans. 2: { apply maponpaths_2, k_eq_r2. }
         use sum_stdb_vector_pointwise_prod.
       + etrans.
         { apply maponpaths.
-          etrans. { apply maponpaths_2, pointwise_comm2_vector. }
+          etrans. { apply maponpaths_2, (@pointwise_comm2_vector F). }
           apply pointwise_assoc2_vector. }
         use sum_stdb_vector_pointwise_prod.
     - use sum_stdb_vector_pointwise_prod.

@@ -29,12 +29,14 @@ Require Import UniMath.Algebra.Elimination.Matrices.
 Require Import UniMath.Algebra.Elimination.RowOps.
 Require Import UniMath.Algebra.Elimination.Elimination.
 
-(***
+(**
   In this module, we define a back-substitution procedure that works on
   nxn matrices that are upper triangular with all non-zero diagonal.
 
   We use this procedure to show that any nxn matrix either not invertible,
   or calculate its inverse.
+
+  Author: Daniel @Skantz (September 2022)
 *)
 
 Definition matrix_inverse_or_non_invertible_stmt
@@ -126,7 +128,7 @@ Section BackSub.
     now rewrite (@ringlinvax1 F), (@rigrunax1 F).
   Defined.
 
-  (*** [back_sub_step] only modifies target element *)
+  (** [back_sub_step] only modifies target element *)
   Lemma back_sub_step_inv1
     { n : nat } (row : ⟦ n ⟧%stn)
     (mat : Matrix F n n)
@@ -333,7 +335,7 @@ End BackSub.
 
 Section BackSubZero.
 
-  (*** Showing that right invertible matrix, upper triangular,
+  (** Showing that right invertible matrix, upper triangular,
      must have fully non-zero diagonal. *)
 
   Context {F : fld}.
@@ -471,7 +473,7 @@ End BackSubZero.
 
 Section Locals.
 
-  (*** Helper functions *)
+  (** Helper functions *)
 
   Context {F: fld}.
   Local Notation "A ** B" := (@matrix_mult F _ _ A _ B) (at level 80).
@@ -531,36 +533,11 @@ Section Locals.
     ; exact (pr1 (pr2 r)).
   Defined.
 
-  Local Lemma row_vec_col_vec_mult_eq
-  { n : nat }
-  (A : Matrix F n n)
-  : ∏ x, transpose ((row_vec x) ** (transpose A)) = (A ** (col_vec x)).
-  Proof.
-    intros; unfold transpose, flip, row_vec, col_vec, row, col; intros.
-    do 2 (rewrite matrix_mult_eq; unfold matrix_mult_unf).
-    assert (eq: ∏ x0 : (stn n), iterop_fun 0%ring op1
-        (λ k : (⟦ n ⟧)%stn, (x k * A x0 k)%ring)
-      = iterop_fun 0%ring op1 (λ k : (⟦ n ⟧)%stn, (A x0 k * x k )%ring)).
-    { intros x0.
-      assert (sum_pointwise_eq : ∏ (f g : (stn n) -> F),
-      (∏ i : (stn n), f i = g i) ->
-        iterop_fun 0%ring op1 f =  iterop_fun 0%ring op1 g).
-      { intros f g H. apply maponpaths. apply funextfun. intros j. apply H. }
-      apply sum_pointwise_eq.
-      intros; apply (@ringcomm2 F). }
-    assert (f_eq : ∏ f g: (stn n) -> (stn 1) -> F,
-      (∏ i : (stn n), ∏ j : (stn 1), f i j = g i j) -> f = g).
-    { intros f g. intros H. apply funextfun; intros i.
-      apply funextfun; intros j. apply H. }
-    apply f_eq; intros i j; apply eq.
-  Defined.
-
-
 End Locals.
 
 Section Inverse.
 
-  (*** Some additional properties of matrix inverses,
+  (** Some additional properties of matrix inverses,
       having now defined Gaussian elimination and
       back-substitution.
 

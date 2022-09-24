@@ -11,8 +11,10 @@ Require Import UniMath.Algebra.IteratedBinaryOperations.
 
 Require Import UniMath.RealNumbers.Prelim.
 
-(*** Observing the extent that it is
-    possible to compute some of the Elimination material. *)
+(** Observing the extent that it is
+    possible to compute some of the Elimination material. 
+    
+    Author: Daniel @Skantz (September 2022) *)
 
 Section Tests_1.
 

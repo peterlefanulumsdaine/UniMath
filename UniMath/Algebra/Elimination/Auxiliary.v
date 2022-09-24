@@ -1,8 +1,8 @@
- (*** * Matrices
+ (** * Matrices
 
 Miscellaneous background lemmas for [Elimination.Elimination]
 
-Author: @Skantz (April 2021)
+Author: Daniel @Skantz (September 2022)
 *)
 
 Require Import UniMath.Foundations.All.

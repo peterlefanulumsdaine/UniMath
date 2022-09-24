@@ -1,8 +1,8 @@
- (*** * Matrices
+ (** * Matrices
 
 Background on vectors, for [Algebra.Elimination.Elimination]
 
-Author: @Skantz (April 2021)
+Author: Daniel @Skantz (September 2022)
 *)
 
 Require Import UniMath.Foundations.PartA.
@@ -33,7 +33,7 @@ End Misc.
 
 Section Vectors.
 
-  (*** Additional material on vectors --
+  (** Additional material on vectors --
       facts for zero vectors, sums, products, standard basis vectors. *)
 
   Context { R : rig }.
@@ -469,32 +469,22 @@ Section Vectors.
   : ∏ i : (stn 1), v = col (col_vec v) i.
   Proof. easy. Defined.
 
-End Vectors.
-
-Section VectorsField.
-
-  Context {F : fld}.
-  Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
-
-  (** Can be generalized to rigs *)
-  Lemma pointwise_rdistr_vector { n : nat } (v1 v2 v3 : Vector F n)
+  Lemma pointwise_rdistr_vector { n : nat } (v1 v2 v3 : Vector R n)
     : (pointwise n op1 v1 v2) ^ v3 = pointwise n op1 (v1 ^ v3) (v2 ^ v3).
   Proof.
-    use (pointwise_rdistr (rigrdistr F)).
+    use (pointwise_rdistr (rigrdistr R)).
   Defined.
 
-  (** Can be generalized to rigs *)
-  Lemma pointwise_assoc2_vector { n : nat } (v1 v2 v3 : Vector F n)
+  Lemma pointwise_assoc2_vector { n : nat } (v1 v2 v3 : Vector R n)
     : (v1 ^ v2) ^ v3 = v1 ^ (v2 ^ v3).
   Proof.
-    use (pointwise_assoc (rigassoc2 F)).
+    use (pointwise_assoc (rigassoc2 R)).
   Defined.
 
-  (** Can be generalized to commrigs *)
-  Lemma pointwise_comm2_vector { n : nat } (v1 v2 : Vector F n)
+  Lemma pointwise_comm2_vector {CR: commrig} { n : nat } (v1 v2 : Vector CR n)
     : v1 ^ v2 = v2 ^ v1.
   Proof.
-    use (pointwise_comm (rigcomm2 F)).
+    use (pointwise_comm (rigcomm2 CR)).
   Defined.
 
-End VectorsField.
+End Vectors.
