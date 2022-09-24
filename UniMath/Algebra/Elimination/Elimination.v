@@ -3,7 +3,7 @@
 Gaussian Elimination over fields.
 
 Author: Daniel @Skantz (September 2022)
-  With much help from, nad thanks to, Peter LeFanu Lumsdaine
+  With much help from, and thanks to, Peter LeFanu Lumsdaine
 *)
 
 Require Import UniMath.Foundations.PartA.
