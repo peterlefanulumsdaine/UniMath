@@ -1,4 +1,4 @@
-(** * Matrices
+(*** * Matrices
 
 Elementary row operations on matrices, for elimination procedures
 
@@ -29,7 +29,7 @@ Section GaussOps.
 
 Section RowOps.
 
-  (** Defining the three row operations on F;
+  (*** Defining the three row operations on F;
       Addition of a multiple of a row to another row,
       the interchange of two rows,
       multiplication of a row by a nonzero scalar.
@@ -234,7 +234,7 @@ End RowOps.
 
 Section Elementary.
 
-  (* The following three lemmata test the equivalence
+  (** The following three lemmata test the equivalence
      of multiplication by elementary matrices to swaps of indices. *)
   Lemma scalar_mult_mat_elementary
     {m n : nat} (mat : Matrix F m n) (s : F) (r : ⟦ m ⟧%stn)

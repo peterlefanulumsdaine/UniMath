@@ -1,4 +1,4 @@
- (** * Matrices
+ (*** * Matrices
 
 Miscellaneous background lemmas for [Elimination.Elimination]
 
@@ -17,10 +17,10 @@ Require Import UniMath.PAdics.lemmas.
 Require Import UniMath.NumberSystems.RationalNumbers.
 Require Import UniMath.RealNumbers.Prelim.
 
-(* The first few sections contain Definitions and Lemmas that
+(** The first few sections contain Definitions and Lemmas that
    should be moved further up the project tree *)
 
-(* Local Notation "A ** B" := (matrix_mult A B) (at level 80).
+(** Local Notation "A ** B" := (matrix_mult A B) (at level 80).
 Local Notation  Σ := (iterop_fun 0%hq op1).
 Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2). *)
 
@@ -53,9 +53,7 @@ Section Misc.
   Lemma min_le_a:
     ∏ a b : (nat), min a b ≤ a.
   Proof.
-    intros.
-    unfold min.
-    revert a.
+    intros; unfold min; revert a.
     induction b as [| b IH]; destruct a ; try reflexivity.
     apply IH.
   Defined.
@@ -139,8 +137,7 @@ Section Misc.
     2: {left; assumption. }
     right.
     unfold multinvpair, invpair in m.
-    destruct m as [m1 m2].
-    destruct m2 as [m2 m3].
+    destruct m as [m1 [m2 m3]].
     apply (@ringneq0andmultlinv X e m1).
     change 1%ring with 1%multmonoid in m3.
     assert (eq: (e * m1)%ring = 1%ring).
@@ -180,11 +177,8 @@ Section Misc.
     2: { apply fromempty.
          rewrite contr_eq in ne.
          contradiction. }
-    unfold multinvpair in m.
-    unfold invpair in m.
-    destruct m as [m1 m2].
+    destruct m as [m1 [m2 m3]].
     simpl.
-    destruct m2 as [m2 m3].
     change (m1 * e)%ring with (m1 * e)%multmonoid.
     rewrite m2.
     reflexivity.
@@ -229,12 +223,11 @@ Section Misc.
       replace (b + - b)%ring with (b  - b)%ring.
       + rewrite ringrinvax1. apply (@rigrunax1 F).
       + reflexivity.
-   - symmetry.
-     rewrite ringcomm1.
+   - rewrite <- ringcomm1.
      reflexivity.
   Defined.
 
-  (* could try to simplify/speed up? *)
+  (** could try to simplify/speed up? *)
   Lemma hqone_neq_hqzero : 1%hq != 0%hq.
   Proof.
     intro contr.
@@ -267,21 +260,20 @@ Section Misc.
     destruct (nat_eq_or_neq i i) as [ ? | cnt].
     2 : { remember cnt as cnt'. clear Heqcnt'.
           apply isirrefl_natneq in cnt. contradiction. }
-    apply maponpaths.
-    apply proofirrelevance.
-    apply isaproppathsfromisolated.
-    apply isisolatedn.
+    apply maponpaths, proofirrelevance
+    , isaproppathsfromisolated, isisolatedn.
   Defined.
 
-  (* could upstream to stn *)
+  (** could upstream to stn *)
   Lemma stn_eq_or_neq_refl
     {n : nat} {i : ⟦ n ⟧%stn} : stn_eq_or_neq i i = inl (idpath i).
   Proof.
     intros; unfold stn_eq_or_neq; simpl.
-    destruct (nat_eq_or_neq i i) as [? | neq]. 2 : { contradiction (isirrefl_natneq _ neq). }
+    destruct (nat_eq_or_neq i i) as [? | neq].
+    2 : { contradiction (isirrefl_natneq _ neq). }
     rewrite coprod_rect_compute_1.
-    apply maponpaths, proofirrelevance.
-    apply isaproppathsfromisolated, isisolatedinstn.
+    apply maponpaths, proofirrelevance
+    , isaproppathsfromisolated, isisolatedinstn.
   Defined.
 
   Lemma nat_eq_or_neq_left:
@@ -409,8 +401,8 @@ Section PrelStn.
     - exact eq.
   Defined.
 
-  (* General symmetry for decidable equality is tricky to state+prove (requires Hedberg’s theorem); but for non-dependent case-splits, it’s cleaner. *)
-  (* Should also be generalisable, but non-unifiedness of definitions of ≠ makes that harder than it should be. *)
+  (** General symmetry for decidable equality is tricky to state+prove (requires Hedberg’s theorem); but for non-dependent case-splits, it’s cleaner. *)
+  (** Should also be generalisable, but non-unifiedness of definitions of ≠ makes that harder than it should be. *)
   Lemma stn_eq_or_neq_symm_nondep {n} {x y : ⟦n⟧%stn}
         (de_xy : (x = y) ⨿ (x ≠ y)%stn) (de_yx : (y = x) ⨿ (y ≠ x)%stn)
        {Z} (z1 z2 : Z)
@@ -420,14 +412,14 @@ Section PrelStn.
     destruct de_xy as [e_xy | ne_xy];
       destruct de_yx as [e_yx | ne_yx];
       simpl;
-    (* consistent cases: *)
+    (** consistent cases: *)
       try reflexivity;
-    (* inconsistent cases: *)
+    (** inconsistent cases: *)
       eapply fromempty, nat_neq_to_nopath; try eassumption;
       apply pathsinv0, maponpaths; assumption.
   Defined.
 
-  (* upstream to stn? *)
+  (** upstream to stn? *)
   Lemma stn_eq
     {k : nat} (i j : stn k) (eq : pr1 i = pr1 j) : i = j.
   Proof.
@@ -447,7 +439,6 @@ Section PrelStn.
   Proof.
     now apply stn_eq_2.
   Defined.
-
 
 End PrelStn.
 
@@ -507,8 +498,8 @@ Section Dual.
     {n : nat} (i : ⟦ n ⟧%stn) : dualelement (dualelement i) = i.
   Proof.
     unfold dualelement.
-    destruct (natchoice0 n) as [contr_eq | gt]; simpl.
-    { simpl. apply fromstn0. now rewrite <- contr_eq in i. }
+    destruct (natchoice0 n) as [contr_eq | gt].
+    { apply fromstn0. now rewrite <- contr_eq in i. }
     unfold make_stn.
     apply subtypePath_prop; simpl.
     rewrite (doubleminuslehpaths (n - 1) i); try reflexivity.
@@ -536,9 +527,9 @@ Section Dual.
   Proof.
     intros lt.
     unfold dualelement.
-    destruct (natchoice0 n) as [contr_eq | ?]; simpl.
-    {simpl. apply fromstn0. rewrite contr_eq. assumption. }
-    apply minusgth0inv.
+    destruct (natchoice0 n) as [contr_eq | ?].
+    {apply fromstn0. rewrite contr_eq. assumption. }
+    apply minusgth0inv; simpl.
     rewrite natminusminusassoc, natpluscomm,
     <- natminusminusassoc, minusminusmmn.
     2: {apply (natgthtogehm1 _ _ (pr2 j)). }
@@ -585,22 +576,20 @@ Section Dual.
   Proof.
     unfold dualelement.
     destruct (natchoice0 _) as [eq | ?]; simpl.
-    - rewrite <- eq in p3.
-      contradiction (negnatgth0n _ p3).
-    - refine (istransnatlth _ _ _ _ _).
-      {exact lt_dual. }
-      unfold dualelement.
-      destruct (natchoice0 _) as [contr_eq | ?].
-      + apply fromempty; clear lt_dual.
-        rewrite <- contr_eq in p1.
-        contradiction (negnatgth0n _ p1).
-      + simpl; do 2 rewrite natminusminus.
-        apply natlthandminusl; try assumption.
-        refine (natlehlthtrans _ _ _ _ _).
-        * rewrite natpluscomm.
-          apply natlthtolehp1.
-          exact p1.
-        * assumption.
+    { rewrite <- eq in p3; contradiction (negnatgth0n _ p3). }
+    refine (istransnatlth _ _ _ _ _). {exact lt_dual. }
+    unfold dualelement.
+    destruct (natchoice0 _) as [contr_eq | ?].
+    - apply fromempty; clear lt_dual.
+      rewrite <- contr_eq in p1.
+      contradiction (negnatgth0n _ p1).
+    - simpl; do 2 rewrite natminusminus.
+      apply natlthandminusl; try assumption.
+      refine (natlehlthtrans _ _ _ _ _); try assumption.
+      rewrite natpluscomm.
+      apply natlthtolehp1.
+      exact p1.
+      assumption.
   Defined.
 
   Lemma dualelement_sn_eq
@@ -655,12 +644,12 @@ Section Dual.
     (i : stn n)
     (p : k < n)
     (leh: dualelement (k,, p) < i)
-    : dualelement (k,, istransnatlth k (S k) (S n) (natgthsnn k) p)
+    : dualelement (k,, istransnatlth _ _ (S n) (natgthsnn k) p)
       <= i.
   Proof.
     unfold dualelement in leh |- *.
     destruct (natchoice0 n) as [contr_eq | ?].
-    {apply fromstn0. rewrite contr_eq. assumption. }
+    {apply fromstn0; rewrite contr_eq; assumption. }
     rewrite coprod_rect_compute_2 in * |-.
     unfold dualelement.
     destruct (natchoice0 (S n)) as [contr_eq | gt].

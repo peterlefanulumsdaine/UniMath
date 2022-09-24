@@ -1,4 +1,4 @@
- (** * Matrices
+ (*** * Matrices
 
 Background on vectors, for [Algebra.Elimination.Elimination]
 
@@ -33,7 +33,7 @@ End Misc.
 
 Section Vectors.
 
-  (** Additional material on vectors --
+  (*** Additional material on vectors --
       facts for zero vectors, sums, products, standard basis vectors. *)
 
   Context { R : rig }.
@@ -78,7 +78,7 @@ Section Vectors.
       + apply rigmultx0.
       + apply funextfun; intros i.
         destruct (weqstn0toempty i).
-    - rewrite iterop_fun_step.  2: {apply riglunax1. }
+    - rewrite iterop_fun_step. 2: {apply riglunax1. }
       rewrite rigldistr, IH, replace_dni_last.
       rewrite iterop_fun_step. 2: {apply riglunax1. }
       rewrite replace_dni_last.
@@ -150,10 +150,10 @@ Section Vectors.
       reflexivity.
   Defined.
 
-  (* The following few lemmata are slight generalizations of the pre-existing proofs
+  (** The following few lemmata are slight generalizations of the pre-existing proofs
      for natural numbers. Could be upstreamed. *)
 
-  (* Identical to transport_stnsum but with Σ , R*)
+  (** Identical to transport_stnsum but with Σ , R*)
   Lemma transport_rigsum {m n : nat} (e: m = n) (g: ⟦ n ⟧%stn -> R) :
      Σ g =  Σ (λ i, g (transportf stn e i)).
   Proof.
@@ -476,21 +476,21 @@ Section VectorsField.
   Context {F : fld}.
   Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
 
-  (* Can be generalized to rigs *)
+  (** Can be generalized to rigs *)
   Lemma pointwise_rdistr_vector { n : nat } (v1 v2 v3 : Vector F n)
     : (pointwise n op1 v1 v2) ^ v3 = pointwise n op1 (v1 ^ v3) (v2 ^ v3).
   Proof.
     use (pointwise_rdistr (rigrdistr F)).
   Defined.
 
-  (* Can be generalized to rigs *)
+  (** Can be generalized to rigs *)
   Lemma pointwise_assoc2_vector { n : nat } (v1 v2 v3 : Vector F n)
     : (v1 ^ v2) ^ v3 = v1 ^ (v2 ^ v3).
   Proof.
     use (pointwise_assoc (rigassoc2 F)).
   Defined.
 
-  (* Can be generalized to commrigs *)
+  (** Can be generalized to commrigs *)
   Lemma pointwise_comm2_vector { n : nat } (v1 v2 : Vector F n)
     : v1 ^ v2 = v2 ^ v1.
   Proof.
