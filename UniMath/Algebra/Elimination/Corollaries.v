@@ -176,30 +176,6 @@ Section BackSub.
       now rewrite H.
   Defined.
 
-  Lemma back_sub_step_inv3
-    { n : nat }
-    (row : ⟦ n ⟧%stn)
-    (mat : Matrix F n n)
-    (x : Vector F n) (b : Vector F n)
-    (is_ut : @is_upper_triangular F n n mat)
-    : ∏ i : ⟦ n ⟧%stn, row < i
-      -> (mat ** (col_vec x)) i
-       = (mat ** (col_vec (back_sub_step row mat x b))) i.
-  Proof.
-    intros i lt.
-    destruct (natlehchoice row i (natlthtoleh _ _ lt)) as [? | eq].
-    2: { rewrite <- eq in lt; now apply isirreflnatgth in lt. }
-    rewrite matrix_mult_eq.
-    apply pathsinv0; rewrite matrix_mult_eq.
-    unfold matrix_mult_unf; apply funextfun; intros ?.
-    apply maponpaths, funextfun; intros i'.
-    destruct (stn_eq_or_neq i' row) as [eq | ?].
-    2: { now rewrite back_sub_step_inv1. }
-    replace (mat i i') with (@ringunel1 F).
-    { now do 2 rewrite (@rigmult0x F). }
-    rewrite is_ut; try reflexivity; now rewrite eq.
-  Defined.
-
   (** Back-substituting repeatedly using step procedure defined earlier.
      Carries an additional [row] parameter for proof reasons. *)
   Definition back_sub_internal
@@ -590,57 +566,6 @@ Section Inverse.
       destruct (natchoice0 n) as [eq | ?].
       {apply fromstn0; now rewrite eq. }
       apply (back_sub_inv _ _ _ _ ut df).
-  Defined.
-
-  (** (BA)C = I -> D, s.t. BD = I*)
-  Local Lemma matrix_product_right_inverse_to_left_term_right_inverse
-    {R : rig} {n : nat}
-    (A : Matrix R n n) (B : Matrix R n n)
-    (inv : (matrix_right_inverse (matrix_mult A B))) : matrix_right_inverse A.
-  Proof.
-    exists (matrix_mult B (pr1 inv)).
-    rewrite <- matrix_mult_assoc; apply inv.
-  Defined.
-
-  (** C(BA) -> D s.t. DA = I*)
-  Local Lemma matrix_product_left_inverse_to_right_term_left_inverse
-    {R : rig} {n : nat}
-    (A : Matrix R n n) (B : Matrix R n n)
-    (inv : (matrix_left_inverse (matrix_mult A B))) : matrix_left_inverse B.
-  Proof.
-    exists (matrix_mult (pr1 inv) A).
-    simpl; rewrite matrix_mult_assoc; apply inv.
-  Defined.
-
-  Local Lemma left_inverse_implies_right_internal
-    {n : nat}
-    (A B: Matrix F n n)
-    (ut : @is_upper_triangular F _ _ A) (df: @diagonal_all_nonzero F n A)
-    : (B ** A) = (@identity_matrix _ _) -> (@matrix_inverse F _ A).
-  Proof.
-    intros H0; exists B; use tpair; try assumption.
-    assert (eq0: ∏ y, (A ** (col_vec (back_sub F A y))) = (col_vec y)).
-    { intros. now apply (back_sub_inv0 _ _ _ ut df). }
-    assert (eq1 : ∏ y,
-      (B ** (A ** (col_vec (back_sub F A y)))) = (B ** (col_vec y))).
-    { intros y; now rewrite (eq0 y). }
-    assert (eq2 : ∏ y, col_vec y = (A ** (B ** (col_vec y)))).
-    { intros y.
-      pose (leading_entry := eq0 y).
-      unfold col_vec in *.
-      rewrite <- leading_entry.
-      apply maponpaths.
-      now rewrite <- matrix_mult_assoc, H0, matlunax2.
-    }
-    apply identity_matrix_unique_left.
-    intros n' A'.
-    apply funextfun; intros i.
-    apply funextfun; intros j.
-    pose (H := (eq2 (col A' j))).
-    rewrite <- matrix_mult_assoc in H.
-    pose (eq3 := @col_vec_mult_eq _ _ _ _ _ _ (!H)).
-    unfold col, transpose, flip in eq3.
-    now rewrite <- eq3.
   Defined.
 
   Lemma left_inverse_implies_right { n : nat } (A B: Matrix F n n)

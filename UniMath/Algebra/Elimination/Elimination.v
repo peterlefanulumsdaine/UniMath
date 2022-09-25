@@ -98,9 +98,6 @@ Section LeadingEntry.
   Local Notation "A ** B" := (@matrix_mult F _ _ A _ B) (at level 80).
   Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
 
-  Definition is_leading_entry_dual {n : nat} (v : Vector F n) (i_1 : ⟦ n ⟧%stn)
-    := (v i_1 != 0%ring) × (∏ i_2 : ⟦ n ⟧%stn, i_1 < i_2 -> (v i_2) = 0%ring).
-
   (** The leading entry of a (dual <-> "flipped") vector:
      [... _ _ X 0 0 0] -> index of X  (Up to a separator variable) *)
   Definition leading_entry_compute_dual_internal
@@ -445,23 +442,6 @@ Section Pivot.
       rewrite <- (H' _ _ (col mat k) (m,, natgthsnn _) none i);
       try reflexivity.
       apply (pr2 i).
-  Defined.
-
-  Definition select_uncleared_column_compute
-    {m n : nat} (mat : Matrix F m n)
-    (row_sep : ⟦ m ⟧%stn) (col_iter : ⟦ S n ⟧%stn) (p : n > 0)
-    : maybe ((⟦ m ⟧%stn) × (⟦ n ⟧%stn)).
-  Proof.
-    destruct (natchoice0 m) as [contr_eq | _].
-    {apply fromstn0; now rewrite contr_eq. }
-    destruct col_iter as [col_iter lt].
-    induction col_iter as [| col_iter IH].
-    - exact nothing.
-    - destruct (select_pivot_row_coprod mat row_sep (col_iter,, lt))
-      as [[idx ?] | z].
-      + exact (just (idx,, (col_iter,, lt))).
-      + simpl in lt;
-          exact (IH (istransnatlth _ _ _ lt (natgthsnn n))).
   Defined.
 
   Local Definition exists_first_uncleared
@@ -831,10 +811,6 @@ Section Gauss.
     refine (gauss_clear_earlier_rows _).
     exact (istransnatlth _ _ _ (natgthsnn row_sep) row_sep_lt_n ).
   Defined.
-
-  Definition gauss_clear_rows
-      { m n : nat } (mat : Matrix F m n)
-    := gauss_clear_rows_up_to mat (m,, natgthsnn _).
 
   (** invertible matrix, such that left-multiplication by this
      corresponds to [gauss_clear_columns_up_to]  *)
