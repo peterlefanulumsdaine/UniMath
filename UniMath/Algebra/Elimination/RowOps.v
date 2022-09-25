@@ -11,8 +11,10 @@ Require Import UniMath.MoreFoundations.All.
 Require Import UniMath.Combinatorics.StandardFiniteSets.
 Require Import UniMath.Combinatorics.Vectors.
 
-Require Import UniMath.NumberSystems.RationalNumbers.
 Require Import UniMath.Algebra.Matrix.
+Require Import UniMath.Algebra.RigsAndRings.
+Require Import UniMath.Algebra.IteratedBinaryOperations.
+Require Import UniMath.Algebra.Domains_and_Fields.
 
 Require Import UniMath.Algebra.Elimination.Auxiliary.
 Require Import UniMath.Algebra.Elimination.Vectors.

@@ -1,32 +1,19 @@
-Require Import UniMath.Foundations.PartA.
-Require Import UniMath.Foundations.NaturalNumbers.
 Require Import UniMath.MoreFoundations.PartA.
 Require Import UniMath.MoreFoundations.Nat.
 Require Import UniMath.MoreFoundations.Tactics.
 
-Require Import UniMath.Combinatorics.StandardFiniteSets.
-Require Import UniMath.Combinatorics.FiniteSequences.
-Require Import UniMath.Combinatorics.WellOrderedSets.
-Require Import UniMath.Combinatorics.Vectors.
-Require Import UniMath.Combinatorics.Maybe.
-
-Require Import UniMath.Algebra.BinaryOperations.
-Require Import UniMath.Algebra.IteratedBinaryOperations.
-Require Import UniMath.Algebra.RigsAndRings.
 Require Import UniMath.Algebra.Matrix.
 
-Require Import UniMath.NumberSystems.Integers.
-Require Import UniMath.Tactics.Nat_Tactics.
-
-Require Import UniMath.PAdics.z_mod_p.
 Require Import UniMath.PAdics.lemmas.
 
-Require Import UniMath.RealNumbers.Prelim.
+Require Import UniMath.Algebra.Domains_and_Fields.
+Require Import UniMath.Algebra.Matrix.
+Require Import UniMath.Algebra.RigsAndRings.
+Require Import UniMath.Algebra.IteratedBinaryOperations.
 
 Require Import UniMath.Algebra.Elimination.Auxiliary.
 Require Import UniMath.Algebra.Elimination.Vectors.
 Require Import UniMath.Algebra.Elimination.Matrices.
-Require Import UniMath.Algebra.Elimination.RowOps.
 Require Import UniMath.Algebra.Elimination.Elimination.
 
 (**
@@ -187,7 +174,7 @@ Section BackSub.
     : Vector F n.
   Proof.
     destruct sep as [sep p].
-    induction sep as[| m IH]. {exact x. }
+    induction sep as [| m IH]. {exact x. }
     destruct (natlthorgeh (dualelement (m,, p)) row).
     2: {exact x. }
     refine (back_sub_step (dualelement (m,, p)) mat (IH _) b).
@@ -380,7 +367,6 @@ Section BackSubZero.
           (λ (_ : _) (_ : _), (@rigunel1 F)) idx0 =
           (λ (_ : _) (_ : (⟦ 1 ⟧)%stn), x1 x2) idx0
         ). { now rewrite eq. }
-        simpl in contr_eq'.
         apply toforallpaths in contr_eq'.
         change 0%rig with (@rigunel1 F) in * |-.
         rewrite contr_eq' in x3.
@@ -476,7 +462,7 @@ Section Locals.
       (flip_fld_bin_vec v) (pr1 some) (pr2 some)).
     destruct leading_entry_inv as [some_neq_0 prev_eq_0].
     unfold is_leading_entry, flip_fld_bin_vec, flip_fld_bin in * |-.
-    destruct (fldchoice0 (v (pr1 some))); try contradiction.
+    destruct (fldchoice0 (v _)); try contradiction.
     use tpair; try assumption.
     intros j lt.
     pose (eq := prev_eq_0 _ lt).
@@ -537,8 +523,8 @@ Section Inverse.
     (p': @matrix_left_inverse F _ _ A)
     : (@diagonal_all_nonzero F _ A).
   Proof.
-    pose (H := @vector_all_nonzero_compute_internal _ _ (@diagonal_sq F _ A)).
-    destruct H as [l | r].
+    destruct (@vector_all_nonzero_compute_internal _ _ (@diagonal_sq F _ A))
+      as [l | r].
     { unfold diagonal_all_nonzero; intros; unfold diagonal_sq in l; apply l. }
     unfold diagonal_sq in r; apply fromempty; now apply (@back_sub_zero _ _ A p).
   Defined.
@@ -584,8 +570,7 @@ Section Inverse.
     assert (CA_ut : is_upper_triangular CA).
     { pose (CA_ut
       := @row_echelon_to_upper_triangular _ _ _ CA).
-      unfold is_upper_triangular.
-      unfold is_upper_triangular_partial in CA_ut.
+      unfold is_upper_triangular in CA_ut |- *.
       intros.
       apply CA_ut; try assumption.
       unfold is_row_echelon_partial.

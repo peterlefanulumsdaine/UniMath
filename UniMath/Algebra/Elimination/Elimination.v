@@ -27,7 +27,7 @@ Require Import UniMath.Tactics.Nat_Tactics.
 Require Import UniMath.PAdics.z_mod_p.
 Require Import UniMath.PAdics.lemmas.
 
-Require Import UniMath.RealNumbers.Prelim.
+Require Import UniMath.Algebra.Domains_and_Fields.
 
 Require Import UniMath.Algebra.Elimination.Auxiliary.
 Require Import UniMath.Algebra.Elimination.Vectors.
@@ -409,7 +409,7 @@ Section Pivot.
   Context (R: ring).
   Context (F: fld).
 
-  Local Notation Σ := (iterop_fun hqzero op1).
+  Local Notation Σ := (iterop_fun (@rigunel1 F) op1).
   Local Notation "A ** B" := (@matrix_mult F _ _ A _ B) (at level 80).
   Local Notation "R1 ^ R2" := ((pointwise _ op2) R1 R2).
 
@@ -739,7 +739,7 @@ Section Gauss.
     destruct (natchoice0 n) as [contr_eq | p].
     { unfold Matrix, Vector; intros; apply fromstn0.
       now rewrite contr_eq. }
-    destruct (select_uncleared_column F mat row p) 
+    destruct (select_uncleared_column _ mat row p) 
       as [[piv_col [? [piv_row ?]]] | none].
     2: {exact mat. }
     refine (gauss_clear_column _ row piv_col (m,, natlthnsn _)).

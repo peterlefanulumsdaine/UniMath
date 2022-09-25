@@ -14,11 +14,11 @@ Require Import UniMath.Combinatorics.Vectors.
 Require Import UniMath.Algebra.RigsAndRings.
 Require Import UniMath.Algebra.IteratedBinaryOperations.
 Require Import UniMath.Algebra.Matrix.
+Require Import UniMath.Algebra.Domains_and_Fields.
 
 Require Import UniMath.Algebra.Elimination.Auxiliary.
 Require Import UniMath.Algebra.Elimination.Vectors.
 
-Require Import UniMath.RealNumbers.Prelim.
 
 Local Notation Σ := (iterop_fun rigunel1 op1).
 Local Notation "A ** B" := (matrix_mult A B) (at level 80).

@@ -5,16 +5,14 @@
   Author: Daniel @Skantz (September 2022)
 *)
 
-Require Import UniMath.Foundations.All.
 Require Import UniMath.MoreFoundations.All.
 
-Require Import UniMath.Combinatorics.FiniteSequences.
 Require Import UniMath.Combinatorics.Maybe.
-Require Import UniMath.Combinatorics.StandardFiniteSets.
 
 Require Import UniMath.PAdics.lemmas.
 
 Require Import UniMath.NumberSystems.RationalNumbers.
+
 Require Import UniMath.RealNumbers.Prelim.
 
 (** The first few sections contain Definitions and Lemmas that
@@ -332,9 +330,7 @@ Section PrelStn.
     - apply isapropcoprod.
        + apply stn_ne_iff_neq in p. apply isdecpropfromneg. assumption.
        + apply negProp_to_isaprop.
-       + intros i_eq_j.
-         rewrite i_eq_j in p.
-         now apply isirrefl_natneq in p.
+       + intros i_eq_j; rewrite i_eq_j in p; now apply isirrefl_natneq in p.
   Defined.
 
   Lemma stn_implies_nneq0
@@ -644,8 +640,7 @@ Section Dual.
     (i : stn n)
     (p : k < n)
     (leh: dualelement (k,, p) < i)
-    : dualelement (k,, istransnatlth _ _ (S n) (natgthsnn k) p)
-      <= i.
+    : dualelement (k,, istransnatlth _ _ (S n) (natgthsnn k) p) <= i.
   Proof.
     unfold dualelement in leh |- *.
     destruct (natchoice0 n) as [contr_eq | ?].
@@ -675,8 +670,7 @@ Section Dual.
   Lemma dualvalue_eq
     {X : UU} {n : nat}
     (v : ⟦ n ⟧%stn -> X) (i : ⟦ n ⟧%stn)
-  : (v i)
-  = (λ i' : ⟦ n ⟧%stn, v (dualelement i')) (dualelement i).
+  : (v i) = (λ i' : ⟦ n ⟧%stn, v (dualelement i')) (dualelement i).
   Proof.
     simpl; now rewrite dualelement_2x.
   Defined.

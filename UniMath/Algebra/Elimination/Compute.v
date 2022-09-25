@@ -1,14 +1,7 @@
-Require Import UniMath.Combinatorics.VectorsTests.
 Require Import UniMath.Algebra.Elimination.Elimination.
 Require Import UniMath.Algebra.Elimination.RowOps.
 
-Require Import UniMath.Combinatorics.StandardFiniteSets.
-Require Import UniMath.Combinatorics.Vectors.
-
 Require Import UniMath.Algebra.Matrix.
-
-Require Import UniMath.Algebra.BinaryOperations.
-Require Import UniMath.Algebra.IteratedBinaryOperations.
 
 Require Import UniMath.RealNumbers.Prelim.
 
