@@ -150,8 +150,8 @@ Section Vectors.
       reflexivity.
   Defined.
 
-  (** The following few lemmata are slight generalizations of the pre-existing proofs
-     for natural numbers. Could be upstreamed. *)
+  (** The following few lemmata are variants of existing proofs
+     for natural numbers. *)
 
   (** Identical to transport_stnsum but with Σ , R*)
   Lemma transport_rigsum {m n : nat} (e: m = n) (g: ⟦ n ⟧%stn -> R) :
@@ -277,6 +277,9 @@ Section Vectors.
   (f : ⟦ n ⟧%stn -> R)
     := ∏ (j: ⟦ n ⟧%stn), (i ≠ j) -> (f j = 0%rig).
 
+  (** Some lemmata on vectors with one or two non-zero values. 
+      Useful later for computations using standard basis vectors,
+      identity matrix, elementary row operations. *)
   Lemma pulse_function_sums_to_point { n : nat }
     (f : ⟦ n ⟧%stn -> R) (i : ⟦ n ⟧%stn)
     (f_pulse_function : is_pulse_function i f)

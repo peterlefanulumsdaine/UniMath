@@ -1,5 +1,6 @@
 Require Import UniMath.Combinatorics.VectorsTests.
 Require Import UniMath.Algebra.Elimination.Elimination.
+Require Import UniMath.Algebra.Elimination.RowOps.
 
 Require Import UniMath.Combinatorics.StandardFiniteSets.
 Require Import UniMath.Combinatorics.Vectors.
@@ -72,6 +73,17 @@ Section Tests_1.
   Local Lemma eq6 : firstValue (firstValue eval6) = (@nattorig natcommrig 0).
   Proof. try apply idpath. Abort.
 
+  (** Switch : [1, 0] -> [0, 1]
+               [0, 1]    [1, 0]*)
+
+  Let eval7 := gauss_switch_row (@identity_matrix R 2) (0,, (natgthsnn 0)) (1,, (natgthsnn _)).
+
+  Local Lemma eq7 : (firstValue (firstValue eval7)) = (@rigunel1 R).
+  Proof. apply idpath. Defined.
+
+  Local Lemma eq8 : (firstValue (lastValue eval7)) = (@rigunel2 R).
+  Proof. apply idpath. Defined.
+
 End Tests_1.
 
 Section Tests_2.
@@ -98,6 +110,6 @@ Section Tests_2.
 
     (** A minute - and not computing *)
     (** Let eval6 := Eval cbn in
-        ((@gaussian_elimination hq _ _ (row_vec v4))). *)
+        ((@gaussian_elimination hq _ _ (row_vec v3))). *)
 
 End Tests_2.

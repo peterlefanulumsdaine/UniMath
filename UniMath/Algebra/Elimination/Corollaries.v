@@ -151,8 +151,7 @@ Section BackSub.
     (mat : Matrix F n n)
     (x : Vector F n) (b : Vector F n)
     (is_ut: @is_upper_triangular F n n mat)
-    : ∏ i : ⟦ n ⟧%stn,
-        i ≥ row
+    : ∏ i : ⟦ n ⟧%stn, i ≥ row
     -> (mat i i != 0)%ring
     -> (mat ** (col_vec x)) i = (col_vec b) i
     -> (mat ** (col_vec (back_sub_step row mat x b))) i = (col_vec b) i.
@@ -219,13 +218,7 @@ Section BackSub.
     apply (istransnatlth _ _ _ (natgthsnn m) p).
   Defined.
 
-  Definition back_sub
-    {n : nat}
-    (mat : Matrix F n n)
-    (vec : Vector F n)
-    := back_sub_internal mat vec vec (n,, natgthsnn _) (n,, natgthsnn _).
-
-    Lemma back_sub_internal_inv0
+  Lemma back_sub_internal_inv0
     { n : nat }
     (mat : Matrix F n n)
     (x : Vector F n) (b : Vector F n)
@@ -309,6 +302,12 @@ Section BackSub.
         contradiction (isirreflnatlth _ (natlthlehtrans _ _ _ lt contr_geh)).
   Defined.
 
+  Definition back_sub
+    {n : nat}
+    (mat : Matrix F n n)
+    (vec : Vector F n)
+  := back_sub_internal mat vec vec (n,, natgthsnn _) (n,, natgthsnn _).
+
   Lemma back_sub_inv0
     { n : nat }
     (mat : Matrix F n n) (b : Vector F n)
@@ -316,7 +315,6 @@ Section BackSub.
     (df : @diagonal_all_nonzero F _ mat)
     : back_sub_stmt mat b ut df.
   Proof.
-    unfold back_sub_stmt.
     exists (back_sub mat b).
     intros; unfold back_sub.
     destruct (natchoice0 n) as [eq0 | ?].
@@ -588,10 +586,10 @@ Section Inverse.
       rewrite id_mat_ij; try rewrite id_mat_ij; try easy.
       apply (issymm_natneq _ _ neq).
     - unfold upper_triangular_right_inverse_construction.
-      pose (leading_entry_inv := @back_sub_inv0).
+      pose (back_sub_inv := @back_sub_inv0).
       destruct (natchoice0 n) as [eq | ?].
       {apply fromstn0; now rewrite eq. }
-      apply (leading_entry_inv _ _ _ _ ut df).
+      apply (back_sub_inv _ _ _ _ ut df).
   Defined.
 
   (** (BA)C = I -> D, s.t. BD = I*)
@@ -761,8 +759,7 @@ Section Inverse.
     set (BAC_id := @right_inverse_construction_inv _ _ ut nz).
     assert (rinv_eq : (C ** BA) = identity_matrix).
     { pose (linv := @right_inverse_implies_left _ _ C (C,, BAC_id)).
-      pose (eq :=
-        @matrix_left_inverse_equals_right_inverse
+      pose (eq := @matrix_left_inverse_equals_right_inverse
         _ n _ n _ linv (_,, BAC_id)).
       change (pr1 (C,, _)) with C in eq.
       apply linv. }
