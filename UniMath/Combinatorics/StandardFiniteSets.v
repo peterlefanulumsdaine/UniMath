@@ -200,24 +200,18 @@ Definition lastValue {X:UU} {n:nat} : (⟦S n⟧ -> X) -> X
   := λ x, x lastelement.
 
 (** Dual of i in stn n, is n - 1 - i *)
-Local Lemma dualelement_0_empty {n : nat} (i : ⟦n⟧ ) (e : 0 = n) : empty.
-Proof.
-  induction e.
-  apply (negnatlthn0 _ (stnlt i)).
-Qed.
 
-Local Lemma dualelement_lt (i n : nat) (H : n > 0) : n - 1 - i < n.
+Lemma dualelement_lt (i n : nat) (H : i < n) : n - 1 - i < n.
 Proof.
   rewrite natminusminus.
-  apply (natminuslthn _ _ H).
-  apply idpath.
+  use natminuslthn.
+  - eapply natlehlthtrans; try apply H. apply natleh0n.
+  - apply natgthsn0.
 Qed.
 
 Definition dualelement {n : nat} (i : ⟦n⟧ ) : ⟦n⟧.
 Proof.
-  induction (natchoice0 n) as [H | H].
-  - exact (make_stn n (n - 1 - i) (fromempty (dualelement_0_empty i H))).
-  - exact (make_stn n (n - 1 - i) (dualelement_lt i n H)).
+  exists (n-1-i). apply dualelement_lt, stnlt.
 Defined.
 
 Definition stnmtostnn ( m n : nat ) (isnatleh: natleh m n ) : ⟦m⟧ -> ⟦n⟧ :=

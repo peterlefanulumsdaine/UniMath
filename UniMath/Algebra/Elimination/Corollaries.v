@@ -252,9 +252,7 @@ Section BackSub.
               (natlthlehtrans _ _ _ (istransnatlth _ _ _ leh lt) contr_geh)).
       }
       rewrite back_sub_step_inv2; try easy.
-      { unfold dualelement. unfold dualelement in leh.
-        destruct (natchoice0 _) as [contr_eq | ?].
-        {apply fromstn0. now rewrite contr_eq. }
+      { unfold dualelement in *.
         now apply natgthtogeh. }
       rewrite IH; try reflexivity.
         now apply dualelement_lt_to_le_s.
@@ -285,8 +283,6 @@ Section BackSub.
     apply funextfun; intros i.
     apply back_sub_internal_inv2;
       try assumption; unfold dualelement.
-    destruct (natchoice0 _) as [eq0 | ?].
-    { apply fromempty; now apply negpaths0sx in eq0. }
     simpl; now rewrite minus0r, minusnn0.
     apply df.
     exact (pr2 i).
@@ -399,10 +395,7 @@ Section BackSubZero.
     - apply funextfun; intros j.
       destruct (natlthorgeh j zero) as [? | ge].
       + rewrite back_sub_internal_inv2; try easy.
-        * unfold dualelement.
-          destruct (natchoice0 (S n)).
-          {simpl. now rewrite minus0r, minusxx. }
-          rewrite coprod_rect_compute_2; simpl.
+        * unfold dualelement; simpl.
           now rewrite minus0r, minusxx.
         * now apply (pr2 iszero).
       + rewrite matrix_mult_eq; unfold matrix_mult_unf.

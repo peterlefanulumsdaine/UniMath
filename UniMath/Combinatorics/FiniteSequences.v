@@ -701,27 +701,21 @@ Proof.
   induction x as [n x].
   apply pair_path_in2.
   apply funextfun; intro i.
-  unfold reverse, dualelement, coprod_rect. cbn.
-  induction (natchoice0 n) as [H | H].
-  + apply fromempty. rewrite <- H in i. now apply negstn0.
-  + cbn. apply maponpaths. apply isinjstntonat. apply minusminusmmn. apply natgthtogehm1. apply stnlt.
+  unfold reverse, dualelement. cbn.
+  apply maponpaths. apply isinjstntonat. apply minusminusmmn. apply natgthtogehm1. apply stnlt.
 Qed.
 
 Lemma reverse_index {X : UU} (x : Sequence X) (i : stn (length x)) :
   (reverse x) (dualelement i) = x i.
 Proof.
-  cbn. unfold dualelement, coprod_rect.
+  cbn. unfold dualelement.
   set (e := natgthtogehm1 (length x) i (stnlt i)).
-  induction (natchoice0 (length x)) as [H' | H'].
-  - apply maponpaths. apply isinjstntonat. cbn. apply (minusminusmmn _ _ e).
-  - apply maponpaths. apply isinjstntonat. cbn. apply (minusminusmmn _ _ e).
+  apply maponpaths. apply isinjstntonat. cbn. apply (minusminusmmn _ _ e).
 Qed.
 
 Lemma reverse_index' {X : UU} (x : Sequence X) (i : stn (length x)) :
   (reverse x) i = x (dualelement i).
 Proof.
-  cbn. unfold dualelement, coprod_rect.
-  induction (natchoice0 (length x)) as [H' | H'].
-  - apply maponpaths. apply isinjstntonat. cbn. apply idpath.
-  - apply maponpaths. apply isinjstntonat. cbn. apply idpath.
+  cbn. unfold dualelement.
+  apply maponpaths. apply isinjstntonat. cbn. apply idpath.
 Qed.
