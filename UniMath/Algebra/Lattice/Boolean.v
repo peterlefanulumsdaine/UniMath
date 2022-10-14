@@ -21,8 +21,8 @@ Section Def.
   Local Notation "⊤" := (Ltop L).
   Local Notation "⊥" := (Lbot L).
 
-  (** While complements are in general not unique, we regain uniqueness in the
-      case of Boolean algebras. Therefore, Boolean algebra structure is a proposition. *)
+  (** While complements are not unique in arbitrary lattices, they are in the
+      distributive case. Therefore, Boolean algebra structure is a proposition. *)
   Definition is_boolean : hProp.
   Proof.
     use make_hProp.
@@ -36,6 +36,9 @@ Section Def.
 
 End Def.
 
+Definition is_distributive_of_is_boolean {X : hSet} {L : bounded_lattice X}
+  : is_boolean L -> is_distributive L := pr1.
+
 Definition make_is_boolean {X : hSet} (L : bounded_lattice X) :
   is_distributive L -> complemented_structure L -> is_boolean L.
 Proof.
@@ -44,6 +47,7 @@ Proof.
   - assumption.
   - assumption.
 Defined.
+
 
 Definition boolean_algebra (X : hSet) :=
   ∑ L : bounded_lattice X, is_boolean L.
@@ -69,15 +73,40 @@ Section Heyting.
 
   Context {X : hSet} (L : boolean_algebra X).
 
-  (** The normal "∧", "∨" notation conflicts with that for [hProp], whereas
-      "+", "×" conflict with notation for types. *)
-  Local Notation "x ⊕ y" := (Lmax L x y).
+  Local Notation "x ≤ y" := (Lle L x y).
+  Local Notation "x ∧ y" := (Lmin L x y).
+  Local Notation "x ∨ y" := (Lmax L x y).
   Local Notation "¬ x" := (boolean_algebra_complement L x).
 
-  Lemma boolean_algebra_exponential : exponential L.
+  (* TODO: upstream *)
+  Lemma Lmax_monot_r {x y:X} (le_x_y : x ≤ y) (z:X) : (x ∧ z) ≤ (y ∧ z).
   Proof.
-    use make_exponential.
-    - intros x y; exact ((¬ x) ⊕ y).
-    - intros x y z; use make_dirprod; cbn; intros H.
+    cbn in *.
+    rewrite <- isassoc_Lmin.
+    rewrite (isassoc_Lmin _ x z y).
+    rewrite (iscomm_Lmin _ z y).
+    rewrite <- isassoc_Lmin, isassoc_Lmin.
+    apply maponpaths_12.
+    - assumption.
+    - apply Lmin_id.
+  Qed.
+
+  Lemma lattice_ldistr : isldistr (Lmax L) (Lmin L).
+    intros x y z.
+    use is_distributive_of_is_boolean.
+    use boolean_algebra_is_boolean.
+    Proof.
+
+  Defined.
+  Lemma boolean_algebra_exponential : exponential_structure L.
+  Proof.
+    intros x y.
+    exists ((¬ x) ∨ y).
+    intros z; use make_dirprod; intros H.
+    - use istrans_Lle. { exact ((¬ x ∨ y) ∧ x). }
+      { apply Lmax_monot_r; assumption. }
+      rewrite
+
+    -
   Abort.
 End Heyting.

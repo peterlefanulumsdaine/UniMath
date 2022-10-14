@@ -12,19 +12,22 @@ Section Def.
   Local Notation "x ≤ y" := (Lle L x y).
   Local Notation "x ∧ y" := (Lmin L x y).
 
+  Definition exponential (x y : X) : UU :=
+    ∑ exp_x_y : X, ∏ z : X, z ≤ exp_x_y <-> (z ∧ x) ≤ y.
+
+  Definition make_exponential {x y} (exp_x_y:X) exp_ump : exponential x y :=
+    (exp_x_y ,, exp_ump).
+
   (** An exponential is a binary operation on [X] satisfying this law *)
-  Definition exponential : UU :=
-    ∑ exponential_map : X -> X -> X,
-      ∏ x y z : X, z ≤ (exponential_map x y) <-> (z ∧ x) ≤ y.
+  Definition exponential_structure : UU :=
+    ∏ x y : X, exponential x y.
 
-  Definition make_exponential (exponential_map : X -> X -> X)
-             (prop : ∏ x y z : X, z ≤ (exponential_map x y) <-> (z ∧ x) ≤ y) :
-    exponential := tpair _ exponential_map prop.
+  Definition exponential_map (exp : exponential_structure) : X -> X -> X :=
+    fun x y => pr1 (exp x y).
+  Coercion exponential_map : exponential_structure >-> Funclass.
 
-  Definition exponential_map (exp : exponential) : X -> X -> X := pr1 exp.
-  Coercion exponential_map : exponential >-> Funclass.
-
-  Definition exponential_is_exponential (exp : exponential) :
-    ∏ x y z : X, z ≤ (exponential_map exp x y) <-> (z ∧ x) ≤ y := pr2 exp.
+  Definition exponential_is_exponential (exp : exponential_structure) :
+    ∏ x y z : X, z ≤ (exponential_map exp x y) <-> (z ∧ x) ≤ y :=
+  fun x y => pr2 (exp x y).
 
 End Def.
