@@ -189,6 +189,22 @@ Opaque gr_univalence.
 
 (** *** Computation lemmas for groups *)
 
+Lemma grfrompathsxy (X : gr) {a b : X} (e : a = b) : paths (op a (grinv X b)) (unel X).
+Proof.
+  intros.
+  set (e' := maponpaths (λ x : X, op x (grinv X b)) e). simpl in e'.
+  rewrite (grrinvax X _) in e'. apply e'.
+Defined.
+
+Lemma grtopathsxy (X : gr) {a b : X} (e : paths (op a (grinv X b)) (unel X) ) : a = b .
+Proof.
+  intros.
+  set (e' := maponpaths (λ x, op x b) e). simpl in e'.
+  rewrite (assocax X) in e'. rewrite (grlinvax X) in e'.
+  rewrite (lunax X) in e'. rewrite (runax X) in e'.
+  apply e'.
+Defined.
+
 Definition weqlmultingr (X : gr) (x0 : X) : pr1 X ≃ pr1 X :=
   make_weq _ (isweqlmultingr_is (pr2 X) x0).
 

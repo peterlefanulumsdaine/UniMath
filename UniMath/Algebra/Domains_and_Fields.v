@@ -32,31 +32,6 @@ Require Export UniMath.Algebra.RigsAndRings.
 
 (** To upstream files *)
 
-(** To one binary operation *)
-
-Lemma islcancelableif {X : hSet} (opp : binop X) (x : X)
-      (is : ∏ a b : X, paths (opp x a) (opp x b) -> a = b) : islcancelable opp x.
-Proof.
-  intros. apply isinclbetweensets.
-  - apply (setproperty X).
-  - apply (setproperty X).
-  - apply is.
-Defined.
-
-Lemma isrcancelableif {X : hSet} (opp : binop X) (x : X)
-      (is : ∏ a b : X, paths (opp a x) (opp b x) -> a = b) : isrcancelable opp x.
-Proof.
-  intros. apply isinclbetweensets.
-  - apply (setproperty X).
-  - apply (setproperty X).
-  - apply is.
-Defined.
-
-Definition iscancelableif {X : hSet} (opp : binop X) (x : X)
-           (isl : ∏ a b : X, paths (opp x a) (opp x b) -> a = b)
-           (isr : ∏ a b : X, paths (opp a x) (opp b x) -> a = b) :
-  iscancelable opp x := make_dirprod (islcancelableif opp x isl) (isrcancelableif opp x isr).
-
 (** To monoids *)
 
 (** TODO: this has now been upstreamed to BinaryOperations.v, these should be
@@ -159,24 +134,6 @@ Proof.
   intros. split with ((pr1 y') * (pr1 x')). split.
   - apply (pr2 (linvpairxy _ x y (invtolinv _ x x') (invtolinv _ y y'))).
   - apply (pr2 (rinvpairxy _ x y (invtorinv _ x x') (invtorinv _ y y'))).
-Defined.
-
-(** To groups *)
-
-Lemma grfrompathsxy (X : gr) {a b : X} (e : a = b) : paths (op a (grinv X b)) (unel X).
-Proof.
-  intros.
-  set (e' := maponpaths (λ x : X, op x (grinv X b)) e). simpl in e'.
-  rewrite (grrinvax X _) in e'. apply e'.
-Defined.
-
-Lemma grtopathsxy (X : gr) {a b : X} (e : paths (op a (grinv X b)) (unel X) ) : a = b .
-Proof.
-  intros.
-  set (e' := maponpaths (λ x, op x b) e). simpl in e'.
-  rewrite (assocax X) in e'. rewrite (grlinvax X) in e'.
-  rewrite (lunax X) in e'. rewrite (runax X) in e'.
-  apply e'.
 Defined.
 
 (** To rigs *)
@@ -413,52 +370,49 @@ Proof.
   intros. intro e. destruct (ism (intdomax2l X n m e isn )).
 Defined.
 
-Lemma intdomlcan (X : intdom) : ∏ (a b c : X), c != 0 -> paths (c * a) (c * b) -> a = b.
+Lemma intdom_islcancelable (X : intdom) (c : X) (ne : c != 0) : islcancelable (@op2 X) c.
 Proof.
-  intros a b c ne e.
-  apply (@grtopathsxy X a b). change (paths (a - b) 0).
-  assert (e' := grfrompathsxy X e). change (paths ((c * a) - (c * b)) 0) in e'.
-  rewrite (pathsinv0 (ringrmultminus X _ _)) in e'.
-  rewrite (pathsinv0 (ringldistr X _ _ c)) in e'.
-  set (int := intdomax X _ _ e'). generalize ne.
-  assert (int' : isaprop (c != 0 -> paths (a - b) 0)).
-  {
-    apply impred. intro.
-    apply (setproperty X _ _).
-  }
-  generalize int. simpl. apply (@hinhuniv _ (make_hProp _ int')).
-  intro ene. destruct ene as [ e'' | ne' ].
-  - destruct (ne e'').
-  - intro. apply ne'.
-Defined.
-Opaque intdomlcan.
+  apply islcancelableif. intros a b e.
+  apply (grfrompathsxy X) in e. change (paths ((c * a) - (c * b)) 0) in e.
+  rewrite <- ringrmultminus in e.
+  rewrite <- ringldistr in e.
+  apply intdomax in e.
+  eapply (squash_to_prop e); clear e. { apply setproperty. }
+  intros [e_c0 | e_ab ].
+  { destruct (ne e_c0). }
+  apply (grtopathsxy X); assumption.
+Qed.
 
-Lemma intdomrcan (X : intdom) : ∏ (a b c : X), c != 0 -> paths (a * c) (b * c) -> a = b.
+Lemma intdom_lcancel (X : intdom) {a b : X} (c : X) (ne : c != 0) : (c * a = c * b) -> a = b.
 Proof.
-  intros a b c ne e. apply (@grtopathsxy X a b). change (paths (a - b) 0).
-  assert (e' := grfrompathsxy X e). change (paths ((a * c) - (b * c)) 0) in e'.
-  rewrite (pathsinv0 (ringlmultminus X _ _)) in e'.
-  rewrite (pathsinv0 (ringrdistr X _ _ c)) in e'.
-  set (int := intdomax X _ _ e'). generalize ne.
-  assert (int' : isaprop (c != 0 -> paths (a - b) 0)).
-  {
-    apply impred. intro.
-    apply (setproperty X _ _).
-  }
-  generalize int. simpl. apply (@hinhuniv _ (make_hProp _ int')).
-  intro ene. destruct ene as [ e'' | ne' ].
-  - intro. apply e''.
-  - destruct (ne ne').
+  apply lcancel, intdom_islcancelable; assumption.
 Defined.
-Opaque intdomrcan.
+
+Lemma intdom_isrcancelable (X : intdom) (c : X) (ne : c != 0) : isrcancelable (@op2 X) c.
+Proof.
+  apply isrcancelableif. intros a b e.
+  apply (grfrompathsxy X) in e. change (paths ((a * c) - (b * c)) 0) in e.
+  rewrite <- ringlmultminus in e.
+  rewrite <- ringrdistr in e.
+  apply intdomax in e.
+  eapply (squash_to_prop e); clear e. { apply setproperty. }
+  intros [ e_ab | e_c0 ].
+  2: { destruct (ne e_c0). }
+  apply (grtopathsxy X); assumption.
+Defined.
+Opaque intdom_isrcancelable.
+
+Lemma intdom_rcancel (X : intdom) {a b : X} (c : X) (ne : c != 0) : a * c = b * c -> a = b.
+Proof.
+  apply rcancel, intdom_isrcancelable; assumption.
+Defined.
 
 Lemma intdomiscancelable (X : intdom) (x : X) (is : x != 0) : iscancelable (@op2 X) x.
 Proof.
-  intros. apply iscancelableif.
-  - intros a b. apply (intdomlcan X a b x is).
-  - intros a b. apply (intdomrcan X a b x is).
+  intros. split.
+  - apply intdom_islcancelable; assumption.
+  - apply intdom_isrcancelable; assumption.
 Defined.
-
 
 (** **** Multiplicative submonoid of non-zero elements *)
 
@@ -681,8 +635,7 @@ Lemma isdeceqfldfrac (X : intdom) (is : isdeceq X) :
   isdeceq (commringfrac X (intdomnonzerosubmonoid X)).
 Proof.
   intros. apply isdeceqcommringfrac.
-  - intro a. apply isrcancelableif.
-    intros b0 b1 e. apply (intdomrcan X _ _ (pr1 a) (pr2 a) e).
+  - intro a. apply intdom_isrcancelable, (pr2 a).
   - apply is.
 Defined.
 
@@ -782,12 +735,11 @@ Definition isringfuntofldfrac (X : intdom) (is : isdeceq X) :
 
 Definition isincltofldfrac (X : intdom) (is : isdeceq X) : isincl (tofldfrac X is) :=
   isincltocommringfrac X (intdomnonzerosubmonoid X)
-                      (λ x : _, pr2 (intdomiscancelable X (pr1 x) (pr2 x))).
-
+                      (λ x : _, intdom_isrcancelable X (pr1 x) (pr2 x)).
 
 (** *** Relations similar to "greater" on fields of fractions
 
-Our approach here is slightly different from the tranditional one used for example in Bourbaki
+Our approach here is slightly different from the traditional one used for example in Bourbaki
 Algebra II, Ch. VI, Section 2 where one starts with a total ordering on a ring and extends it to
 its field of fractions. This situation woud be exemplified by the extension of "greater or equal"
 from integers to rationals. We have chosen to use instead as our archetypical example the extension
@@ -826,21 +778,21 @@ Proof.
   destruct (nc (pr1 (pr2 xa1)) 0 (pr2 (pr2 xa1))) as [ g1 | l1 ].
   - destruct (nc (pr1 (pr2 xa2)) 0 (pr2 (pr2 xa2))) as [ g2 | l2 ].
     + simpl. rewrite (ringrunax2 X _). rewrite (ringrunax2 X _).
-      apply (intdomrcan X _ _ _ (pr2 aa0) e).
+      apply (intdom_rcancel _ _ (pr2 aa0) e).
     + simpl. rewrite (ringrunax2 X _). rewrite (ringrunax2 X _).
       rewrite (ringrmultminus X _ _). rewrite (ringlmultminus X _ _).
-      apply (maponpaths (λ x : X, - x)).
-      apply (intdomrcan X _ _ _ (pr2 aa0) e).
+      apply maponpaths.
+      apply (intdom_rcancel _ _ (pr2 aa0) e).
   - destruct (nc (pr1 (pr2 xa2)) 0 (pr2 (pr2 xa2))) as [ g2 | l2 ].
     + simpl. rewrite (ringrunax2 X _). rewrite (ringrunax2 X _).
       rewrite (ringrmultminus X _ _). rewrite (ringlmultminus X _ _).
-      apply (maponpaths (λ x : X, - x)).
-      apply (intdomrcan X _ _ _ (pr2 aa0) e).
+      apply maponpaths.
+      apply (intdom_rcancel _ _ (pr2 aa0) e).
     + simpl. rewrite (ringrunax2 X _). rewrite (ringrunax2 X _).
       rewrite (ringrmultminus X _ _). rewrite (ringlmultminus X _ _).
       rewrite (ringrmultminus X _ _). rewrite (ringlmultminus X _ _).
-      apply (maponpaths (λ x : X, - - x)).
-      apply (intdomrcan X _ _ _ (pr2 aa0) e).
+      apply maponpaths, maponpaths.
+      apply (intdom_rcancel _ _ (pr2 aa0) e).
 Defined.
 Opaque weqfldfracgtintcomp_f.
 
