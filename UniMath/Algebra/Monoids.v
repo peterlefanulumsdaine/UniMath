@@ -61,6 +61,9 @@ Definition make_monoid :
 Definition pr1monoid : monoid -> setwithbinop := @pr1 _ _.
 Coercion pr1monoid : monoid >-> setwithbinop.
 
+Definition monoidop_property (X : monoid) : ismonoidop (@op X) := pr2 X.
+Coercion monoidop_property : monoid >-> ismonoidop.
+
 Definition assocax (X : monoid) : isassoc (@op X) := pr1 (pr2 X).
 
 Definition unel (X : monoid) : X := pr1 (pr2 (pr2 X)).
@@ -460,7 +463,7 @@ Proof.
   split.
   (** This is a similar statement to [grinvop] *)
   - intros xpair ypair.
-    apply mere_invop.
+    apply hasinvop.
     + exact (pr2 xpair).
     + exact (pr2 ypair).
   - apply hinhpr; exact (1,, make_dirprod (lunax _ 1) (lunax _ 1)).
@@ -473,7 +476,7 @@ Lemma inverse_in_submonoid (X : monoid) :
                 merely_invertible_elements (@op X) (pr2 X) x0.
 Proof.
   intros x x0 _ x0isxinv.
-  unfold merely_invertible_elements, hasinv.
+  unfold merely_invertible_elements, inv.
   apply hinhpr.
   exact (x,, is_inv_inv (@op X) _ _ _ x0isxinv).
 Defined.
