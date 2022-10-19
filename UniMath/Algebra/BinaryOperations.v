@@ -62,6 +62,15 @@ Proof.
   apply invmaponpathsincl, H_x.
 Defined.
 
+Lemma islcancelableif {X : hSet} (opp : binop X) (x : X)
+      (is : ∏ a b : X, paths (opp x a) (opp x b) -> a = b) : islcancelable opp x.
+Proof.
+  intros. apply isinclbetweensets.
+  - apply (setproperty X).
+  - apply (setproperty X).
+  - apply is.
+Defined.
+
 Definition isrcancelable {X : UU} (opp : binop X) (x : X) : UU := isincl (λ x0 : X, opp x0 x).
 
 Definition rcancel {X : UU} {opp : binop X} {x : X} (H_x : isrcancelable opp x) (y z : X) :
@@ -70,8 +79,22 @@ Proof.
   apply (invmaponpathsincl (fun y => opp y x)), H_x.
 Defined.
 
+Lemma isrcancelableif {X : hSet} (opp : binop X) (x : X)
+      (is : ∏ a b : X, paths (opp a x) (opp b x) -> a = b) : isrcancelable opp x.
+Proof.
+  intros. apply isinclbetweensets.
+  - apply (setproperty X).
+  - apply (setproperty X).
+  - apply is.
+Defined.
+
 Definition iscancelable {X : UU} (opp : binop X) (x : X) : UU :=
   (islcancelable opp x) × (isrcancelable opp x).
+
+Definition iscancelableif {X : hSet} (opp : binop X) (x : X)
+           (isl : ∏ a b : X, paths (opp x a) (opp x b) -> a = b)
+           (isr : ∏ a b : X, paths (opp a x) (opp b x) -> a = b) :
+  iscancelable opp x := make_dirprod (islcancelableif opp x isl) (isrcancelableif opp x isr).
 
 Definition islinvertible {X : UU} (opp : binop X) (x : X) : UU := isweq (λ x0 : X, opp x x0).
 
@@ -316,9 +339,8 @@ Section ElementsWithInversesSet.
     apply isaproptotal2.
     - intro; apply isapropislinvel.
     - intros x' x'' islinvx' islinvx''.
-      apply (Injectivity (λ x0 : X, x * x0)).
-      + apply incl_injectivity; assumption.
-      + exact (islinvx' @ !islinvx'').
+      eapply lcancel. { apply can. }
+      exact (islinvx' @ !islinvx'').
   Defined.
 
   (** If the operation is right cancellable, left inverses are unique. *)
@@ -328,9 +350,8 @@ Section ElementsWithInversesSet.
     apply isaproptotal2.
     - intro; apply isapropisrinvel.
     - intros x' x'' isrinvx' isrinvx''.
-      apply (Injectivity (λ x0 : X, x0 * x)).
-      + apply incl_injectivity; assumption.
-      + exact (isrinvx' @ !isrinvx'').
+      eapply rcancel. { apply can. }
+      exact (isrinvx' @ !isrinvx'').
   Defined.
 
   (** For the two-sided case, we can just reuse the argument from the
@@ -343,9 +364,8 @@ Section ElementsWithInversesSet.
       + apply isapropislinvel.
       + apply isapropisrinvel.
     - intros x' x'' isinvx' isinvx''.
-      apply (Injectivity (λ x0 : X, x * x0)).
-      + apply incl_injectivity; apply (pr1 can).
-      + exact (pr2 isinvx' @ !pr2 isinvx'').
+      eapply lcancel. { apply can. }
+      exact (pr2 isinvx' @ !pr2 isinvx'').
   Defined.
 
   (** The subset of elements that have inverses *)

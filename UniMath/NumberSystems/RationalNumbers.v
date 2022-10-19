@@ -650,10 +650,10 @@ rewrite en .  rewrite ( hqmultx0 m ) . apply isreflhqgeh .   Defined .
 (** *** Cancellation properties of multiplication on [ hq ] *)
 
 Lemma hqmultlcan ( a b c : hq ) ( ne : neg ( c = 0 ) ) ( e : paths ( c * a ) ( c * b ) ) : a = b .
-Proof . intros . apply ( intdomlcan hq _ _ _ ne e ) . Defined .
+Proof . intros . apply ( intdom_lcancel hq _ ne e ) . Defined .
 
 Lemma hqmultrcan ( a b c : hq ) ( ne : neg ( c = 0 ) ) ( e : paths ( a * c ) ( b * c ) ) : a = b .
-Proof . intros . apply ( intdomrcan hq _ _ _ ne e ) . Defined .
+Proof . intros . apply ( intdom_rcancel hq _ ne e ) . Defined .
 
 
 
