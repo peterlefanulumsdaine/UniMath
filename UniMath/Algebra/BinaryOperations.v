@@ -35,7 +35,7 @@
 
 (** Imports *)
 
-Require Export UniMath.Foundations.Sets.
+Require Export UniMath.Foundations.All.
 Require Export UniMath.MoreFoundations.Propositions.
 
 Local Open Scope logic.
@@ -357,7 +357,7 @@ Section ElementsWithInversesSet.
   Definition isapropisrinvel (x x0 : X) : isaprop (isrinvel opp is x x0) := setproperty X _ _.
   Definition isapropisinvel (x x0 : X) : isaprop (isinvel opp is x x0) := isapropdirprod _ _ (isapropislinvel _ _) (isapropisrinvel _ _).
 
-  (** If the operation is left cancellable, right inverses are unique. *)
+  (** For left-cancelable elements, right inverses are unique, and vice versa *)
   Definition isaprop_linv (x : X) (can : islcancelable opp x) :
     isaprop (rinv opp is x).
   Proof.
@@ -368,7 +368,6 @@ Section ElementsWithInversesSet.
       exact (islinvx' @ !islinvx'').
   Defined.
 
-  (** If the operation is right cancellable, left inverses are unique. *)
   Definition isaprop_rinv (x : X) (can : isrcancelable opp x) :
     isaprop (linv opp is x).
   Proof.
@@ -379,9 +378,37 @@ Section ElementsWithInversesSet.
       exact (isrinvx' @ !isrinvx'').
   Defined.
 
-  (** For the two-sided case, we can just reuse the argument from the
-      left-cancellable case. *)
-  Definition isaprop_inv (x : X) (can : iscancelable opp x) :
+  (** Elements with left inverses are left-cancelable, and dually *)
+  Definition lcancel_linv {x:X} (xlinv : linv opp is x) : ∏ y y' : X, x * y = x * y' -> y = y'.
+  Proof.
+    intros y y' e.
+    refine (_ @ maponpaths (fun y => (pr1 xlinv) * y) e @ _);
+    [ apply pathsinv0 | ];
+    rewrite <- (assocax_is is), linv_property; apply lunax_is.
+  Defined.
+
+  Definition lcancelable_linv {x:X} (xhaslinv : haslinv opp is x) : islcancelable opp x.
+  Proof.
+    apply (squash_to_prop xhaslinv). { apply isapropisincl. }
+    intros. apply islcancelableif, lcancel_linv; assumption.
+  Defined.
+
+  Definition rcancel_rinv {x:X} (xrinv : rinv opp is x) : ∏ y y' : X, y * x = y' * x -> y = y'.
+  Proof.
+    intros y y' e.
+    refine (_ @ maponpaths (fun y => y * (pr1 xrinv)) e @ _);
+    [ apply pathsinv0 | ];
+    rewrite (assocax_is is), rinv_property; apply runax_is.
+  Defined.
+
+  Definition rcancelable_rinv {x:X} (xhasrinv : hasrinv opp is x) : isrcancelable opp x.
+  Proof.
+    apply (squash_to_prop xhasrinv). { apply isapropisincl. }
+    intros. apply isrcancelableif, rcancel_rinv; assumption.
+  Defined.
+
+  (** Two-sided inverses are (unconditionally!) unique *)
+  Definition isaprop_inv (x : X) :
     isaprop (inv opp is x).
   Proof.
     apply isaproptotal2.
@@ -389,7 +416,7 @@ Section ElementsWithInversesSet.
       + apply isapropislinvel.
       + apply isapropisrinvel.
     - intros x' x'' isinvx' isinvx''.
-      eapply lcancel. { apply can. }
+      eapply lcancel_linv. { exists x'. apply isinvx'. }
       exact (pr2 isinvx' @ !pr2 isinvx'').
   Defined.
 
