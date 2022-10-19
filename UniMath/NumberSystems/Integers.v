@@ -18,6 +18,7 @@ Unset Kernel Term Sharing.
 Require Export UniMath.Foundations.NaturalNumbers.
 Require Import UniMath.MoreFoundations.PartA.
 Require Export UniMath.MoreFoundations.NegativePropositions.
+Require Import UniMath.Algebra.BinaryOperations.
 Require Import UniMath.Algebra.Monoids.
 Require Import UniMath.Algebra.Groups.
 Require Export UniMath.Algebra.RigsAndRings.
@@ -681,16 +682,16 @@ Definition hzintdom : intdom := tpair _ _ isintdomhz .
 Definition hzneq0andmult ( n m : hz ) ( isn : hzneq n 0 ) ( ism : hzneq m 0 ) : hzneq ( n * m ) 0 := intdomneq0andmult hzintdom n m isn ism .
 
 Lemma hzmultlcan ( a b c : hz ) ( ne : neg ( c = 0 ) ) ( e : ( c * a ) = ( c * b ) ) : a = b .
-Proof . intros . apply ( intdomlcan hzintdom _ _ _ ne e ) . Defined .
+Proof . intros . apply ( intdom_lcancel hzintdom _ ne e ) . Defined .
 
 Lemma hzmultrcan ( a b c : hz ) ( ne : neg ( c = 0 ) ) ( e : ( a * c ) = ( b * c ) ) : a = b .
-Proof . intros . apply ( intdomrcan hzintdom _ _ _ ne e ) . Defined .
+Proof . intros . apply ( intdom_rcancel hzintdom _ ne e ) . Defined .
 
 Lemma isinclhzmultl ( n : hz )( ne : neg ( n = 0 ) ) : isincl ( λ m : hz, n * m ) .
-Proof.  intros .  apply ( pr1 ( intdomiscancelable hzintdom n ne ) ) . Defined .
+Proof.  intros .  apply ( intdom_islcancelable hzintdom n ne ) . Defined .
 
 Lemma isinclhzmultr ( n : hz )( ne : neg ( n = 0 ) ) : isincl ( λ m : hz, m * n ) .
-Proof. intros . apply ( pr2 ( intdomiscancelable hzintdom n ne ) ) . Defined.
+Proof.  intros .  apply ( intdom_isrcancelable hzintdom n ne ) . Defined .
 
 
 

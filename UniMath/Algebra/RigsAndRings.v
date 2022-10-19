@@ -952,58 +952,6 @@ Local Open Scope ring_scope.
 
 Definition ringinvunel1 (X : ring) : -0 = 0 := grinvunel X.
 
-Lemma ringismultlcancelableif (X : ring) (x : X) (isl : ∏ y, paths (x * y) 0 -> y = 0) :
-  islcancelable op2 x.
-Proof.
-  intros.
-  apply (@isinclbetweensets X X).
-  - apply setproperty.
-  - apply setproperty.
-  - intros x1 x2 e.
-    set (e' := maponpaths (λ a, a + (x * (-x2))) e). simpl in e'.
-    rewrite (pathsinv0 (ringldistr X _ _ x)) in e'.
-    rewrite (pathsinv0 (ringldistr X _ _ x)) in e'.
-    rewrite (ringrinvax1 X x2) in e'.
-    rewrite (ringmultx0 X _) in e'.
-    set (e'' := isl (x1 - x2) e').
-    set (e''' := maponpaths (λ a, a + x2) e''). simpl in e'''.
-    rewrite (ringassoc1 X _ _ x2) in e'''.
-    rewrite (ringlinvax1 X x2) in e'''.
-    rewrite (ringlunax1 X _) in e'''.
-    rewrite (ringrunax1 X _) in e'''.
-    apply e'''.
-Defined.
-Opaque  ringismultlcancelableif.
-
-Lemma ringismultrcancelableif (X : ring) (x : X) (isr : ∏ y, paths (y * x) 0 -> y = 0) :
-  isrcancelable op2 x.
-Proof.
-  intros. apply (@isinclbetweensets X X).
-  - apply setproperty.
-  - apply setproperty.
-  - intros x1 x2 e.
-    set (e' := maponpaths (λ a, a + ((-x2) * x)) e).  simpl in e'.
-    rewrite (pathsinv0 (ringrdistr X _ _ x)) in e'.
-    rewrite (pathsinv0 (ringrdistr X _ _ x)) in e'.
-    rewrite (ringrinvax1 X x2) in e'.
-    rewrite (ringmult0x X _) in e'.
-    set (e'' := isr (x1 - x2) e').
-    set (e''' := maponpaths (λ a, a + x2) e''). simpl in e'''.
-    rewrite (ringassoc1 X _ _ x2) in e'''.
-    rewrite (ringlinvax1 X x2) in e'''.
-    rewrite (ringlunax1 X _) in e'''.
-    rewrite (ringrunax1 X _) in e'''.
-    apply e'''.
-Defined.
-Opaque ringismultrcancelableif.
-
-Lemma ringismultcancelableif (X : ring) (x : X) (isl : ∏ y, paths (x * y) 0 -> y = 0)
-      (isr : ∏ y, paths (y * x) 0 -> y = 0) : iscancelable op2 x.
-Proof.
-  intros.
-  apply (make_dirprod (ringismultlcancelableif X x isl) (ringismultrcancelableif X x isr)).
-Defined.
-
 Lemma ringlmultminus (X : ring) (a b : X) : paths ((- a) * b) (- (a * b)).
 Proof.
   intros. apply (@grrcan X _ _ (a * b)).
@@ -1039,6 +987,45 @@ Lemma ringminusminus (X : ring) (a : X) : --a = a.
 Proof. intros. apply (grinvinv X a). Defined.
 
 Definition ringinvmaponpathsminus (X : ring) {a b : X} : -a = -b -> a = b := grinvmaponpathsinv X.
+
+Lemma ringismultlcancelableif (X : ring) (x : X) (isl : ∏ y, paths (x * y) 0 -> y = 0) :
+  islcancelable op2 x.
+Proof.
+  intros.
+  apply islcancelableif.
+  intros x1 x2 e.
+  apply (grtopathsxy X). change (paths (x1 - x2) 0).
+  apply isl.
+  rewrite ringldistr.
+  rewrite ringrmultminus.
+  apply (grfrompathsxy X).
+  assumption.
+Defined.
+Opaque  ringismultlcancelableif.
+
+Lemma ringismultrcancelableif (X : ring) (x : X) (isr : ∏ y, paths (y * x) 0 -> y = 0) :
+  isrcancelable op2 x.
+Proof.
+  intros.
+  apply isrcancelableif.
+  intros x1 x2 e.
+  apply (grtopathsxy X). change (paths (x1 - x2) 0).
+  apply isr.
+  rewrite ringrdistr.
+  rewrite ringlmultminus.
+  apply (grfrompathsxy X).
+  assumption.
+Defined.
+Opaque ringismultrcancelableif.
+
+Lemma ringismultcancelableif (X : ring) (x : X) (isl : ∏ y, paths (x * y) 0 -> y = 0)
+      (isr : ∏ y, paths (y * x) 0 -> y = 0) : iscancelable op2 x.
+Proof.
+  intros. split.
+  - apply ringismultlcancelableif, isl.
+  - apply ringismultrcancelableif, isr.
+Defined.
+
 
 
 (** **** Relations compatible with the additive structure on rings *)
@@ -2570,7 +2557,7 @@ Proof.
   apply weqimplimpl.
   - apply (@hinhuniv _ (_ = _)).
     intro ae. destruct ae as [ a eq ].
-    apply (invmaponpathsincl _ (iscanc a) _ _ eq).
+    apply (rcancel (iscanc a)), eq.
   - intro eq. apply hinhpr. split with (unel S).
     rewrite (ringrunax2 X). rewrite (ringrunax2 X).
     apply eq.
@@ -2583,14 +2570,11 @@ Lemma isinclprcommringfrac (X : commring) (S : @submonoid (ringmultabmonoid X))
       (iscanc : ∏ a : S, isrcancelable (@op2 X) (pr1carrier _ a)) :
   ∏ a' : S, isincl (λ x, prcommringfrac X S x a').
 Proof.
-  intros. apply isinclbetweensets.
-  apply (setproperty X). apply (setproperty (commringfrac X S)).
-  intros x x'. intro e.
-  set (e' := invweq (weqpathsinsetquot
-                       (eqrelcommringfrac X S) (make_dirprod x a') (make_dirprod x' a')) e).
-  set (e'' := weqhrelhrel0commringfrac
-                X S iscanc (make_dirprod _ _) (make_dirprod _ _) e').
-  simpl in e''. apply (invmaponpathsincl _ (iscanc a')). apply e''.
+  intros. apply isinclbetweensets; try apply setproperty.
+  intros x x' e.
+  apply (rcancel (iscanc a')).
+  apply (weqpathsinsetquot (eqrelcommringfrac X S)) in e.
+  apply weqhrelhrel0commringfrac in e; assumption.
 Defined.
 
 Definition isincltocommringfrac (X : commring) (S : @submonoid (ringmultabmonoid X))

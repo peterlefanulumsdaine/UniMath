@@ -1138,18 +1138,13 @@ Defined.
 
 Lemma isinclprabmonoidfrac (X : abmonoid) (A : submonoid X)
       (iscanc : ∏ a : A, isrcancelable (@op X) (pr1carrier _ a)) :
-  ∏ a' : A, isincl (λ x, prabmonoidfrac X A x a').
+  ∏ a : A, isincl (λ x, prabmonoidfrac X A x a).
 Proof.
-  intro a'. apply isinclbetweensets.
-  - apply (setproperty X).
-  - apply (setproperty (abmonoidfrac X A)).
-  - intros x x'. intro e.
-    set (e' := invweq (weqpathsinsetquot (eqrelabmonoidfrac X A) (make_dirprod x a')
-                                         (make_dirprod x' a')) e).
-    set (e'' := weqhrelhrel0abmonoidfrac X A iscanc (make_dirprod _ _) (make_dirprod _ _) e').
-    simpl in e''.
-    apply (invmaponpathsincl _ (iscanc a')).
-    apply e''.
+  intros a. apply isinclbetweensets; try apply setproperty.
+  intros x x' e.
+  apply (rcancel (iscanc a)).
+  apply (weqpathsinsetquot (eqrelabmonoidfrac X A)) in e.
+  apply weqhrelhrel0abmonoidfrac in e; assumption.
 Defined.
 
 Definition isincltoabmonoidfrac (X : abmonoid) (A : submonoid X)
