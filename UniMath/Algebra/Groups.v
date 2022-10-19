@@ -778,7 +778,7 @@ Proof.
   apply (squash_to_prop (pr2 xpair) (propproperty _)).
 
   intros xinv.
-  unfold haslinv.
+  unfold linv.
   apply hinhpr.
   refine ((pr1 xinv,, inverse_in_submonoid _ x (pr1 xinv) (pr2 xpair) (pr2 xinv)),, _).
   apply subtypePath_prop.
