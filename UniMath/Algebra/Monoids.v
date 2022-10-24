@@ -459,26 +459,24 @@ Local Open Scope multmonoid.
 
 Definition invertible_submonoid (X : monoid) : @submonoid X.
 Proof.
-  refine (merely_invertible_elements (@op X) (pr2 X),, _).
+  refine (invertible_elements (@op X) (monoidop_property X),, _).
   split.
   (** This is a similar statement to [grinvop] *)
   - intros xpair ypair.
-    apply hasinvop.
+    apply invop.
     + exact (pr2 xpair).
     + exact (pr2 ypair).
-  - apply hinhpr; exact (1,, make_dirprod (lunax _ 1) (lunax _ 1)).
+  - exists 1. split; apply lunax.
 Defined.
 
 (** This submonoid is closed under inversion *)
-Lemma inverse_in_submonoid (X : monoid) :
-  ∏ (x x0 : X), merely_invertible_elements (@op X) (pr2 X) x ->
-                isinvel (@op X) (pr2 X) x x0 ->
-                merely_invertible_elements (@op X) (pr2 X) x0.
+Lemma inverse_invertible_element (X : monoid) :
+   invertible_submonoid X -> invertible_submonoid X.
 Proof.
-  intros x x0 _ x0isxinv.
-  unfold merely_invertible_elements, inv.
-  apply hinhpr.
-  exact (x,, is_inv_inv (@op X) _ _ _ x0isxinv).
+  intros [x xinv].
+  exists (pr1 xinv).
+  exists x.
+  apply is_inv_inv, inv_property.
 Defined.
 
 Local Close Scope multmonoid.

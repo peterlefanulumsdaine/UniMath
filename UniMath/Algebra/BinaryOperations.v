@@ -422,8 +422,6 @@ Section ElementsWithInversesSet.
 
   (** The subset of elements that have inverses *)
 
-  Definition merely_invertible_elements : hsubtype X := hasinv opp is.
-
   Definition invertible_elements : hsubtype X.
   Proof.
     intro x.
