@@ -136,7 +136,7 @@ Proof.
   repeat rewrite isa; exact (idpath _).
 Qed.
 
-(** cancellativity *)
+(** cancellativity: an operation is (left, right) cancellative if all elements are (left, right) cancelable *)
 
 Definition isrcancellative {X : UU} (opp : binop X) : UU :=
   ∏ x:X, isrcancelable opp x.
@@ -407,7 +407,7 @@ Section ElementsWithInversesSet.
     intros. apply isrcancelableif, rcancel_rinv; assumption.
   Defined.
 
-  (** Two-sided inverses are (unconditionally!) unique *)
+  (** Two-sided inverses are unique *)
   Definition isaprop_inv (x : X) :
     isaprop (inv opp is x).
   Proof.
@@ -424,12 +424,12 @@ Section ElementsWithInversesSet.
 
   Definition merely_invertible_elements : hsubtype X := hasinv opp is.
 
-  Definition invertible_elements (can : ∏ x, iscancelable opp x) : hsubtype X.
+  Definition invertible_elements : hsubtype X.
   Proof.
     intro x.
     use make_hProp.
-    - exact (inv opp is x).
-    - apply isaprop_inv, can.
+    { exact (inv opp is x). }
+    apply isaprop_inv.
   Defined.
 
   (** If an element has an inverse, then it is cancellable *)
