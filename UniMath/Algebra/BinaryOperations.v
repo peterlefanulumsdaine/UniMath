@@ -332,8 +332,8 @@ Section ElementsWithInverses.
     apply hinhfun2, invop.
   Defined.
 
-  (** If an element has both left and right inverses, they're equal. *)
-  Lemma linv_eq_rinv (x lx rx : X) (lxlinv : islinvel x lx) (rxrinv : isrinvel x rx) :
+  (** If an element has both left and right inverses, they are equal (or at least, their underlying elements are). *)
+  Lemma linvel_eq_rinvel (x lx rx : X) (lxlinv : islinvel x lx) (rxrinv : isrinvel x rx) :
     lx = rx.
   Proof.
     intros.
@@ -342,6 +342,25 @@ Section ElementsWithInverses.
     refine (!assocax_is is _ _ _ @ _).
     refine (maponpaths (λ z, z * rx) lxlinv @ _).
     apply lunax_is.
+  Defined.
+
+  (** …so if an element has a left and right inverse, it has a 2-sided inverse *)
+  Lemma isinvel_from_linvel_rinvel
+      (x lx rx : X) (lxlinv : islinvel x lx) (rxrinv : isrinvel x rx) :
+    isinvel x lx.
+  Proof.
+    intros; split. { assumption. }
+    eapply transportb. { eapply linvel_eq_rinvel; eassumption. }
+    assumption.
+  Defined.
+
+  Lemma inv_from_linv_rinv (x : X) (xlinv : linv x) (xrinv : rinv x) :
+    inv x.
+  Proof.
+    exists (pr1 xlinv).
+    eapply isinvel_from_linvel_rinvel.
+    - apply linv_property.
+    - apply (rinv_property xrinv).
   Defined.
 
 End ElementsWithInverses.
@@ -418,6 +437,20 @@ Section ElementsWithInversesSet.
     - intros x' x'' isinvx' isinvx''.
       eapply lcancel_linv. { exists x'. apply isinvx'. }
       exact (pr2 isinvx' @ !pr2 isinvx'').
+  Defined.
+
+  Definition inv_from_hasinv (x:X) : hasinv opp is x -> inv opp is x.
+  Proof.
+    apply factor_through_squash. { apply isaprop_inv. }
+    apply idfun.
+  Defined.
+
+  Definition inv_from_haslinv_hasrinv (x:X) :
+    haslinv opp is x -> hasrinv opp is x -> inv opp is x.
+  Proof.
+    intros xl xr; apply inv_from_hasinv.
+    refine (hinhfun2 _ xl xr).
+    apply inv_from_linv_rinv.
   Defined.
 
   (** The subset of elements that have inverses *)
