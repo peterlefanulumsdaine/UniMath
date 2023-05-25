@@ -552,13 +552,6 @@ Defined.
 
 (** ** Paths between pairs *)
 
-(* replace all uses of this by uses of subtypePairEquality *)
-Definition pair_path_props {X} {P:X->Type} {x y:X} {p:P x} {q:P y} :
-  x = y -> (∏ z, isaprop (P z)) -> x,,p = y,,q.
-Proof.
-  intros e is. now apply subtypePairEquality.
-Abort.
-
 Local Open Scope transport.
 
 Definition pair_path2 {A} {B:A->UU} {a a1 a2} {b1:B a1} {b2:B a2}
