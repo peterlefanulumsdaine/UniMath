@@ -421,7 +421,6 @@ End PointedTypes.
 
 Definition weq_total2_prod {X Y} (Z:Y->Type) : (∑ y, X × Z y) ≃ (X × ∑ y, Z y).
 Proof.
-  (* move upstream *)
   intros. simple refine (make_weq _ (isweq_iso _ _ _ _)).
   { intros [y [x z]]. exact (x,,y,,z). }
   { intros [x [y z]]. exact (y,,x,,z). }
