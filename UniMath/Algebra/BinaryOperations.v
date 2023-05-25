@@ -408,6 +408,14 @@ Section ElementsWithInversesSet.
   Defined.
 
   (** Two-sided inverses are (unconditionally!) unique *)
+  Definition invel_unique (x y y' : X)
+      (isinv_y : isinvel opp is x y) (isinv_y' : isinvel opp is x y')
+    : y = y'.
+  Proof.
+    eapply lcancel_linv. { exists y. apply isinv_y. }
+    exact (pr2 isinv_y @ !pr2 isinv_y').
+  Defined.
+
   Definition isaprop_inv (x : X) :
     isaprop (inv opp is x).
   Proof.
@@ -416,8 +424,7 @@ Section ElementsWithInversesSet.
       + apply isapropislinvel.
       + apply isapropisrinvel.
     - intros x' x'' isinvx' isinvx''.
-      eapply lcancel_linv. { exists x'. apply isinvx'. }
-      exact (pr2 isinvx' @ !pr2 isinvx'').
+      apply (invel_unique x); assumption.
   Defined.
 
   (** The subset of elements that have inverses *)
