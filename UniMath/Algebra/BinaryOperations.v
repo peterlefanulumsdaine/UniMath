@@ -51,8 +51,7 @@ Definition unop (X : UU) : UU := X -> X.
 
 (** *** Binary operations *)
 
-
-(** **** General definitions *)
+(** **** Cancellability *)
 
 Definition islcancelable {X : UU} (opp : binop X) (x : X) : UU := isincl (λ x0 : X, opp x x0).
 
@@ -95,6 +94,10 @@ Definition iscancelableif {X : hSet} (opp : binop X) (x : X)
            (isl : ∏ a b : X, paths (opp x a) (opp x b) -> a = b)
            (isr : ∏ a b : X, paths (opp a x) (opp b x) -> a = b) :
   iscancelable opp x := make_dirprod (islcancelableif opp x isl) (isrcancelableif opp x isr).
+
+(** **** “Invertibility” (nonstandard)*)
+
+(** Note: this sense of “invertible” is not generally equivalent to the standard sense, except in monoids.  The more standard sense is given in [Section ElementsWithInverses] below. *)
 
 Definition islinvertible {X : UU} (opp : binop X) (x : X) : UU := isweq (λ x0 : X, opp x x0).
 
@@ -144,7 +147,7 @@ Definition isrcancellative {X : UU} (opp : binop X) : UU :=
 Definition islcancellative {X : UU} (opp : binop X) : UU :=
   ∏ x:X, islcancelable opp x.
 
-(** *)
+(** left, right units and unitality *)
 
 Definition islunit {X : UU} (opp : binop X) (un0 : X) : UU := ∏ x : X, (opp un0 x) = x.
 
@@ -181,7 +184,7 @@ Proof.
   apply (pathscomp0 (pathsinv0 (pr2 ua2 u1)) (pr1 ua1 u2)).
 Defined.
 
-(** *)
+(** monoid operations *)
 
 Definition ismonoidop {X : UU} (opp : binop X) : UU := (isassoc opp) × (isunital opp).
 
@@ -470,31 +473,6 @@ Section ElementsWithInversesSet.
     apply isaprop_inv.
   Defined.
 
-  (** If an element has an inverse, then it is cancellable *)
-
-  Definition lcanfromlinv (a b c : X) (c' : linv opp is c) :
-    (c * a) = (c * b) → a = b.
-  Proof.
-    intros e.
-    refine (!lunax_is is a @ _ @ lunax_is is b).
-    refine (!maponpaths (λ z, z * _) (pr2 c') @ _ @
-             maponpaths (λ z, z * _) (pr2 c')).
-    refine (assocax_is is _ _ _ @ _ @ !assocax_is is _ _ _).
-    apply maponpaths.
-    assumption.
-  Defined.
-
-  Definition rcanfromrinv (a b c : X) (c' : rinv opp is c) :
-    (a * c) = (b * c) → a = b.
-  Proof.
-    intros e.
-    refine (!runax_is is a @ _ @ runax_is is b).
-    refine (!maponpaths (λ z, _ * z) (pr2 c') @ _ @
-             maponpaths (λ z, _ * z) (pr2 c')).
-    refine (!assocax_is is _ _ _ @ _ @ assocax_is is _ _ _).
-    apply (maponpaths (λ z, z * _)).
-    assumption.
-  Defined.
 End ElementsWithInversesSet.
 
 Section InverseOperations.
