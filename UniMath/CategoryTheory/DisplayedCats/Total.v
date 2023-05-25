@@ -3,8 +3,7 @@
 
 Require Import UniMath.Foundations.Sets.
 
-(* Needed for pr1_issurjective *)
-Require Import UniMath.MoreFoundations.AxiomOfChoice.
+Require Import UniMath.MoreFoundations.PartA.
 
 Require Import UniMath.CategoryTheory.Core.Categories.
 Require Import UniMath.CategoryTheory.Core.Functors.
@@ -117,7 +116,7 @@ Section Total_Category.
     : full (pr1_category D).
   Proof.
     intros ? ?.
-    use pr1_issurjective.
+    use issurjective_pr1.
     apply H.
   Defined.
 

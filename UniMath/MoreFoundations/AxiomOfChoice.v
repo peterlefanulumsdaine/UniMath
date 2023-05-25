@@ -3,17 +3,6 @@
 Require Export UniMath.MoreFoundations.DecidablePropositions.
 Require Export UniMath.MoreFoundations.Sets.
 
-(** ** Preliminaries  *)
-
-Lemma pr1_issurjective {X : UU} {P : X -> UU} :
-  (∏ x : X, ∥ P x ∥) -> issurjective (pr1 : (∑ x, P x) -> X).
-(* move upstream later *)
-Proof.
-  intros ne x. simple refine (hinhuniv _ (ne x)).
-  intros p. apply hinhpr.
-  exact ((x,,p),,idpath _).
-Defined.
-
 (** ** Characterize equivalence relations on [bool] *)
 
 Definition eqrel_on_bool (P:hProp) : eqrel boolset.
@@ -74,7 +63,7 @@ Proof.
     + exact (λ y, hfiberpr1 f y (s y)).
     + exact (λ y, hfiberpr2 f y (s y)).
   - intros AC X P ne.
-    use (hinhuniv _ (AC X _ _ (pr1_issurjective ne))).
+    use (hinhuniv _ (AC X _ _ (issurjective_pr1 ne))).
     intros sec. use hinhpr. intros x.
     induction (pr2 sec x). exact (pr2 (pr1 sec x)).
 Defined.

@@ -1469,4 +1469,13 @@ Section surjectivity.
     intro gfiber; apply coprodofhfiberstohfiber.
     exact(inr gfiber).
   Qed.
+
+  Lemma issurjective_pr1 {X : UU} {P : X -> UU} :
+    (∏ x : X, ∥ P x ∥) -> issurjective (pr1 : (∑ x, P x) -> X).
+  Proof.
+    intros ne x. simple refine (hinhuniv _ (ne x)).
+    intros p. apply hinhpr.
+    exact ((x,,p),,idpath _).
+  Defined.
+
 End surjectivity.
