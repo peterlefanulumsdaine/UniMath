@@ -574,6 +574,12 @@ Proof.
   apply Action_univalence.
 Defined.
 
+Lemma torsor_univalence_id {G:gr} (X:Torsor G) : invmap torsor_univalence (idActionIso X) = idpath X.
+Proof.
+  change (idActionIso X) with (torsor_univalence (idpath X)).
+  apply homotinvweqweq.
+Defined.
+
 Definition torsor_univalence_transport {G:gr} {X Y:Torsor G} (p:X=Y) (x:X) :
   torsor_univalence p x = transportf (λ X:Torsor G, X:Type) p x.
 (* compare with castTorsor_transportf above *)
@@ -638,13 +644,6 @@ Defined.
 
 Ltac torsor_induction' f X :=
   generalize f; generalize X; apply TorsorIso_rect'; clear f X.
-
-Lemma torsor_univalence_id {G:gr} (X:Torsor G) : invmap torsor_univalence (idActionIso X) = idpath X.
-(* upstream *)
-Proof.
-  change (idActionIso X) with (torsor_univalence (idpath X)).
-  apply homotinvweqweq.
-Defined.
 
 Definition invUnivalenceCompose {G:gr} {X Y Z : Torsor G} (f : ActionIso X Y) (g : ActionIso Y Z) :
   invmap torsor_univalence f @ invmap torsor_univalence g = invmap torsor_univalence (composeActionIso f g).
